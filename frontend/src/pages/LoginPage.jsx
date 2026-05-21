@@ -3,6 +3,47 @@ import { useState } from "react";
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
+  const [email, setEmail] = useState("admin@example.com");
+  const [password, setPassword] = useState("123");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setError(result.message || "Login failed");
+        return;
+      }
+
+      localStorage.setItem("accessToken", result.data.accessToken);
+      localStorage.setItem("user", JSON.stringify(result.data.user));
+
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Cannot connect to server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-[#faf8ff] overflow-hidden">
       <div className="hidden lg:flex lg:w-1/2 relative bg-[#dbe1ff] items-center justify-center overflow-hidden">
@@ -26,8 +67,8 @@ export default function LoginPage() {
           </h1>
 
           <p className="text-lg text-[#3f465c]">
-            Streamline operations, optimize space utilization, and maximize revenue with
-            ParkMaster Pro.
+            Streamline operations, optimize space utilization, and maximize
+            revenue with ParkMaster Pro.
           </p>
         </div>
 
@@ -52,15 +93,24 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={handleLogin}>
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Email address
               </label>
               <input
                 type="email"
-                placeholder="admin@parkmaster.com"
+                placeholder="admin@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                required
               />
             </div>
 
@@ -69,7 +119,10 @@ export default function LoginPage() {
                 <label className="block text-sm font-semibold text-slate-700">
                   Password
                 </label>
-                <button type="button" className="text-sm font-medium text-blue-600">
+                <button
+                  type="button"
+                  className="text-sm font-medium text-blue-600"
+                >
                   Forgot password?
                 </button>
               </div>
@@ -78,7 +131,10 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-12 rounded-xl border border-slate-300 bg-white px-4 pr-12 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  required
                 />
                 <button
                   type="button"
@@ -105,11 +161,20 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full h-12 rounded-xl bg-blue-600 text-white font-semibold shadow-md shadow-blue-900/20 hover:bg-blue-700 transition"
+              disabled={loading}
+              className="w-full h-12 rounded-xl bg-blue-600 text-white font-semibold shadow-md shadow-blue-900/20 hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:bg-blue-400"
             >
-              Sign in
+              {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
+
+          <div className="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-600">
+            <p className="font-semibold text-slate-700 mb-2">Test accounts:</p>
+            <p>admin@example.com / 123</p>
+            <p>manager@example.com / 123</p>
+            <p>staff@example.com / 123</p>
+            <p>driver@example.com / 123</p>
+          </div>
 
           <p className="mt-8 text-center text-sm text-slate-500">
             Parking Building Management System
