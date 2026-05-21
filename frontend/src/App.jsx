@@ -1,7 +1,7 @@
-import ParkingSlotsPage from "./pages/ParkingSlotsPage";
+import LoginPage from "./pages/LoginPage";
 
 function App() {
-  return <ParkingSlotsPage />;
+  return <LoginPage />;
 }
 
 export default App;
