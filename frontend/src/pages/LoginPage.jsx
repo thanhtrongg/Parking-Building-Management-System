@@ -37,7 +37,10 @@ export default function LoginPage() {
       localStorage.setItem("accessToken", result.data.accessToken);
       localStorage.setItem("user", JSON.stringify(result.data.user));
 
-      window.location.href = "/dashboard";
+      const role = result.data.user.role?.toLowerCase();
+      const userRoles = ["driver", "user", "customer", "student"];
+
+      window.location.href = userRoles.includes(role) ? "/user-dashboard" : "/dashboard";
     } catch (error) {
       console.error("Login error:", error);
       setError("Cannot connect to server");
