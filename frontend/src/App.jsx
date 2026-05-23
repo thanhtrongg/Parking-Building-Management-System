@@ -4,6 +4,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ParkingSlotsPage from "./pages/ParkingSlotsPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
 import UserMyBookingsPage from "./pages/UserMyBookingsPage";
+import UserSettingsPage from "./pages/UserSettingsPage";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/user-dashboard" element={<UserDashboardPage />} />
         <Route path="/user-bookings" element={<UserMyBookingsPage />} />
+        <Route path="/user-settings" element={<UserSettingsPage />} />
         <Route path="/parking-slots" element={<ParkingSlotsPage />} />
       </Routes>
     </BrowserRouter>
