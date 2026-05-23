@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ParkingSlotsPage from "./pages/ParkingSlotsPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
+import UserMyBookingsPage from "./pages/UserMyBookingsPage";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/user-dashboard" element={<UserDashboardPage />} />
+        <Route path="/user-bookings" element={<UserMyBookingsPage />} />
         <Route path="/parking-slots" element={<ParkingSlotsPage />} />
       </Routes>
     </BrowserRouter>

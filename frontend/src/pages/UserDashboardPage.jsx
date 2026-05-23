@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const navItems = [
   ["dashboard", "Dashboard", "/user-dashboard"],
-  ["event_available", "My Bookings", "#"],
+  ["event_available", "My Bookings", "/user-bookings"],
   ["settings", "Settings", "#"],
 ];
 
