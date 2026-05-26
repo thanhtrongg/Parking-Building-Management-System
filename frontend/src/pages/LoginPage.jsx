@@ -37,10 +37,19 @@ export default function LoginPage() {
       localStorage.setItem("accessToken", result.data.accessToken);
       localStorage.setItem("user", JSON.stringify(result.data.user));
 
-      const role = result.data.user.role?.toLowerCase();
-      const userRoles = ["driver", "user", "customer", "student"];
+      const role = result.data.user.role;
 
-      window.location.href = userRoles.includes(role) ? "/user-dashboard" : "/dashboard";
+      if (
+        role === "SYSTEM_ADMIN" ||
+        role === "FACILITY_MANAGER" ||
+        role === "PARKING_STAFF"
+      ) {
+        window.location.href = "/dashboard";
+      } else if (role === "DRIVER") {
+        window.location.href = "/user-dashboard";
+      } else {
+        window.location.href = "/login";
+      }
     } catch (error) {
       console.error("Login error:", error);
       setError("Cannot connect to server");
