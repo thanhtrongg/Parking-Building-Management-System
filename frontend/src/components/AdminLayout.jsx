@@ -3,9 +3,9 @@ import { NavLink, useNavigate } from "react-router-dom";
 const navItems = [
   ["dashboard", "Dashboard", "/dashboard"],
   ["local_parking", "Parking Slots", "/parking-slots"],
-  ["directions_car", "Vehicles", "#"],
-  ["event_available", "Reservations", "#"],
-  ["payments", "Payments", "#"],
+  ["directions_car", "Vehicles", "/admin-vehicles"],
+  ["event_available", "Reservations", "/reservations"],
+  ["payments", "Payments", "/payments"],
   ["group", "Users", "#"],
 ];
 
@@ -107,7 +107,7 @@ function Sidebar({ activeLabel, onLogout }) {
   );
 }
 
-function SearchBox() {
+function SearchBox({ placeholder = "Search for slot ID or vehicle tag..." }) {
   return (
     <div className="relative w-full max-w-md">
       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#434655]">
@@ -115,16 +115,16 @@ function SearchBox() {
       </span>
       <input
         className="h-12 w-full rounded-xl border border-[#c3c6d7] bg-[#f3f3fe] pl-10 pr-4 font-['Inter'] text-sm text-[#191b23] outline-none transition focus:border-transparent focus:ring-2 focus:ring-[#2563eb]"
-        placeholder="Search for slot ID or vehicle tag..."
+        placeholder={placeholder}
       />
     </div>
   );
 }
 
-function Header({ action }) {
+function Header({ action, searchPlaceholder }) {
   return (
     <header className="fixed right-0 top-0 z-40 flex h-16 w-[calc(100%-260px)] items-center justify-between border-b border-[#c3c6d7] bg-[#faf8ff] px-8 shadow-sm">
-      <SearchBox />
+      <SearchBox placeholder={searchPlaceholder} />
 
       <div className="flex items-center gap-4">
         <button className="rounded-full p-2 text-[#434655] transition hover:bg-[#e7e7f3]">
@@ -146,7 +146,7 @@ function Header({ action }) {
   );
 }
 
-export default function AdminLayout({ activeLabel, headerAction, children }) {
+export default function AdminLayout({ activeLabel, headerAction, searchPlaceholder, children }) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -158,7 +158,7 @@ export default function AdminLayout({ activeLabel, headerAction, children }) {
   return (
     <div className="min-h-screen bg-[#faf8ff] font-['Inter'] text-[#191b23]">
       <Sidebar activeLabel={activeLabel} onLogout={handleLogout} />
-      <Header action={headerAction} />
+      <Header action={headerAction} searchPlaceholder={searchPlaceholder} />
 
       <main className="ml-[260px] h-screen overflow-y-auto pt-16">
         <div className="p-8">{children}</div>
