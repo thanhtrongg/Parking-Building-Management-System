@@ -3,8 +3,8 @@ import { useState } from "react";
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("123");
+  const [email, setEmail] = useState("admin@gmail.com");
+  const [password, setPassword] = useState("123456");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,13 +39,9 @@ export default function LoginPage() {
 
       const role = result.data.user.role;
 
-      if (
-        role === "SYSTEM_ADMIN" ||
-        role === "FACILITY_MANAGER" ||
-        role === "PARKING_STAFF"
-      ) {
+      if (role === "ADMIN" || role === "MANAGER" || role === "STAFF") {
         window.location.href = "/dashboard";
-      } else if (role === "DRIVER") {
+      } else if (role === "USER") {
         window.location.href = "/user-dashboard";
       } else {
         window.location.href = "/login";
@@ -184,7 +180,7 @@ export default function LoginPage() {
 
           <div className="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-600">
             <p className="font-semibold text-slate-700 mb-2">Test accounts:</p>
-            <p>admin@example.com / 123</p>
+            <p>admin@gmail.com / 123456</p>
             <p>manager@example.com / 123</p>
             <p>staff@example.com / 123</p>
             <p>driver@example.com / 123</p>

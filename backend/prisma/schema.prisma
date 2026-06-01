@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model feedbacks {
+  id                                 String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id                            String?           @db.Uuid
+  parking_session_id                 String?           @db.Uuid
+  issue_type                         String            @db.VarChar(50)
+  description                        String
+  status                             String?           @default("OPEN") @db.VarChar(20)
+  resolved_by                        String?           @db.Uuid
+  created_at                         DateTime?         @default(now()) @db.Timestamptz(6)
+  parking_sessions                   parking_sessions? @relation(fields: [parking_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_feedbacks_resolved_byTousers users?            @relation("feedbacks_resolved_byTousers", fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_feedbacks_user_idTousers     users?            @relation("feedbacks_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model parking_sessions {
+  id                                                             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ticket_code                                                    String?        @unique @db.VarChar(50)
+  license_plate                                                  String         @db.VarChar(20)
+  vehicle_type_id                                                String?        @db.Uuid
+  user_id                                                        String?        @db.Uuid
+  parking_slot_id                                                String?        @db.Uuid
+  assigned_slot_id                                               String?        @db.Uuid
+  entry_gate                                                     String?        @db.VarChar(50)
+  exit_gate                                                      String?        @db.VarChar(50)
+  entry_time                                                     DateTime?      @default(now()) @db.Timestamptz(6)
+  exit_time                                                      DateTime?      @db.Timestamptz(6)
+  checkin_staff_id                                               String?        @db.Uuid
+  checkout_staff_id                                              String?        @db.Uuid
+  status                                                         String?        @default("ACTIVE") @db.VarChar(20)
+  feedbacks                                                      feedbacks[]
+  parking_slots_parking_sessions_assigned_slot_idToparking_slots parking_slots? @relation("parking_sessions_assigned_slot_idToparking_slots", fields: [assigned_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_parking_sessions_checkin_staff_idTousers                 users?         @relation("parking_sessions_checkin_staff_idTousers", fields: [checkin_staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_parking_sessions_checkout_staff_idTousers                users?         @relation("parking_sessions_checkout_staff_idTousers", fields: [checkout_staff_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parking_slots_parking_sessions_parking_slot_idToparking_slots  parking_slots? @relation("parking_sessions_parking_slot_idToparking_slots", fields: [parking_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_parking_sessions_user_idTousers                          users?         @relation("parking_sessions_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicle_types                                                  vehicle_types? @relation(fields: [vehicle_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments                                                       payments[]
+}
+
+model parking_slots {
+  id                                                                String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  zone_id                                                           String?            @db.Uuid
+  slot_name                                                         String             @db.VarChar(20)
+  status                                                            String?            @default("AVAILABLE") @db.VarChar(20)
+  distance_to_gate                                                  Int?               @default(0)
+  parking_sessions_parking_sessions_assigned_slot_idToparking_slots parking_sessions[] @relation("parking_sessions_assigned_slot_idToparking_slots")
+  parking_sessions_parking_sessions_parking_slot_idToparking_slots  parking_sessions[] @relation("parking_sessions_parking_slot_idToparking_slots")
+  zones                                                             zones?             @relation(fields: [zone_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservations                                                      reservations[]
+
+  @@unique([zone_id, slot_name])
+}
+
+model payments {
+  id                 String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  parking_session_id String?           @db.Uuid
+  amount             Decimal           @db.Decimal(10, 2)
+  payment_method     String            @db.VarChar(20)
+  payment_time       DateTime?         @default(now()) @db.Timestamptz(6)
+  status             String?           @default("SUCCESS") @db.VarChar(20)
+  parking_sessions   parking_sessions? @relation(fields: [parking_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pricing_policies {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  vehicle_type_id String?        @db.Uuid
+  base_price      Decimal        @db.Decimal(10, 2)
+  hourly_rate     Decimal?       @default(0) @db.Decimal(10, 2)
+  night_rate      Decimal?       @default(0) @db.Decimal(10, 2)
+  effective_date  DateTime       @db.Date
+  vehicle_types   vehicle_types? @relation(fields: [vehicle_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([vehicle_type_id, effective_date])
+}
+
+model reservations {
+  id                  String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id             String         @db.Uuid
+  vehicle_type_id     String         @db.Uuid
+  parking_slot_id     String?        @db.Uuid
+  expected_start_time DateTime       @db.Timestamptz(6)
+  expected_end_time   DateTime       @db.Timestamptz(6)
+  status              String?        @default("PENDING") @db.VarChar(20)
+  created_at          DateTime?      @default(now()) @db.Timestamptz(6)
+  parking_slots       parking_slots? @relation(fields: [parking_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users               users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicle_types       vehicle_types  @relation(fields: [vehicle_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model system_configs {
+  config_key   String    @id @db.VarChar(50)
+  config_value String
+  description  String?
+  updated_by   String?   @db.Uuid
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  users        users?    @relation(fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  id                                                         String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username                                                   String             @unique @db.VarChar(50)
+  password                                                   String             @db.VarChar(255)
+  full_name                                                  String             @db.VarChar(100)
+  email                                                      String?            @unique @db.VarChar(100)
+  phone                                                      String?            @db.VarChar(20)
+  role                                                       String             @db.VarChar(20)
+  status                                                     String?            @default("ACTIVE") @db.VarChar(20)
+  created_at                                                 DateTime?          @default(now()) @db.Timestamptz(6)
+  feedbacks_feedbacks_resolved_byTousers                     feedbacks[]        @relation("feedbacks_resolved_byTousers")
+  feedbacks_feedbacks_user_idTousers                         feedbacks[]        @relation("feedbacks_user_idTousers")
+  parking_sessions_parking_sessions_checkin_staff_idTousers  parking_sessions[] @relation("parking_sessions_checkin_staff_idTousers")
+  parking_sessions_parking_sessions_checkout_staff_idTousers parking_sessions[] @relation("parking_sessions_checkout_staff_idTousers")
+  parking_sessions_parking_sessions_user_idTousers           parking_sessions[] @relation("parking_sessions_user_idTousers")
+  reservations                                               reservations[]
+  system_configs                                             system_configs[]
+}
+
+model vehicle_types {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  type_name        String             @unique @db.VarChar(50)
+  description      String?
+  parking_sessions parking_sessions[]
+  pricing_policies pricing_policies[]
+  reservations     reservations[]
+  zones            zones[]
+}
+
+model zones {
+  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  zone_name       String          @db.VarChar(50)
+  vehicle_type_id String?         @db.Uuid
+  total_capacity  Int
+  parking_slots   parking_slots[]
+  vehicle_types   vehicle_types?  @relation(fields: [vehicle_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}

@@ -1,13 +1,13 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const pool = require("../config/db");
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import prisma from "../config/prisma.js";
 
 const generateToken = (user) => {
   return jwt.sign(
     {
       id: user.id,
       email: user.email,
-      role: user.role_name,
+      role: user.role,
     },
     process.env.JWT_SECRET,
     {
@@ -16,7 +16,7 @@ const generateToken = (user) => {
   );
 };
 
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -27,40 +27,35 @@ exports.login = async (req, res) => {
       });
     }
 
-    const result = await pool.query(
-      `
-      SELECT 
-        users.id,
-        users.full_name,
-        users.email,
-        users.password_hash,
-        users.status,
-        roles.name AS role_name
-      FROM users
-      JOIN roles ON users.role_id = roles.id
-      WHERE users.email = $1
-      LIMIT 1
-      `,
-      [email],
-    );
+    const user = await prisma.users.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        full_name: true,
+        email: true,
+        password: true,
+        role: true,
+        status: true,
+      },
+    });
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       });
     }
 
-    const user = result.rows[0];
-
-    if (user.status !== "active") {
+    if (user.status !== "ACTIVE") {
       return res.status(403).json({
         success: false,
         message: "Account is not active",
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -80,7 +75,7 @@ exports.login = async (req, res) => {
           id: user.id,
           fullName: user.full_name,
           email: user.email,
-          role: user.role_name,
+          role: user.role,
         },
       },
     });
@@ -90,37 +85,33 @@ exports.login = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
     });
   }
 };
 
-exports.getMe = async (req, res) => {
+export const getMe = async (req, res) => {
   try {
-    const result = await pool.query(
-      `
-      SELECT 
-        users.id,
-        users.full_name,
-        users.email,
-        users.phone,
-        users.status,
-        roles.name AS role_name
-      FROM users
-      JOIN roles ON users.role_id = roles.id
-      WHERE users.id = $1
-      LIMIT 1
-      `,
-      [req.user.id],
-    );
+    const user = await prisma.users.findUnique({
+      where: {
+        id: req.user.id,
+      },
+      select: {
+        id: true,
+        full_name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+      },
+    });
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
-
-    const user = result.rows[0];
 
     return res.json({
       success: true,
@@ -129,7 +120,7 @@ exports.getMe = async (req, res) => {
         fullName: user.full_name,
         email: user.email,
         phone: user.phone,
-        role: user.role_name,
+        role: user.role,
         status: user.status,
       },
     });
@@ -139,11 +130,12 @@ exports.getMe = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
     });
   }
 };
 
-exports.logout = async (req, res) => {
+export const logout = async (req, res) => {
   return res.json({
     success: true,
     message: "Logout successfully",

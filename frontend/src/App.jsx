@@ -13,8 +13,8 @@ import UserSettingsPage from "./pages/UserSettingsPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
-  const adminRoles = ["SYSTEM_ADMIN", "FACILITY_MANAGER", "PARKING_STAFF"];
-  const userRoles = ["DRIVER"];
+  const adminRoles = ["ADMIN", "MANAGER", "STAFF"];
+  const userRoles = ["USER"];
   return (
     <BrowserRouter>
       <Routes>
