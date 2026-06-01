@@ -1,137 +1,137 @@
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
+import { apiRequest } from "../services/api";
 
-const overviewCards = [
-  {
-    label: "Total Revenue (All Methods)",
-    value: "142.500.000 ₫",
-    icon: "payments",
-    iconClass: "bg-[#dbe1ff] text-[#004ac6]",
-    badge: "+12.5%",
-    badgeClass: "text-green-600",
-    badgeIcon: "trending_up",
-  },
-  {
-    label: "Pending Payments",
-    value: "12.430.500 ₫",
-    icon: "pending_actions",
-    iconClass: "bg-orange-50 text-[#943700]",
-    badge: "84 Invoices",
-    badgeClass: "text-[#943700]",
-  },
-  {
-    label: "Successful Trans. (All Methods)",
-    value: "2,842",
+const statusConfig = {
+  SUCCESS: {
+    label: "Success",
+    className: "bg-green-100 text-green-700 border-green-200",
+    dot: "bg-green-500",
     icon: "check_circle",
-    iconClass: "bg-green-100 text-green-700",
-    badge: "Today: 124",
-    badgeClass: "text-[#434655]",
   },
-  {
-    label: "Refunds",
-    value: "840.000 ₫",
+  PENDING: {
+    label: "Pending",
+    className: "bg-amber-100 text-amber-700 border-amber-200",
+    dot: "bg-amber-500",
+    icon: "pending_actions",
+  },
+  FAILED: {
+    label: "Failed",
+    className: "bg-red-100 text-red-700 border-red-200",
+    dot: "bg-red-500",
+    icon: "error",
+  },
+  REFUNDED: {
+    label: "Refunded",
+    className: "bg-slate-100 text-slate-700 border-slate-200",
+    dot: "bg-slate-400",
     icon: "restart_alt",
-    iconClass: "bg-red-50 text-[#ba1a1a]",
-    badge: "-2.4%",
-    badgeClass: "text-[#ba1a1a]",
   },
-];
+};
 
-const transactions = [
-  {
-    id: "#TRX-94821",
-    initials: "JD",
-    avatarClass: "bg-[#dbe1ff] text-[#00174b]",
-    user: "Johnathan Doe",
-    tenant: "Building A - Slot 22",
-    date: "Oct 24, 2023, 14:32",
-    amount: "3.125.000 ₫",
-    method: "Visa •••• 4242",
-    methodIcon: "credit_card",
-    methodIconClass: "text-[#004ac6]",
-    status: "Paid",
+const paymentMethodConfig = {
+  CASH: {
+    label: "Cash",
+    icon: "payments",
+    className: "text-green-600",
   },
-  {
-    id: "#TRX-94822",
-    initials: "MS",
-    avatarClass: "bg-[#ffdbcd] text-[#7d2d00]",
-    user: "Maria Santos",
-    tenant: "Building B - Slot 08",
-    date: "Oct 24, 2023, 13:15",
-    amount: "11.250.000 ₫",
-    method: "Mastercard •••• 8812",
-    methodIcon: "payment",
-    methodIconClass: "text-red-600",
-    status: "Pending",
+  BANKING: {
+    label: "Banking",
+    icon: "account_balance",
+    className: "text-blue-600",
   },
-  {
-    id: "#TRX-94823",
-    initials: "BK",
-    avatarClass: "bg-[#dae2fd] text-[#131b2e]",
-    user: "Billie K.",
-    tenant: "Visitor Pass - Daily",
-    date: "Oct 24, 2023, 11:02",
-    amount: "625.000 ₫",
-    method: "Apple Pay",
-    methodIcon: "account_balance_wallet",
-    methodIconClass: "text-blue-400",
-    status: "Failed",
+  VNPAY: {
+    label: "VNPay",
+    icon: "qr_code_2",
+    className: "text-purple-600",
   },
-  {
-    id: "#TRX-94824",
-    initials: "RL",
-    avatarClass: "bg-[#dbe1ff] text-[#00174b]",
-    user: "Robert Long",
-    tenant: "Building C - Slot 102",
-    date: "Oct 23, 2023, 17:45",
-    amount: "2.125.000 ₫",
-    method: "Visa •••• 1109",
-    methodIcon: "credit_card",
-    methodIconClass: "text-[#004ac6]",
-    status: "Paid",
-  },
-  {
-    id: "#TRX-94825",
-    initials: "SC",
-    avatarClass: "bg-orange-100 text-orange-700",
-    user: "Sarah Connor",
-    tenant: "Building A - Slot 05",
-    date: "Oct 23, 2023, 09:12",
-    amount: "1.125.000 ₫",
-    method: "Cash",
-    methodIcon: "payments",
-    methodIconClass: "text-green-600",
-    status: "Paid",
-  },
-];
+};
 
-const chartBars = [
-  ["Mon", "40%"],
-  ["Tue", "65%"],
-  ["Wed", "55%"],
-  ["Thu", "85%"],
-  ["Fri", "95%"],
-  ["Sat", "45%"],
-  ["Sun", "30%"],
-];
+function getStatusMeta(status) {
+  return (
+    statusConfig[status] || {
+      label: status || "Unknown",
+      className: "bg-slate-100 text-slate-700 border-slate-200",
+      dot: "bg-slate-400",
+      icon: "help",
+    }
+  );
+}
+
+function getPaymentMethodMeta(method) {
+  return (
+    paymentMethodConfig[method] || {
+      label: method || "Unknown",
+      icon: "credit_card",
+      className: "text-slate-600",
+    }
+  );
+}
+
+function formatCurrency(value) {
+  const amount = Number(value || 0);
+
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function formatDateTime(value) {
+  if (!value) return "N/A";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function normalizePayment(payment) {
+  const session = payment.parkingSession;
+
+  return {
+    id: payment.id,
+    amount: payment.amount,
+    paymentMethod: payment.paymentMethod,
+    paymentTime: payment.paymentTime,
+    status: payment.status,
+
+    ticketCode: session?.ticketCode || payment.ticketCode || "No ticket",
+    licensePlate: session?.licensePlate || payment.licensePlate || "N/A",
+
+    userFullName: session?.user?.fullName || payment.fullName || "Guest User",
+    userEmail: session?.user?.email || payment.email || "No email",
+
+    vehicleTypeName:
+      session?.vehicleType?.typeName || payment.vehicleTypeName || "N/A",
+
+    slotName: session?.parkingSlot?.slotName || payment.slotName || "No slot",
+    zoneName: session?.parkingSlot?.zoneName || payment.zoneName || "No zone",
+  };
+}
 
 function PageHeader() {
   return (
-    <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
       <div>
-        <h2 className="mb-1 font-['Geist'] text-2xl font-semibold leading-8 text-[#191b23]">
+        <h2 className="font-['Geist'] text-3xl font-semibold text-[#191b23]">
           Payment Management
         </h2>
-        <p className="font-['Inter'] text-sm text-[#434655]">
-          Monitor transactions, revenue, and pending invoices across all buildings.
+        <p className="mt-2 max-w-3xl font-['Inter'] text-sm text-[#6b7280]">
+          Monitor parking payments, transaction status, payment methods, and
+          related parking sessions.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <button className="flex h-11 items-center gap-2 rounded-xl border border-[#c3c6d7] bg-white px-4 font-['Geist'] text-[13px] font-medium text-[#191b23] transition hover:bg-[#ededf9]">
-          <span className="material-symbols-outlined text-xl">calendar_today</span>
+        <button className="flex h-11 items-center gap-2 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]">
+          <span className="material-symbols-outlined text-xl">
+            calendar_today
+          </span>
           This Month
         </button>
-        <button className="flex h-11 items-center gap-2 rounded-xl bg-[#004ac6] px-5 font-['Geist'] text-[13px] font-semibold text-white shadow-lg shadow-blue-950/10 transition hover:bg-[#003ea8] active:scale-95">
+        <button className="flex h-11 items-center gap-2 rounded-xl bg-[#2563eb] px-5 font-['Inter'] text-sm font-semibold text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95">
           <span className="material-symbols-outlined text-xl">download</span>
           Export Data
         </button>
@@ -140,262 +140,491 @@ function PageHeader() {
   );
 }
 
-function OverviewCard({ card }) {
+function SummaryCard({ title, value, icon, iconWrapClass, iconClass, helper }) {
   return (
-    <div className="flex min-h-44 flex-col justify-between rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${card.iconClass}`}>
-          <span className="material-symbols-outlined">{card.icon}</span>
-        </div>
-        <span
-          className={`flex items-center gap-1 font-['Geist'] text-[11px] font-semibold ${card.badgeClass}`}
-        >
-          {card.badgeIcon && (
-            <span className="material-symbols-outlined text-sm">{card.badgeIcon}</span>
+    <div className="rounded-2xl border border-[#d7d9e4] bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
+            {title}
+          </p>
+          <h3 className="mt-2 font-['Geist'] text-2xl font-bold text-[#191b23]">
+            {value}
+          </h3>
+          {helper && (
+            <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+              {helper}
+            </p>
           )}
-          {card.badge}
-        </span>
-      </div>
-
-      <div>
-        <p className="mb-2 font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#434655]">
-          {card.label}
-        </p>
-        <h3 className="font-['Geist'] text-3xl font-bold leading-9 text-[#191b23]">
-          {card.value}
-        </h3>
-      </div>
-    </div>
-  );
-}
-
-function OverviewGrid() {
-  return (
-    <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-      {overviewCards.map((card) => (
-        <OverviewCard key={card.label} card={card} />
-      ))}
-    </div>
-  );
-}
-
-function FilterBar() {
-  return (
-    <div className="flex flex-col gap-4 border-b border-[#c3c6d7] bg-[#f3f3fe] p-4 xl:flex-row xl:items-center xl:justify-between">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center">
-        <div className="flex overflow-hidden rounded-lg border border-[#c3c6d7] bg-[#faf8ff] font-['Geist'] text-[13px] font-medium">
-          <button className="border-r border-[#c3c6d7] bg-white px-4 py-2 font-semibold text-[#004ac6]">
-            All Transactions
-          </button>
-          <button className="border-r border-[#c3c6d7] px-4 py-2 text-[#434655] transition hover:bg-white">
-            Revenue
-          </button>
-          <button className="px-4 py-2 text-[#434655] transition hover:bg-white">Refunds</button>
         </div>
 
-        <div className="hidden h-8 w-px bg-[#c3c6d7] md:block" />
-
-        <label className="flex items-center gap-2 font-['Geist'] text-[13px] font-medium text-[#434655]">
-          Status:
-          <select className="rounded-lg border-0 bg-transparent px-2 py-1 font-semibold text-[#004ac6] outline-none focus:ring-0">
-            <option>All Status</option>
-            <option>Paid</option>
-            <option>Pending</option>
-            <option>Failed</option>
-          </select>
-        </label>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-['Geist'] text-[13px] font-medium text-[#434655]">Date Range:</span>
-        <button className="flex items-center gap-2 rounded-lg border border-[#c3c6d7] bg-white px-3 py-2 font-['Geist'] text-[13px] text-[#191b23] transition hover:bg-[#faf8ff]">
-          Oct 01, 2023
-          <span className="material-symbols-outlined text-base">arrow_forward</span>
-          Oct 31, 2023
-        </button>
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconWrapClass}`}
+        >
+          <span className={`material-symbols-outlined ${iconClass}`}>
+            {icon}
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatusPill({ status }) {
-  const statusClasses = {
-    Paid: "bg-green-100 text-green-700",
-    Pending: "bg-amber-100 text-amber-700",
-    Failed: "bg-red-100 text-red-700",
-  };
+function OverviewGrid({ payments }) {
+  const totalRevenue = payments
+    .filter((payment) => payment.status === "SUCCESS")
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+  const pendingAmount = payments
+    .filter((payment) => payment.status === "PENDING")
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+  const successCount = payments.filter(
+    (payment) => payment.status === "SUCCESS",
+  ).length;
+  const failedCount = payments.filter(
+    (payment) => payment.status === "FAILED",
+  ).length;
+
+  return (
+    <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard
+        title="Total Revenue"
+        value={formatCurrency(totalRevenue)}
+        icon="payments"
+        iconWrapClass="bg-blue-50"
+        iconClass="text-blue-600"
+        helper="Successful payments only"
+      />
+      <SummaryCard
+        title="Pending Amount"
+        value={formatCurrency(pendingAmount)}
+        icon="pending_actions"
+        iconWrapClass="bg-amber-50"
+        iconClass="text-amber-600"
+        helper="Waiting for confirmation"
+      />
+      <SummaryCard
+        title="Successful Payments"
+        value={successCount}
+        icon="check_circle"
+        iconWrapClass="bg-green-50"
+        iconClass="text-green-600"
+        helper={`${payments.length} total transaction(s)`}
+      />
+      <SummaryCard
+        title="Failed Payments"
+        value={failedCount}
+        icon="error"
+        iconWrapClass="bg-red-50"
+        iconClass="text-red-600"
+        helper="Need review"
+      />
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const meta = getStatusMeta(status);
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 font-['Geist'] text-[11px] font-bold uppercase tracking-wide ${statusClasses[status]}`}
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-['Geist'] text-[11px] font-semibold ${meta.className}`}
     >
-      {status}
+      <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+      {meta.label}
     </span>
   );
 }
 
-function TransactionRow({ transaction }) {
+function FilterToolbar({
+  keyword,
+  setKeyword,
+  selectedStatus,
+  setSelectedStatus,
+  selectedMethod,
+  setSelectedMethod,
+  filteredCount,
+  onResetFilters,
+}) {
   return (
-    <tr className="transition hover:bg-[#faf8ff]">
-      <td className="px-6 py-4 font-['Geist'] text-[13px] font-bold text-[#004ac6]">
-        {transaction.id}
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full font-['Geist'] text-[11px] font-bold ${transaction.avatarClass}`}
+    <div className="mb-6 rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
+      <div className="flex flex-col gap-4 p-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative w-full lg:max-w-md">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
+              search
+            </span>
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="Search ticket, plate, user, slot..."
+              className="h-11 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] pl-11 pr-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+            />
+          </div>
+
+          <select
+            value={selectedStatus}
+            onChange={(event) => setSelectedStatus(event.target.value)}
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
           >
-            {transaction.initials}
-          </div>
-          <div>
-            <p className="font-['Geist'] text-[13px] font-medium text-[#191b23]">
-              {transaction.user}
-            </p>
-            <p className="font-['Inter'] text-xs font-medium text-[#434655]">
-              {transaction.tenant}
-            </p>
-          </div>
+            <option value="ALL">All Status</option>
+            <option value="SUCCESS">Success</option>
+            <option value="PENDING">Pending</option>
+            <option value="FAILED">Failed</option>
+            <option value="REFUNDED">Refunded</option>
+          </select>
+
+          <select
+            value={selectedMethod}
+            onChange={(event) => setSelectedMethod(event.target.value)}
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
+          >
+            <option value="ALL">All Methods</option>
+            <option value="CASH">Cash</option>
+            <option value="BANKING">Banking</option>
+            <option value="VNPAY">VNPay</option>
+          </select>
+
+          <button
+            onClick={onResetFilters}
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]"
+          >
+            Reset Filters
+          </button>
         </div>
-      </td>
-      <td className="px-6 py-4 font-['Inter'] text-sm text-[#434655]">{transaction.date}</td>
-      <td className="px-6 py-4 text-right font-['Geist'] text-[13px] font-semibold text-[#191b23]">
-        {transaction.amount}
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2">
-          <span className={`material-symbols-outlined text-xl ${transaction.methodIconClass}`}>
-            {transaction.methodIcon}
+
+        <div className="flex items-center justify-between gap-3 lg:justify-end">
+          <span className="font-['Inter'] text-sm text-[#6b7280]">
+            Showing{" "}
+            <span className="font-semibold text-[#191b23]">
+              {filteredCount}
+            </span>{" "}
+            payment(s)
           </span>
-          <span className="font-['Inter'] text-sm text-[#191b23]">{transaction.method}</span>
+
+          <button className="rounded-xl border border-[#d7d9e4] bg-white px-4 py-2.5 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]">
+            Export
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentRow({ payment }) {
+  const data = normalizePayment(payment);
+  const methodMeta = getPaymentMethodMeta(data.paymentMethod);
+
+  return (
+    <tr className="transition hover:bg-[#fafbff]">
+      <td className="px-6 py-5">
+        <div>
+          <p className="font-mono text-[13px] font-bold text-[#2563eb]">
+            {data.id.slice(0, 8).toUpperCase()}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            {formatDateTime(data.paymentTime)}
+          </p>
         </div>
       </td>
-      <td className="px-6 py-4">
-        <StatusPill status={transaction.status} />
+
+      <td className="px-6 py-5">
+        <div>
+          <p className="font-['Inter'] text-sm font-semibold text-[#191b23]">
+            {data.ticketCode}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            Plate: {data.licensePlate}
+          </p>
+        </div>
       </td>
-      <td className="px-6 py-4 text-center">
-        <button className="rounded-lg p-2 text-[#434655] transition hover:bg-[#ededf9]">
-          <span className="material-symbols-outlined text-xl">more_vert</span>
-        </button>
+
+      <td className="px-6 py-5">
+        <div>
+          <p className="font-['Inter'] text-sm font-medium text-[#191b23]">
+            {data.userFullName}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            {data.userEmail}
+          </p>
+        </div>
+      </td>
+
+      <td className="px-6 py-5">
+        <div>
+          <p className="font-['Inter'] text-sm font-medium text-[#191b23]">
+            {data.vehicleTypeName}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            {data.slotName} • {data.zoneName}
+          </p>
+        </div>
+      </td>
+
+      <td className="px-6 py-5">
+        <div className="flex items-center gap-2">
+          <span
+            className={`material-symbols-outlined text-xl ${methodMeta.className}`}
+          >
+            {methodMeta.icon}
+          </span>
+          <span className="font-['Inter'] text-sm font-medium text-[#191b23]">
+            {methodMeta.label}
+          </span>
+        </div>
+      </td>
+
+      <td className="px-6 py-5 text-right font-['Geist'] text-sm font-bold text-[#191b23]">
+        {formatCurrency(data.amount)}
+      </td>
+
+      <td className="px-6 py-5">
+        <StatusBadge status={data.status} />
+      </td>
+
+      <td className="px-6 py-5 text-right">
+        <div className="flex items-center justify-end gap-1">
+          <button className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8]">
+            <span className="material-symbols-outlined">visibility</span>
+          </button>
+          <button className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8]">
+            <span className="material-symbols-outlined">receipt_long</span>
+          </button>
+          <button className="rounded-lg p-2 text-red-500 transition hover:bg-red-50">
+            <span className="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
       </td>
     </tr>
   );
 }
 
-function TransactionsPanel() {
-  return (
-    <div className="mb-6 overflow-hidden rounded-xl border border-[#c3c6d7] bg-white shadow-sm">
-      <FilterBar />
+function PaymentsTable({ payments, loading, error }) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-[#d7d9e4] bg-white p-10 text-center font-['Inter'] text-sm text-[#6b7280] shadow-sm">
+        Loading payments...
+      </div>
+    );
+  }
 
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center font-['Inter'] text-sm text-red-600 shadow-sm">
+        {error}
+      </div>
+    );
+  }
+
+  if (payments.length === 0) {
+    return (
+      <div className="rounded-2xl border border-[#d7d9e4] bg-white p-10 text-center font-['Inter'] text-sm text-[#6b7280] shadow-sm">
+        No payments found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[920px] border-collapse text-left">
-          <thead className="bg-white">
+        <table className="min-w-[1120px] border-collapse text-left">
+          <thead className="bg-[#f7f8fc]">
             <tr>
-              {["Transaction ID", "User / Tenant", "Date", "Amount", "Method", "Status", "Action"].map(
-                (heading) => (
-                  <th
-                    key={heading}
-                    className={`px-6 py-4 font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#434655] ${
-                      heading === "Amount"
-                        ? "text-right"
-                        : heading === "Action"
-                          ? "text-center"
-                          : ""
-                    }`}
-                  >
-                    {heading}
-                  </th>
-                ),
-              )}
+              {[
+                "Payment ID",
+                "Ticket",
+                "User",
+                "Vehicle / Slot",
+                "Method",
+                "Amount",
+                "Status",
+                "Actions",
+              ].map((heading) => (
+                <th
+                  key={heading}
+                  className={`px-6 py-4 font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] ${
+                    heading === "Amount" || heading === "Actions"
+                      ? "text-right"
+                      : ""
+                  }`}
+                >
+                  {heading}
+                </th>
+              ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#e1e2ed]">
-            {transactions.map((transaction) => (
-              <TransactionRow key={transaction.id} transaction={transaction} />
+
+          <tbody className="divide-y divide-[#eceef5]">
+            {payments.map((payment) => (
+              <PaymentRow key={payment.id} payment={payment} />
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-[#c3c6d7] bg-white p-6 md:flex-row md:items-center md:justify-between">
-        <p className="font-['Geist'] text-[13px] font-medium text-[#434655]">
-          Showing 1-10 of 1,248 transactions
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            disabled
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#c3c6d7] text-[#737686] opacity-50"
-          >
-            <span className="material-symbols-outlined">chevron_left</span>
-          </button>
-          {["1", "2", "3"].map((page) => (
-            <button
-              key={page}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg font-['Geist'] text-[13px] font-medium ${
-                page === "1"
-                  ? "bg-[#004ac6] text-white"
-                  : "text-[#434655] transition hover:bg-[#ededf9]"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <span className="px-1 text-[#737686]">...</span>
-          <button className="flex h-9 w-9 items-center justify-center rounded-lg font-['Geist'] text-[13px] font-medium text-[#434655] transition hover:bg-[#ededf9]">
-            125
-          </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#c3c6d7] text-[#191b23] transition hover:bg-[#ededf9]">
-            <span className="material-symbols-outlined">chevron_right</span>
-          </button>
-        </div>
+      <div className="flex items-center justify-between border-t border-[#eceef5] bg-[#f8f9fc] px-6 py-4">
+        <span className="font-['Inter'] text-sm text-[#6b7280]">
+          Showing {payments.length} payment(s)
+        </span>
       </div>
     </div>
   );
 }
 
-function RevenueFlow() {
+function MethodBreakdown({ payments }) {
+  const methodData = ["CASH", "BANKING", "VNPAY"].map((method) => {
+    const total = payments
+      .filter((payment) => payment.paymentMethod === method)
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+    return {
+      method,
+      total,
+      count: payments.filter((payment) => payment.paymentMethod === method)
+        .length,
+    };
+  });
+
+  const maxTotal = Math.max(...methodData.map((item) => item.total), 1);
+
   return (
-    <div className="rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm">
-      <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-center">
-        <h3 className="font-['Geist'] text-xl font-semibold text-[#191b23]">Weekly Revenue Flow</h3>
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2 font-['Geist'] text-[11px] font-medium text-[#434655]">
-            <span className="h-3 w-3 rounded-full bg-[#004ac6]" />
-            Successful
-          </span>
-          <span className="flex items-center gap-2 font-['Geist'] text-[11px] font-medium text-[#434655]">
-            <span className="h-3 w-3 rounded-full bg-[#943700]" />
-            Refunds
-          </span>
+    <div className="mt-6 rounded-2xl border border-[#d7d9e4] bg-white p-6 shadow-sm">
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h3 className="font-['Geist'] text-lg font-semibold text-[#191b23]">
+            Payment Method Breakdown
+          </h3>
+          <p className="mt-1 font-['Inter'] text-sm text-[#6b7280]">
+            Revenue grouped by payment method.
+          </p>
         </div>
       </div>
 
-      <div className="flex h-40 items-end gap-4 border-b border-[#c3c6d7] px-2">
-        {chartBars.map(([day, height]) => (
-          <div key={day} className="flex flex-1 items-end">
-            <div
-              className="w-full rounded-t-md bg-[#b4c5ff]/70 transition hover:bg-[#b4c5ff]"
-              style={{ height }}
-              title={`${day}: ${height}`}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex justify-between px-2 font-['Geist'] text-[11px] font-medium text-[#737686]">
-        {chartBars.map(([day]) => (
-          <span key={day}>{day}</span>
-        ))}
+      <div className="space-y-4">
+        {methodData.map((item) => {
+          const meta = getPaymentMethodMeta(item.method);
+          const width = `${Math.max((item.total / maxTotal) * 100, item.total > 0 ? 12 : 3)}%`;
+
+          return (
+            <div key={item.method}>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`material-symbols-outlined ${meta.className}`}
+                  >
+                    {meta.icon}
+                  </span>
+                  <span className="font-['Inter'] text-sm font-medium text-[#191b23]">
+                    {meta.label}
+                  </span>
+                  <span className="font-['Inter'] text-xs text-[#6b7280]">
+                    {item.count} transaction(s)
+                  </span>
+                </div>
+                <span className="font-['Geist'] text-sm font-semibold text-[#191b23]">
+                  {formatCurrency(item.total)}
+                </span>
+              </div>
+
+              <div className="h-3 overflow-hidden rounded-full bg-[#edf0f7]">
+                <div
+                  className="h-full rounded-full bg-[#2563eb]"
+                  style={{ width }}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 export default function PaymentsPage() {
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [selectedMethod, setSelectedMethod] = useState("ALL");
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const result = await apiRequest("/api/payments");
+        setPayments(result.data || []);
+      } catch (error) {
+        setError(error.message || "Cannot load payments");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayments();
+  }, []);
+
+  const filteredPayments = useMemo(() => {
+    return payments.filter((payment) => {
+      const data = normalizePayment(payment);
+
+      const searchText = `
+        ${data.id || ""}
+        ${data.paymentMethod || ""}
+        ${data.status || ""}
+        ${data.ticketCode || ""}
+        ${data.licensePlate || ""}
+        ${data.userFullName || ""}
+        ${data.userEmail || ""}
+        ${data.vehicleTypeName || ""}
+        ${data.slotName || ""}
+        ${data.zoneName || ""}
+      `.toLowerCase();
+
+      const matchesKeyword = searchText.includes(keyword.toLowerCase());
+      const matchesStatus =
+        selectedStatus === "ALL" || payment.status === selectedStatus;
+      const matchesMethod =
+        selectedMethod === "ALL" || payment.paymentMethod === selectedMethod;
+
+      return matchesKeyword && matchesStatus && matchesMethod;
+    });
+  }, [payments, keyword, selectedStatus, selectedMethod]);
+
+  const resetFilters = () => {
+    setKeyword("");
+    setSelectedStatus("ALL");
+    setSelectedMethod("ALL");
+  };
+
   return (
-    <AdminLayout activeLabel="Payments" searchPlaceholder="Search transactions, receipts...">
+    <AdminLayout
+      activeLabel="Payments"
+      searchPlaceholder="Search transactions, tickets, plates..."
+    >
       <PageHeader />
-      <OverviewGrid />
-      <TransactionsPanel />
-      <RevenueFlow />
+      <OverviewGrid payments={payments} />
+
+      <FilterToolbar
+        keyword={keyword}
+        setKeyword={setKeyword}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        selectedMethod={selectedMethod}
+        setSelectedMethod={setSelectedMethod}
+        filteredCount={filteredPayments.length}
+        onResetFilters={resetFilters}
+      />
+
+      <PaymentsTable
+        payments={filteredPayments}
+        loading={loading}
+        error={error}
+      />
+      <MethodBreakdown payments={payments} />
     </AdminLayout>
   );
 }
