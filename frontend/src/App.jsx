@@ -1,11 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminVehiclesPage from "./pages/AdminVehiclesPage";
 import ParkingSlotsPage from "./pages/ParkingSlotsPage";
 import PaymentsPage from "./pages/PaymentsPage";
-import PublicLandingPage from "./pages/PublicLandingPage";
 import ReservationsPage from "./pages/ReservationsPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
 import UserMyBookingsPage from "./pages/UserMyBookingsPage";
@@ -18,7 +16,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PublicLandingPage />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
 
         <Route
@@ -26,14 +24,6 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={adminRoles}>
               <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-users"
-          element={
-            <ProtectedRoute allowedRoles={adminRoles}>
-              <AdminUsersPage />
             </ProtectedRoute>
           }
         />

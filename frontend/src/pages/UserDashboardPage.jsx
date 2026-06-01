@@ -380,7 +380,7 @@ export default function UserDashboardPage() {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
-    navigate("/", { replace: true });
+    navigate("/login", { replace: true });
   };
 
   return (
