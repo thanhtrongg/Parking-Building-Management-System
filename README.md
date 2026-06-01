@@ -1,8 +1,8 @@
 # Parking Building Management System
 
-A full-stack web application for managing parking buildings, parking slots, vehicles, entry/exit sessions, reservations, payments, and user roles.
+A full-stack web application for managing parking buildings, parking slots, vehicle types, reservations, payments, parking sessions, feedbacks, pricing policies, and user roles.
 
-This project is built as a modern parking management platform for multi-floor parking buildings, helping parking operators manage vehicle flow, slot availability, parking fees, staff activities, and system users more efficiently.
+This project is developed as a modern parking building management platform to help parking operators manage slot availability, vehicle flow, reservations, payments, and system users more efficiently.
 
 ---
 
@@ -13,65 +13,73 @@ This project is built as a modern parking management platform for multi-floor pa
 - [Tech Stack](#tech-stack)
 - [System Roles](#system-roles)
 - [Project Structure](#project-structure)
-- [Backend Features](#backend-features)
-- [Frontend Features](#frontend-features)
 - [Database Design](#database-design)
-- [Authentication Flow](#authentication-flow)
+- [Backend Progress](#backend-progress)
+- [Frontend Progress](#frontend-progress)
 - [API Endpoints](#api-endpoints)
+- [Authentication Flow](#authentication-flow)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [Test Accounts](#test-accounts)
-- [Development Roadmap](#development-roadmap)
-- [Screenshots](#screenshots)
+- [Development Workflow](#development-workflow)
+- [Roadmap](#roadmap)
 - [Contributors](#contributors)
 
 ---
 
 ## Overview
 
-**Parking Building Management System** is a web-based application designed to support parking building operations in urban areas.
+**Parking Building Management System** is a web-based application designed to support the daily operation of a multi-floor parking building.
 
 The system helps manage:
 
-- Parking buildings, floors, zones, and slots
-- Vehicle types and vehicle information
-- Vehicle entry and exit sessions
-- Parking fee calculation
-- Payments
-- Reservations
-- Incidents and issue reports
-- Users, roles, and authentication
+- Vehicle types
+- Parking zones and parking slots
+- Slot status and availability
+- Parking reservations
+- Parking sessions
+- Payment records
+- User authentication
+- Role-based access
+- Feedback and issue reports
+- Pricing policies and system configurations
 
-The goal of this project is to reduce manual errors, improve parking slot tracking, support revenue management, and provide a clear workflow for parking staff and facility managers.
+The goal of this project is to reduce manual parking management errors, improve slot tracking, support revenue management, and provide a clear workflow for administrators, managers, staff, and drivers.
 
 ---
 
 ## Key Features
 
-### Completed
+### Completed Features
 
-- Backend project setup with Node.js and Express.js
-- PostgreSQL database connection
-- User and role database design
+- Backend setup with Node.js and Express.js
+- Backend uses ES Module syntax
+- PostgreSQL local database connection
+- Prisma ORM integration
+- Database schema design for core parking management modules
 - JWT-based authentication
 - Login API
-- Get current user API
-- Frontend login page
-- Frontend-to-backend login integration
+- Get current authenticated user API
+- Logout API
+- Vehicle type API
+- Parking slot API
+- Reservation API
+- Payment API
+- Frontend setup with ReactJS, Vite, and Tailwind CSS
+- Login page connected to backend API
 - Token storage using Local Storage
+- Admin vehicle type page connected to API
+- Parking slot management page connected to API
+- Reservation page connected to API
+- Payment page connected to API
+- Improved UI for parking slots and vehicle type management
 
-### In Progress / Planned
+### Current Development Focus
 
-- Dashboard data integration
-- Parking slot management
-- Vehicle entry management
-- Vehicle exit management
-- Parking fee calculation
-- Payment management
-- Reservation management
-- Incident management
-- Role-based UI rendering
-- Report and analytics dashboard
+- Building admin and management dashboard pages
+- Improving role-based UI rendering
+- Expanding CRUD operations for management pages
+- Enhancing parking slot, reservation, and payment workflows
+- Preparing frontend pages for real database data
 
 ---
 
@@ -83,20 +91,23 @@ The goal of this project is to reduce manual errors, improve parking slot tracki
 - Vite
 - Tailwind CSS
 - React Router DOM
+- JavaScript
 
 ### Backend
 
 - Node.js
 - Express.js
-- PostgreSQL client: `pg`
-- JWT authentication: `jsonwebtoken`
-- Password hashing: `bcryptjs`
+- ES Module
+- Prisma ORM
+- JWT Authentication
+- bcryptjs
 - CORS
 - dotenv
 
 ### Database
 
 - PostgreSQL
+- Prisma Migration
 - pgAdmin 4
 
 ### Development Tools
@@ -104,20 +115,21 @@ The goal of this project is to reduce manual errors, improve parking slot tracki
 - Visual Studio Code
 - Thunder Client / Postman
 - Git & GitHub
-- dbdiagram.io for database design
+- GitHub Issues
+- GitHub Pull Requests
 
 ---
 
 ## System Roles
 
-The system supports four main user roles:
+The current database supports the following roles:
 
 | Role | Description |
 |---|---|
-| `SYSTEM_ADMIN` | Manages system users, roles, and configurations |
-| `FACILITY_MANAGER` | Manages parking building, slots, pricing, and reports |
-| `PARKING_STAFF` | Handles vehicle entry, exit, payment, and incidents |
-| `DRIVER` | Views parking information, reservations, and personal parking sessions |
+| `ADMIN` | Manages system users, roles, configurations, and overall system data |
+| `MANAGER` | Manages parking zones, parking slots, pricing policies, reports, and operations |
+| `STAFF` | Handles vehicle entry, exit, reservations, payments, and daily parking activities |
+| `USER` | Uses the system to view parking information, make reservations, and track parking sessions |
 
 ---
 
@@ -127,25 +139,37 @@ The system supports four main user roles:
 Parking-Building-Management-System/
 │
 ├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── migrations/
+│   │
 │   ├── src/
 │   │   ├── config/
-│   │   │   └── db.js
 │   │   ├── controllers/
-│   │   │   └── auth.controller.js
 │   │   ├── middlewares/
-│   │   │   └── auth.middleware.js
 │   │   ├── routes/
-│   │   │   └── auth.routes.js
+│   │   ├── services/
 │   │   └── server.js
 │   │
+│   ├── .env
 │   ├── .env.example
 │   ├── package.json
 │   └── package-lock.json
 │
 ├── frontend/
 │   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   ├── layouts/
 │   │   ├── pages/
-│   │   │   └── LoginPage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── AdminVehiclesPage.jsx
+│   │   │   ├── ParkingSlotsPage.jsx
+│   │   │   ├── ReservationsPage.jsx
+│   │   │   └── PaymentsPage.jsx
+│   │   │
+│   │   ├── routes/
+│   │   ├── services/
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   │
