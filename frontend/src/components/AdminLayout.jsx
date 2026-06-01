@@ -6,7 +6,7 @@ const navItems = [
   ["directions_car", "Vehicles", "/admin-vehicles"],
   ["event_available", "Reservations", "/reservations"],
   ["payments", "Payments", "/payments"],
-  ["group", "Users", "#"],
+  ["group", "Users", "/admin-users"],
 ];
 
 function Brand() {
@@ -152,7 +152,7 @@ export default function AdminLayout({ activeLabel, headerAction, searchPlacehold
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (

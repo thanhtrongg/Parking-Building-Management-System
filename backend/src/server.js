@@ -4,6 +4,10 @@ import dotenv from "dotenv";
 
 import prisma from "./config/prisma.js";
 import authRoutes from "./routes/auth.routes.js";
+import parkingSlotRoutes from "./routes/parkingSlot.routes.js";
+import reservationRoutes from "./routes/reservation.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import vehicleTypeRoutes from "./routes/vehicleType.routes.js";
 
 dotenv.config();
 
@@ -40,6 +44,10 @@ app.get("/api/test-db", async (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/parking-slots", parkingSlotRoutes);
+app.use("/api/reservations", reservationRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/vehicle-types", vehicleTypeRoutes);
 
 const PORT = process.env.PORT || 5000;
 
