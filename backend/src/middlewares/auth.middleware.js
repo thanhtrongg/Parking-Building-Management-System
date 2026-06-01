@@ -1,6 +1,6 @@
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
-exports.verifyToken = (req, res, next) => {
+export const verifyToken = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -26,7 +26,7 @@ exports.verifyToken = (req, res, next) => {
   }
 };
 
-exports.requireRoles = (...allowedRoles) => {
+export const requireRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({

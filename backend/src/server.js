@@ -1,9 +1,11 @@
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
 
-const pool = require("./config/db");
-const authRoutes = require("./routes/auth.routes");
+import prisma from "./config/prisma.js";
+import authRoutes from "./routes/auth.routes.js";
+
+dotenv.config();
 
 const app = express();
 
@@ -19,12 +21,12 @@ app.get("/", (req, res) => {
 
 app.get("/api/test-db", async (req, res) => {
   try {
-    const result = await pool.query("SELECT NOW() AS current_time");
+    const result = await prisma.$queryRaw`SELECT NOW() AS current_time`;
 
     res.json({
       success: true,
       message: "Database connected successfully",
-      data: result.rows[0],
+      data: result[0],
     });
   } catch (error) {
     console.error("Database error:", error);
@@ -32,6 +34,7 @@ app.get("/api/test-db", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Database connection failed",
+      error: error.message,
     });
   }
 });
