@@ -1,57 +1,18 @@
+import { useEffect, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
+import { apiRequest } from "../services/api";
 
-const stats = [
-  ["Total Registered", "1,284", "directions_car", "bg-blue-50 text-blue-600"],
-  ["Active Permits", "1,102", "verified_user", "bg-orange-50 text-orange-700"],
-  ["Unauthorized Entries", "14", "report_problem", "bg-red-50 text-red-600", "Today"],
-];
-
-const vehicles = [
-  {
-    plate: "ABC-1234",
-    detail: "Tesla Model 3 • Pearl White",
-    owner: "Jonathan Harker",
-    permit: "Monthly Resident",
-    permitClass: "bg-[#dae2fd] text-[#5c647a]",
-    status: "Active",
-    statusClass: "text-[#943700]",
-    dotClass: "bg-[#943700]",
-    thumbClass: "from-slate-700 via-slate-300 to-blue-200",
-  },
-  {
-    plate: "XYZ-9876",
-    detail: "BMW X5 • Sophisto Grey",
-    owner: "Elena Belova",
-    permit: "VIP Executive",
-    permitClass: "bg-blue-50 text-[#004ac6]",
-    status: "Active",
-    statusClass: "text-[#943700]",
-    dotClass: "bg-[#943700]",
-    thumbClass: "from-slate-950 via-slate-700 to-cyan-200",
-  },
-  {
-    plate: "KDL-4421",
-    detail: "Audi A4 • Floret Silver",
-    owner: "Marcus Thorne",
-    permit: "Visitor",
-    permitClass: "bg-[#e7e7f3] text-[#434655]",
-    status: "Expired",
-    statusClass: "text-[#737686]",
-    dotClass: "bg-[#737686]",
-    thumbClass: "from-zinc-800 via-zinc-400 to-stone-100",
-  },
-  {
-    plate: "MNO-3329",
-    detail: "Honda Civic • Aegean Blue",
-    owner: "Sarah Connor",
-    permit: "Contractor",
-    permitClass: "bg-[#dae2fd] text-[#5c647a]",
-    status: "Pending",
-    statusClass: "text-[#004ac6]",
-    dotClass: "bg-[#004ac6] animate-pulse",
-    thumbClass: "from-slate-950 via-blue-900 to-cyan-400",
-  },
-];
+// const stats = [
+//   ["Total Vehicle Types", "Live", "directions_car", "bg-blue-50 text-blue-600"],
+//   ["Active Types", "From DB", "verified_user", "bg-orange-50 text-orange-700"],
+//   [
+//     "Unauthorized Entries",
+//     "14",
+//     "report_problem",
+//     "bg-red-50 text-red-600",
+//     "Today",
+//   ],
+// ];
 
 function PageHeader() {
   return (
@@ -61,7 +22,7 @@ function PageHeader() {
           Vehicle Management
         </h2>
         <p className="font-['Inter'] text-sm text-[#434655]">
-          Manage registered vehicles and their parking access.
+          Manage vehicle types and parking access configuration.
         </p>
       </div>
     </div>
@@ -73,9 +34,12 @@ function StatCard({ stat }) {
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${color}`}>
+      <div
+        className={`flex h-12 w-12 items-center justify-center rounded-full ${color}`}
+      >
         <span className="material-symbols-outlined text-[28px]">{icon}</span>
       </div>
+
       <div>
         <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#434655]">
           {label}
@@ -83,7 +47,7 @@ function StatCard({ stat }) {
         <p className="font-['Geist'] text-2xl font-semibold leading-8 text-[#191b23]">
           {value}
           {badge && (
-            <span className="ml-2 rounded bg-red-50 px-2 py-0.5 align-middle font-['Geist'] text-[11px] font-medium text-red-200">
+            <span className="ml-2 rounded bg-red-50 px-2 py-0.5 align-middle font-['Geist'] text-[11px] font-medium text-red-600">
               {badge}
             </span>
           )}
@@ -93,17 +57,39 @@ function StatCard({ stat }) {
   );
 }
 
-function StatsGrid() {
+function StatsGrid({ totalVehicleTypes }) {
+  const dynamicStats = [
+    [
+      "Total Vehicle Types",
+      totalVehicleTypes,
+      "directions_car",
+      "bg-blue-50 text-blue-600",
+    ],
+    [
+      "Active Types",
+      totalVehicleTypes,
+      "verified_user",
+      "bg-orange-50 text-orange-700",
+    ],
+    [
+      "Unauthorized Entries",
+      "14",
+      "report_problem",
+      "bg-red-50 text-red-600",
+      "Today",
+    ],
+  ];
+
   return (
     <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-      {stats.map((stat) => (
+      {dynamicStats.map((stat) => (
         <StatCard key={stat[0]} stat={stat} />
       ))}
     </div>
   );
 }
 
-function FilterBar() {
+function FilterBar({ keyword, setKeyword, total }) {
   return (
     <div className="flex flex-col justify-between gap-4 border-b border-[#c3c6d7] bg-white p-4 md:flex-row md:items-center">
       <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
@@ -112,25 +98,24 @@ function FilterBar() {
             filter_list
           </span>
           <input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
             className="h-11 w-full rounded-lg border border-[#c3c6d7] bg-[#faf8ff] pl-10 pr-4 font-['Inter'] text-sm outline-none transition placeholder:text-[#737686] focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
-            placeholder="Filter by keyword..."
+            placeholder="Filter by vehicle type..."
           />
         </div>
 
-        {["Status", "Permit Type"].map((label) => (
-          <button
-            key={label}
-            className="flex h-11 items-center justify-center gap-2 rounded-lg border border-[#c3c6d7] bg-[#faf8ff] px-5 font-['Geist'] text-[13px] font-medium text-[#191b23] transition hover:bg-[#ededf9]"
-          >
-            {label}
-            <span className="material-symbols-outlined text-[18px]">expand_more</span>
-          </button>
-        ))}
+        <button className="flex h-11 items-center justify-center gap-2 rounded-lg border border-[#c3c6d7] bg-[#faf8ff] px-5 font-['Geist'] text-[13px] font-medium text-[#191b23] transition hover:bg-[#ededf9]">
+          Status
+          <span className="material-symbols-outlined text-[18px]">
+            expand_more
+          </span>
+        </button>
       </div>
 
       <div className="flex items-center justify-end gap-2">
         <span className="mr-2 font-['Geist'] text-[13px] font-medium text-[#434655]">
-          Showing 1-10 of 1,284
+          Total: {total}
         </span>
         <button className="rounded-lg p-2 text-[#434655] transition hover:bg-[#ededf9]">
           <span className="material-symbols-outlined">download</span>
@@ -148,37 +133,47 @@ function VehicleThumb({ className }) {
     <div
       className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br ${className}`}
     >
-      <span className="material-symbols-outlined text-white/90">directions_car</span>
+      <span className="material-symbols-outlined text-white/90">
+        directions_car
+      </span>
     </div>
   );
 }
 
-function VehicleRow({ vehicle }) {
+function VehicleTypeRow({ vehicleType }) {
   return (
     <tr className="transition hover:bg-[#faf8ff]">
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <VehicleThumb className={vehicle.thumbClass} />
+          <VehicleThumb className="from-slate-950 via-blue-900 to-cyan-400" />
           <div>
-            <p className="font-['Geist'] text-[13px] font-medium text-[#191b23]">{vehicle.plate}</p>
-            <p className="font-['Inter'] text-xs text-[#434655]">{vehicle.detail}</p>
+            <p className="font-['Geist'] text-[13px] font-medium text-[#191b23]">
+              {vehicleType.typeName}
+            </p>
+            <p className="font-['Inter'] text-xs text-[#434655]">
+              Vehicle type from database
+            </p>
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 font-['Inter'] text-sm text-[#434655]">{vehicle.owner}</td>
+
+      <td className="px-6 py-4 font-['Inter'] text-sm text-[#434655]">
+        {vehicleType.description || "No description"}
+      </td>
+
       <td className="px-6 py-4">
-        <span
-          className={`rounded-full px-3 py-1 font-['Geist'] text-[11px] font-semibold ${vehicle.permitClass}`}
-        >
-          {vehicle.permit}
+        <span className="rounded-full bg-[#dae2fd] px-3 py-1 font-['Geist'] text-[11px] font-semibold text-[#5c647a]">
+          Vehicle Type
         </span>
       </td>
+
       <td className="px-6 py-4">
-        <div className={`flex items-center gap-2 ${vehicle.statusClass}`}>
-          <span className={`h-2 w-2 rounded-full ${vehicle.dotClass}`} />
-          <span className="font-['Geist'] text-[13px] font-medium">{vehicle.status}</span>
+        <div className="flex items-center gap-2 text-[#943700]">
+          <span className="h-2 w-2 rounded-full bg-[#943700]" />
+          <span className="font-['Geist'] text-[13px] font-medium">Active</span>
         </div>
       </td>
+
       <td className="px-6 py-4 text-right">
         <button className="rounded-lg p-1.5 text-[#737686] transition hover:bg-[#ededf9]">
           <span className="material-symbols-outlined">edit</span>
@@ -191,16 +186,32 @@ function VehicleRow({ vehicle }) {
   );
 }
 
-function VehiclesTable() {
+function VehiclesTable({ vehicleTypes, loading, error, keyword, setKeyword }) {
+  const filteredVehicleTypes = vehicleTypes.filter((type) => {
+    const searchText =
+      `${type.typeName || ""} ${type.description || ""}`.toLowerCase();
+    return searchText.includes(keyword.toLowerCase());
+  });
+
   return (
     <div className="overflow-hidden rounded-xl border border-[#c3c6d7] bg-white shadow-sm">
-      <FilterBar />
+      <FilterBar
+        keyword={keyword}
+        setKeyword={setKeyword}
+        total={filteredVehicleTypes.length}
+      />
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead className="bg-[#f3f3fe]">
             <tr>
-              {["Vehicle", "Owner", "Permit Type", "Status", "Actions"].map((heading) => (
+              {[
+                "Vehicle Type",
+                "Description",
+                "Category",
+                "Status",
+                "Actions",
+              ].map((heading) => (
                 <th
                   key={heading}
                   className={`px-6 py-4 font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#434655] ${
@@ -212,17 +223,58 @@ function VehiclesTable() {
               ))}
             </tr>
           </thead>
+
           <tbody className="divide-y divide-[#c3c6d7]">
-            {vehicles.map((vehicle) => (
-              <VehicleRow key={vehicle.plate} vehicle={vehicle} />
-            ))}
+            {loading && (
+              <tr>
+                <td
+                  colSpan="5"
+                  className="px-6 py-8 text-center font-['Inter'] text-sm text-[#434655]"
+                >
+                  Loading vehicle types...
+                </td>
+              </tr>
+            )}
+
+            {!loading && error && (
+              <tr>
+                <td
+                  colSpan="5"
+                  className="px-6 py-8 text-center font-['Inter'] text-sm text-red-600"
+                >
+                  {error}
+                </td>
+              </tr>
+            )}
+
+            {!loading &&
+              !error &&
+              filteredVehicleTypes.map((vehicleType) => (
+                <VehicleTypeRow
+                  key={vehicleType.id}
+                  vehicleType={vehicleType}
+                />
+              ))}
+
+            {!loading && !error && filteredVehicleTypes.length === 0 && (
+              <tr>
+                <td
+                  colSpan="5"
+                  className="px-6 py-8 text-center font-['Inter'] text-sm text-[#737686]"
+                >
+                  No vehicle types found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       <div className="flex items-center justify-between border-t border-[#c3c6d7] bg-[#f3f3fe]/40 px-6 py-4">
         <div className="flex items-center gap-2">
-          <span className="font-['Inter'] text-sm text-[#434655]">Rows per page:</span>
+          <span className="font-['Inter'] text-sm text-[#434655]">
+            Rows per page:
+          </span>
           <select className="border-none bg-transparent font-['Geist'] text-[13px] text-[#191b23] outline-none focus:ring-0">
             <option>10</option>
             <option>20</option>
@@ -230,27 +282,8 @@ function VehiclesTable() {
           </select>
         </div>
 
-        <div className="flex items-center gap-1">
-          <button disabled className="rounded-lg p-2 opacity-30">
-            <span className="material-symbols-outlined">chevron_left</span>
-          </button>
-          {[1, 2, 3].map((page) => (
-            <button
-              key={page}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg font-['Geist'] text-[13px] ${
-                page === 1 ? "bg-[#004ac6] text-white" : "text-[#191b23] hover:bg-[#ededf9]"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <span className="px-2">...</span>
-          <button className="flex h-8 w-8 items-center justify-center rounded-lg font-['Geist'] text-[13px] hover:bg-[#ededf9]">
-            129
-          </button>
-          <button className="rounded-lg p-2 hover:bg-[#ededf9]">
-            <span className="material-symbols-outlined">chevron_right</span>
-          </button>
+        <div className="font-['Inter'] text-sm text-[#434655]">
+          Showing {filteredVehicleTypes.length} of {vehicleTypes.length}
         </div>
       </div>
     </div>
@@ -258,10 +291,33 @@ function VehiclesTable() {
 }
 
 export default function AdminVehiclesPage() {
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [keyword, setKeyword] = useState("");
+
+  useEffect(() => {
+    const fetchVehicleTypes = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const result = await apiRequest("/api/vehicle-types");
+        setVehicleTypes(result.data || []);
+      } catch (error) {
+        setError(error.message || "Cannot load vehicle types");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVehicleTypes();
+  }, []);
+
   const headerAction = (
     <button className="flex items-center gap-2 rounded-xl bg-[#004ac6] px-5 py-2.5 font-['Geist'] text-[13px] font-medium text-white shadow-md shadow-blue-900/20 transition hover:bg-[#2563eb] active:scale-95">
       <span className="material-symbols-outlined text-xl">add</span>
-      Add Vehicle
+      Add Vehicle Type
     </button>
   );
 
@@ -269,11 +325,17 @@ export default function AdminVehiclesPage() {
     <AdminLayout
       activeLabel="Vehicles"
       headerAction={headerAction}
-      searchPlaceholder="Search plates, owners, or permits..."
+      searchPlaceholder="Search vehicle types..."
     >
       <PageHeader />
-      <StatsGrid />
-      <VehiclesTable />
+      <StatsGrid totalVehicleTypes={vehicleTypes.length} />
+      <VehiclesTable
+        vehicleTypes={vehicleTypes}
+        loading={loading}
+        error={error}
+        keyword={keyword}
+        setKeyword={setKeyword}
+      />
     </AdminLayout>
   );
 }
