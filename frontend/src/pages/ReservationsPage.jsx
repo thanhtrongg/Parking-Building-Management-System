@@ -1,294 +1,434 @@
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
+import { apiRequest } from "../services/api";
 
-const stats = [
-  {
-    label: "Today's Arrivals",
-    value: "124",
-    detail: "12% increase from yesterday",
-    icon: "login",
-    iconClass: "bg-[#dbe1ff] text-[#004ac6]",
-    valueClass: "text-[#191b23]",
-    detailClass: "text-[#004ac6]",
-    detailIcon: "trending_up",
+const statusConfig = {
+  PENDING: {
+    label: "Pending",
+    className: "bg-amber-100 text-amber-700 border-amber-200",
+    dot: "bg-amber-500",
   },
-  {
-    label: "Active Stays",
-    value: "482",
-    detail: "82% Capacity utilized",
-    icon: "directions_car",
-    iconClass: "bg-[#dae2fd] text-[#5c647a]",
-    valueClass: "text-[#191b23]",
-    detailClass: "text-[#434655]",
+  CONFIRMED: {
+    label: "Confirmed",
+    className: "bg-green-100 text-green-700 border-green-200",
+    dot: "bg-green-500",
   },
-  {
-    label: "Upcoming Cancellations",
-    value: "8",
-    detail: "Next 24 hours",
-    icon: "event_busy",
-    iconClass: "bg-[#ffdad6] text-[#ba1a1a]",
-    valueClass: "text-[#ba1a1a]",
-    detailClass: "text-[#434655]",
+  CANCELLED: {
+    label: "Cancelled",
+    className: "bg-red-100 text-red-700 border-red-200",
+    dot: "bg-red-500",
   },
-];
+  FULFILLED: {
+    label: "Fulfilled",
+    className: "bg-blue-100 text-blue-700 border-blue-200",
+    dot: "bg-blue-500",
+  },
+};
 
-const reservations = [
-  {
-    id: "#PM-88219",
-    user: "Jonathan Wick",
-    vehicle: "ABC-1234 • Mustang",
-    date: "Oct 26, 2023",
-    time: "09:00 AM - 05:00 PM",
-    slot: "L2-B04",
-    status: "Confirmed",
-    statusClass: "bg-green-100 text-green-800",
-    dotClass: "bg-green-600",
-    payment: "Paid",
-    paymentClass: "bg-blue-50 text-blue-700",
-  },
-  {
-    id: "#PM-88220",
-    user: "Sarah Connor",
-    vehicle: "SUV-9988 • Range Rover",
-    date: "Oct 26, 2023",
-    time: "10:30 AM - 02:00 PM",
-    slot: "L1-A12",
-    status: "Checked-in",
-    statusClass: "bg-amber-100 text-amber-800",
-    dotClass: "bg-amber-600",
-    payment: "Paid",
-    paymentClass: "bg-blue-50 text-blue-700",
-  },
-  {
-    id: "#PM-88221",
-    user: "Thomas Anderson",
-    vehicle: "NEO-0101 • Tesla S",
-    date: "Oct 26, 2023",
-    time: "11:00 AM - 06:00 PM",
-    slot: "L3-C02",
-    status: "Cancelled",
-    statusClass: "bg-slate-100 text-slate-500 opacity-70",
-    dotClass: "bg-slate-400",
-    payment: "Refunded",
-    paymentClass: "bg-red-50 text-red-600",
-  },
-];
+function getStatusMeta(status) {
+  return (
+    statusConfig[status] || {
+      label: status || "Unknown",
+      className: "bg-slate-100 text-slate-700 border-slate-200",
+      dot: "bg-slate-400",
+    }
+  );
+}
+
+function formatDateTime(value) {
+  if (!value) return "N/A";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatDate(value) {
+  if (!value) return "N/A";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+  }).format(new Date(value));
+}
+
+function formatTimeRange(start, end) {
+  if (!start || !end) return "N/A";
+
+  const startTime = new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(start));
+
+  const endTime = new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(end));
+
+  return `${startTime} - ${endTime}`;
+}
 
 function PageHeader() {
   return (
-    <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
       <div>
-        <h2 className="mb-1 font-['Geist'] text-4xl font-bold leading-[44px] text-[#191b23]">
+        <h2 className="font-['Geist'] text-3xl font-semibold text-[#191b23]">
           Reservation Management
         </h2>
-        <p className="font-['Inter'] text-base text-[#434655]">
-          View and manage upcoming parking bookings.
+        <p className="mt-2 max-w-3xl font-['Inter'] text-sm text-[#6b7280]">
+          Track upcoming parking bookings, assigned slots, vehicle types, and
+          reservation status.
         </p>
       </div>
     </div>
   );
 }
 
-function StatCard({ stat }) {
+function SummaryCard({ title, value, icon, iconWrapClass, iconClass }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm">
-      <div>
-        <p className="mb-2 font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#434655]">
-          {stat.label}
-        </p>
-        <h3 className={`font-['Geist'] text-2xl font-semibold leading-8 ${stat.valueClass}`}>
-          {stat.value}
-        </h3>
-        <p
-          className={`mt-2 flex items-center gap-1 font-['Geist'] text-[11px] font-semibold ${stat.detailClass}`}
+    <div className="rounded-2xl border border-[#d7d9e4] bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
+            {title}
+          </p>
+          <h3 className="mt-2 font-['Geist'] text-3xl font-bold text-[#191b23]">
+            {value}
+          </h3>
+        </div>
+
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-full ${iconWrapClass}`}
         >
-          {stat.detailIcon && (
-            <span className="material-symbols-outlined text-base">{stat.detailIcon}</span>
-          )}
-          {stat.detail}
-        </p>
-      </div>
-      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${stat.iconClass}`}>
-        <span className="material-symbols-outlined">{stat.icon}</span>
+          <span className={`material-symbols-outlined ${iconClass}`}>
+            {icon}
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatsGrid() {
+function StatsGrid({ reservations }) {
+  const countByStatus = (status) =>
+    reservations.filter((reservation) => reservation.status === status).length;
+
   return (
-    <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-      {stats.map((stat) => (
-        <StatCard key={stat.label} stat={stat} />
-      ))}
+    <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <SummaryCard
+        title="Total Reservations"
+        value={reservations.length}
+        icon="event_note"
+        iconWrapClass="bg-slate-100"
+        iconClass="text-slate-700"
+      />
+      <SummaryCard
+        title="Pending"
+        value={countByStatus("PENDING")}
+        icon="schedule"
+        iconWrapClass="bg-amber-50"
+        iconClass="text-amber-600"
+      />
+      <SummaryCard
+        title="Confirmed"
+        value={countByStatus("CONFIRMED")}
+        icon="check_circle"
+        iconWrapClass="bg-green-50"
+        iconClass="text-green-600"
+      />
+      <SummaryCard
+        title="Fulfilled"
+        value={countByStatus("FULFILLED")}
+        icon="task_alt"
+        iconWrapClass="bg-blue-50"
+        iconClass="text-blue-600"
+      />
+      <SummaryCard
+        title="Cancelled"
+        value={countByStatus("CANCELLED")}
+        icon="event_busy"
+        iconWrapClass="bg-red-50"
+        iconClass="text-red-600"
+      />
     </div>
   );
 }
 
-function ViewControls() {
+function StatusBadge({ status }) {
+  const meta = getStatusMeta(status);
+
   return (
-    <div className="mb-6 overflow-hidden rounded-xl border border-[#c3c6d7] bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#c3c6d7] p-4">
-        <div className="flex items-center rounded-lg bg-[#f3f3fe] p-1">
-          <button className="flex items-center gap-2 rounded-md bg-white px-4 py-2 font-['Geist'] text-[13px] font-medium text-[#004ac6] shadow-sm">
-            <span className="material-symbols-outlined">list</span>
-            List View
-          </button>
-          <button className="flex items-center gap-2 rounded-md px-4 py-2 font-['Geist'] text-[13px] font-medium text-[#434655] transition hover:text-[#191b23]">
-            <span className="material-symbols-outlined">calendar_view_week</span>
-            Weekly Grid
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-['Geist'] text-[11px] font-semibold ${meta.className}`}
+    >
+      <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+      {meta.label}
+    </span>
+  );
+}
+
+function FilterToolbar({
+  keyword,
+  setKeyword,
+  selectedStatus,
+  setSelectedStatus,
+  filteredCount,
+  onResetFilters,
+}) {
+  return (
+    <div className="mb-6 rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
+      <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative w-full lg:max-w-md">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
+              search
+            </span>
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="Search user, email, slot, vehicle type..."
+              className="h-11 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] pl-11 pr-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+            />
+          </div>
+
+          <select
+            value={selectedStatus}
+            onChange={(event) => setSelectedStatus(event.target.value)}
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
+          >
+            <option value="ALL">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="FULFILLED">Fulfilled</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+
+          <button
+            onClick={onResetFilters}
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]"
+          >
+            Reset Filters
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button className="flex items-center gap-2 rounded-lg border border-[#c3c6d7] bg-[#f3f3fe] px-4 py-2 font-['Geist'] text-[13px] text-[#191b23] transition hover:bg-[#ededf9]">
-            <span className="material-symbols-outlined text-xl">calendar_today</span>
-            Oct 24 - Oct 31, 2023
-          </button>
-          <button className="flex items-center gap-2 rounded-lg border border-[#c3c6d7] bg-[#f3f3fe] px-4 py-2 font-['Geist'] text-[13px] text-[#434655] transition hover:bg-[#ededf9]">
-            <span className="material-symbols-outlined">filter_list</span>
-            Filters
-          </button>
-          <button className="flex items-center gap-2 rounded-lg border border-[#c3c6d7] bg-[#f3f3fe] px-4 py-2 font-['Geist'] text-[13px] text-[#434655] transition hover:bg-[#ededf9]">
-            <span className="material-symbols-outlined">file_download</span>
+        <div className="flex items-center justify-between gap-3 lg:justify-end">
+          <span className="font-['Inter'] text-sm text-[#6b7280]">
+            Showing{" "}
+            <span className="font-semibold text-[#191b23]">
+              {filteredCount}
+            </span>{" "}
+            reservations
+          </span>
+
+          <button className="rounded-xl border border-[#d7d9e4] bg-white px-4 py-2.5 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]">
             Export
           </button>
         </div>
       </div>
-
-      <div className="flex flex-wrap items-center gap-2 bg-[#faf8ff] px-4 py-3">
-        <span className="font-['Geist'] text-[11px] font-medium text-[#434655]">Active Filters:</span>
-        {["Status: Confirmed", "Building: North Wing"].map((filter) => (
-          <span
-            key={filter}
-            className="inline-flex items-center gap-1 rounded-full bg-[#dbe1ff] px-3 py-1 font-['Geist'] text-[11px] font-medium text-[#00174b]"
-          >
-            {filter}
-            <button className="material-symbols-outlined text-sm">close</button>
-          </span>
-        ))}
-        <button className="ml-2 font-['Geist'] text-[11px] font-medium text-[#004ac6] hover:underline">
-          Clear All
-        </button>
-      </div>
     </div>
-  );
-}
-
-function StatusChip({ reservation }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-['Geist'] text-[11px] font-bold ${reservation.statusClass}`}
-    >
-      <span className={`h-2 w-2 rounded-full ${reservation.dotClass}`} />
-      {reservation.status}
-    </span>
   );
 }
 
 function ReservationRow({ reservation }) {
   return (
-    <tr className="transition hover:bg-[#f3f3fe]">
-      <td className="px-6 py-5 font-mono text-[13px] font-bold text-[#004ac6]">{reservation.id}</td>
+    <tr className="transition hover:bg-[#fafbff]">
       <td className="px-6 py-5">
-        <div className="flex flex-col">
-          <span className="font-['Inter'] text-base font-medium text-[#191b23]">
-            {reservation.user}
+        <div>
+          <p className="font-mono text-[13px] font-bold text-[#2563eb]">
+            {reservation.id.slice(0, 8).toUpperCase()}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            Created {formatDateTime(reservation.createdAt)}
+          </p>
+        </div>
+      </td>
+
+      <td className="px-6 py-5">
+        <div>
+          <p className="font-['Inter'] text-sm font-semibold text-[#191b23]">
+            {reservation.user?.fullName || "Guest User"}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            {reservation.user?.email || "No email"}
+          </p>
+        </div>
+      </td>
+
+      <td className="px-6 py-5">
+        <div>
+          <p className="font-['Inter'] text-sm font-medium text-[#191b23]">
+            {reservation.vehicleType?.typeName || "N/A"}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            {reservation.parkingSlot?.zoneName || "No zone"}
+          </p>
+        </div>
+      </td>
+
+      <td className="px-6 py-5">
+        <span className="inline-flex items-center gap-2 rounded-xl bg-[#eef3ff] px-3 py-2 font-['Inter'] text-sm font-semibold text-[#2563eb]">
+          <span className="material-symbols-outlined text-[18px]">
+            local_parking
           </span>
-          <span className="font-['Geist'] text-[11px] text-[#434655]">{reservation.vehicle}</span>
-        </div>
-      </td>
-      <td className="px-6 py-5">
-        <div className="flex flex-col">
-          <span className="font-['Geist'] text-[13px] text-[#191b23]">{reservation.date}</span>
-          <span className="font-['Geist'] text-[11px] text-[#434655]">{reservation.time}</span>
-        </div>
-      </td>
-      <td className="px-6 py-5">
-        <span className="inline-flex items-center gap-1 rounded-lg bg-[#e7e7f3] px-3 py-2 font-['Geist'] text-[13px] font-medium text-[#191b23]">
-          <span className="material-symbols-outlined text-base">location_on</span>
-          {reservation.slot}
+          {reservation.parkingSlot?.slotName || "Not assigned"}
         </span>
       </td>
+
       <td className="px-6 py-5">
-        <StatusChip reservation={reservation} />
+        <div>
+          <p className="font-['Inter'] text-sm font-medium text-[#191b23]">
+            {formatDate(reservation.expectedStartTime)}
+          </p>
+          <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
+            {formatTimeRange(
+              reservation.expectedStartTime,
+              reservation.expectedEndTime,
+            )}
+          </p>
+        </div>
       </td>
+
       <td className="px-6 py-5">
-        <span
-          className={`inline-flex items-center rounded-full px-3 py-1 font-['Geist'] text-[11px] font-bold ${reservation.paymentClass}`}
-        >
-          {reservation.payment}
-        </span>
+        <StatusBadge status={reservation.status} />
       </td>
+
       <td className="px-6 py-5 text-right">
-        <button className="material-symbols-outlined text-[#434655] transition hover:text-[#004ac6]">
-          more_vert
-        </button>
+        <div className="flex items-center justify-end gap-1">
+          <button className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8]">
+            <span className="material-symbols-outlined">visibility</span>
+          </button>
+          <button className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8]">
+            <span className="material-symbols-outlined">edit</span>
+          </button>
+          <button className="rounded-lg p-2 text-red-500 transition hover:bg-red-50">
+            <span className="material-symbols-outlined">delete</span>
+          </button>
+        </div>
       </td>
     </tr>
   );
 }
 
-function ReservationsTable() {
+function ReservationsTable({ reservations, loading, error }) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-[#d7d9e4] bg-white p-10 text-center font-['Inter'] text-sm text-[#6b7280] shadow-sm">
+        Loading reservations...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center font-['Inter'] text-sm text-red-600 shadow-sm">
+        {error}
+      </div>
+    );
+  }
+
+  if (reservations.length === 0) {
+    return (
+      <div className="rounded-2xl border border-[#d7d9e4] bg-white p-10 text-center font-['Inter'] text-sm text-[#6b7280] shadow-sm">
+        No reservations found.
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-xl border border-[#c3c6d7] bg-white shadow-sm">
-      <table className="w-full border-collapse text-left">
-        <thead>
-          <tr className="border-b border-[#c3c6d7] bg-[#f3f3fe]">
-            {["Reservation ID", "User / Vehicle", "Date & Time", "Slot", "Status", "Payment", "Actions"].map(
-              (heading) => (
+    <div className="overflow-hidden rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse text-left">
+          <thead className="bg-[#f7f8fc]">
+            <tr>
+              {[
+                "Reservation",
+                "User",
+                "Vehicle Type / Zone",
+                "Slot",
+                "Schedule",
+                "Status",
+                "Actions",
+              ].map((heading) => (
                 <th
                   key={heading}
-                  className={`px-6 py-4 font-['Geist'] text-[11px] font-semibold uppercase tracking-wide text-[#434655] ${
+                  className={`px-6 py-4 font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] ${
                     heading === "Actions" ? "text-right" : ""
                   }`}
                 >
                   {heading}
                 </th>
-              ),
-            )}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#c3c6d7]">
-          {reservations.map((reservation) => (
-            <ReservationRow key={reservation.id} reservation={reservation} />
-          ))}
-        </tbody>
-      </table>
+              ))}
+            </tr>
+          </thead>
 
-      <div className="flex items-center justify-between border-t border-[#c3c6d7] bg-[#f3f3fe] px-6 py-4">
-        <span className="font-['Geist'] text-[11px] font-medium text-[#434655]">
-          Showing 1-10 of 482 reservations
+          <tbody className="divide-y divide-[#eceef5]">
+            {reservations.map((reservation) => (
+              <ReservationRow key={reservation.id} reservation={reservation} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-[#eceef5] bg-[#f8f9fc] px-6 py-4">
+        <span className="font-['Inter'] text-sm text-[#6b7280]">
+          Showing {reservations.length} reservation(s)
         </span>
-        <div className="flex items-center gap-2">
-          <button disabled className="flex h-8 w-8 items-center justify-center rounded-lg opacity-30">
-            <span className="material-symbols-outlined text-lg">chevron_left</span>
-          </button>
-          {[1, 2, 3].map((page) => (
-            <button
-              key={page}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg font-['Geist'] text-[11px] ${
-                page === 1 ? "bg-[#004ac6] text-white" : "hover:bg-[#e7e7f3]"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <span className="px-1 font-['Geist'] text-[11px]">...</span>
-          <button className="flex h-8 w-8 items-center justify-center rounded-lg font-['Geist'] text-[11px] hover:bg-[#e7e7f3]">
-            48
-          </button>
-          <button className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#e7e7f3]">
-            <span className="material-symbols-outlined text-lg">chevron_right</span>
-          </button>
-        </div>
       </div>
     </div>
   );
 }
 
 export default function ReservationsPage() {
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const result = await apiRequest("/api/reservations");
+        setReservations(result.data || []);
+      } catch (error) {
+        setError(error.message || "Cannot load reservations");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReservations();
+  }, []);
+
+  const filteredReservations = useMemo(() => {
+    return reservations.filter((reservation) => {
+      const searchText = `
+        ${reservation.id || ""}
+        ${reservation.user?.fullName || ""}
+        ${reservation.user?.email || ""}
+        ${reservation.vehicleType?.typeName || ""}
+        ${reservation.parkingSlot?.slotName || ""}
+        ${reservation.parkingSlot?.zoneName || ""}
+      `.toLowerCase();
+
+      const matchesKeyword = searchText.includes(keyword.toLowerCase());
+      const matchesStatus =
+        selectedStatus === "ALL" || reservation.status === selectedStatus;
+
+      return matchesKeyword && matchesStatus;
+    });
+  }, [reservations, keyword, selectedStatus]);
+
+  const resetFilters = () => {
+    setKeyword("");
+    setSelectedStatus("ALL");
+  };
+
   const headerAction = (
-    <button className="flex items-center gap-2 rounded-xl bg-[#004ac6] px-5 py-2.5 font-['Geist'] text-[13px] font-medium text-white shadow-md shadow-blue-900/20 transition hover:bg-[#2563eb] active:scale-95">
+    <button className="flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-['Inter'] text-sm font-medium text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95">
       <span className="material-symbols-outlined">add_circle</span>
       New Reservation
     </button>
@@ -298,17 +438,25 @@ export default function ReservationsPage() {
     <AdminLayout
       activeLabel="Reservations"
       headerAction={headerAction}
-      searchPlaceholder="Search reservations, users, or license plates..."
+      searchPlaceholder="Search reservations, users, or slots..."
     >
       <PageHeader />
-      <StatsGrid />
-      <ViewControls />
-      <ReservationsTable />
-      <footer className="py-10 text-center opacity-50">
-        <p className="font-['Geist'] text-[11px] text-[#434655]">
-          © 2023 ParkMaster Pro. Enterprise Edition v4.2.0-stable.
-        </p>
-      </footer>
+      <StatsGrid reservations={reservations} />
+
+      <FilterToolbar
+        keyword={keyword}
+        setKeyword={setKeyword}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        filteredCount={filteredReservations.length}
+        onResetFilters={resetFilters}
+      />
+
+      <ReservationsTable
+        reservations={filteredReservations}
+        loading={loading}
+        error={error}
+      />
     </AdminLayout>
   );
 }
