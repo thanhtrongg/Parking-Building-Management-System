@@ -37,7 +37,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/admin-vehicles" element={<AdminVehiclesPage />} />
+        <Route
+          path="/admin-vehicles"
+          element={
+            <ProtectedRoute allowedRoles={adminRoles}>
+              <AdminVehiclesPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/reservations" element={<ReservationsPage />} />
         <Route
