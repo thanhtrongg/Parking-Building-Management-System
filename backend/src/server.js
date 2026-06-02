@@ -8,6 +8,7 @@ import parkingSlotRoutes from "./routes/parkingSlot.routes.js";
 import reservationRoutes from "./routes/reservation.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import vehicleTypeRoutes from "./routes/vehicleType.routes.js";
+import zoneRoutes from "./routes/zone.routes.js";
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use("/api/parking-slots", parkingSlotRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/vehicle-types", vehicleTypeRoutes);
+app.use("/api/zones", zoneRoutes);
 
 const PORT = process.env.PORT || 5000;
 

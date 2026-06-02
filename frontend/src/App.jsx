@@ -11,6 +11,7 @@ import UserDashboardPage from "./pages/UserDashboardPage";
 import UserMyBookingsPage from "./pages/UserMyBookingsPage";
 import UserSettingsPage from "./pages/UserSettingsPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import ZonesPage from "./pages/ZonesPage";
 
 function App() {
   const adminRoles = ["ADMIN", "MANAGER", "STAFF"];
@@ -42,6 +43,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={adminRoles}>
               <AdminVehiclesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-zones"
+          element={
+            <ProtectedRoute allowedRoles={adminRoles}>
+              <ZonesPage />
             </ProtectedRoute>
           }
         />

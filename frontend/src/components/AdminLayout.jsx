@@ -1,11 +1,17 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 
+// Đã cập nhật: Bổ sung trang Parking Zones vào vị trí thứ 2 trong danh sách Menu
 const navItems = [
   {
     icon: "space_dashboard",
     label: "Dashboard",
     path: "/dashboard",
+  },
+  {
+    icon: "grid_view", // Sử dụng icon grid_view trực quan cho danh sách khu vực
+    label: "Parking Zones",
+    path: "/admin-zones",
   },
   {
     icon: "local_parking",
