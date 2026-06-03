@@ -1,10 +1,50 @@
 import express from "express";
 
-import { getReservations } from "../controllers/reservation.controller.js";
-import { verifyToken } from "../middlewares/auth.middleware.js";
+import {
+  getReservations,
+  getReservationById,
+  createReservation,
+  updateReservation,
+  deleteReservation,
+} from "../controllers/reservation.controller.js";
+
+import { verifyToken, requireRoles } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/", verifyToken, getReservations);
+router.get(
+  "/",
+  verifyToken,
+  requireRoles("ADMIN", "MANAGER", "STAFF", "USER"),
+  getReservations,
+);
+
+router.get(
+  "/:id",
+  verifyToken,
+  requireRoles("ADMIN", "MANAGER", "STAFF", "USER"),
+  getReservationById,
+);
+
+router.post(
+  "/",
+  verifyToken,
+  requireRoles("ADMIN", "MANAGER", "USER"),
+  createReservation,
+);
+
+router.put(
+  "/:id",
+  verifyToken,
+  requireRoles("ADMIN", "MANAGER", "STAFF", "USER"),
+  updateReservation,
+);
+
+router.delete(
+  "/:id",
+  verifyToken,
+  requireRoles("ADMIN", "MANAGER", "USER"),
+  deleteReservation,
+);
 
 export default router;

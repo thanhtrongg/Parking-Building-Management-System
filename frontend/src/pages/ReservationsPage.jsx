@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
 import { apiRequest } from "../services/api";
 
+const RESERVATION_STATUSES = [
+  "PENDING",
+  "CONFIRMED",
+  "CHECKED_IN",
+  "CANCELLED",
+  "COMPLETED",
+];
+
+const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN"];
+
 const statusConfig = {
   PENDING: {
     label: "Pending",
@@ -17,12 +27,12 @@ const statusConfig = {
     dot: "bg-emerald-500",
     icon: "event_available",
   },
-  FULFILLED: {
-    label: "Fulfilled",
-    description: "Reservation completed",
+  CHECKED_IN: {
+    label: "Checked in",
+    description: "User has arrived",
     className: "bg-blue-50 text-blue-700 border-blue-200",
     dot: "bg-blue-500",
-    icon: "task_alt",
+    icon: "login",
   },
   CANCELLED: {
     label: "Cancelled",
@@ -31,6 +41,21 @@ const statusConfig = {
     dot: "bg-rose-500",
     icon: "event_busy",
   },
+  COMPLETED: {
+    label: "Completed",
+    description: "Reservation completed",
+    className: "bg-violet-50 text-violet-700 border-violet-200",
+    dot: "bg-violet-500",
+    icon: "task_alt",
+  },
+};
+
+const initialForm = {
+  parkingSlotId: "",
+  vehicleTypeId: "",
+  startTime: "",
+  endTime: "",
+  status: "PENDING",
 };
 
 function getStatusMeta(status) {
@@ -43,6 +68,35 @@ function getStatusMeta(status) {
       icon: "help",
     }
   );
+}
+
+function getApiData(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.data)) return result.data;
+  return [];
+}
+
+function getApiItem(result) {
+  return result?.data || result;
+}
+
+function toDateTimeLocalValue(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
+}
+
+function toIsoDateTime(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString();
 }
 
 function formatDateTime(value) {
@@ -115,6 +169,47 @@ function getInitials(name) {
     .join("");
 }
 
+function normalizeSlot(slot) {
+  const zone = slot.zone || slot.zones || {};
+  const vehicleType =
+    slot.vehicleType ||
+    slot.vehicle_type ||
+    slot.vehicle_types ||
+    zone.vehicleType ||
+    zone.vehicle_type ||
+    zone.vehicle_types ||
+    {};
+
+  return {
+    id: slot.id,
+    slotName: slot.slotName || slot.slot_name || "Unnamed slot",
+    status: slot.status || "UNKNOWN",
+    zoneId: slot.zoneId || slot.zone_id || zone.id || "",
+    zoneName: zone.zoneName || zone.zone_name || slot.zoneName || "No zone",
+    vehicleTypeId:
+      slot.vehicleTypeId ||
+      slot.vehicle_type_id ||
+      zone.vehicleTypeId ||
+      zone.vehicle_type_id ||
+      vehicleType.id ||
+      "",
+    vehicleTypeName:
+      vehicleType.typeName ||
+      vehicleType.type_name ||
+      slot.vehicleTypeName ||
+      slot.vehicle_type_name ||
+      "N/A",
+  };
+}
+
+function normalizeVehicleType(vehicleType) {
+  return {
+    id: vehicleType.id,
+    typeName: vehicleType.typeName || vehicleType.type_name || "Unnamed type",
+    description: vehicleType.description || "",
+  };
+}
+
 function normalizeReservation(reservation) {
   const parkingSlot =
     reservation.parkingSlot ||
@@ -123,7 +218,6 @@ function normalizeReservation(reservation) {
     {};
 
   const slotZone = parkingSlot.zone || parkingSlot.zones || {};
-
   const user = reservation.user || reservation.users || {};
 
   const vehicleType =
@@ -141,11 +235,13 @@ function normalizeReservation(reservation) {
   const id = reservation.id;
 
   const expectedStartTime =
+    reservation.startTime ||
     reservation.expectedStartTime ||
     reservation.expected_start_time ||
     reservation.expected_start;
 
   const expectedEndTime =
+    reservation.endTime ||
     reservation.expectedEndTime ||
     reservation.expected_end_time ||
     reservation.expected_end;
@@ -160,18 +256,10 @@ function normalizeReservation(reservation) {
     "Guest User";
 
   const customerEmail =
-    user.email ||
-    reservation.email ||
-    reservation.customerEmail ||
-    reservation.customer_email ||
-    "";
+    user.email || reservation.email || reservation.customerEmail || "";
 
   const customerPhone =
-    user.phone ||
-    reservation.phone ||
-    reservation.customerPhone ||
-    reservation.customer_phone ||
-    "";
+    user.phone || reservation.phone || reservation.customerPhone || "";
 
   const slotName =
     parkingSlot.slotName ||
@@ -203,11 +291,22 @@ function normalizeReservation(reservation) {
     raw: reservation,
     id,
     displayId: id ? id.slice(0, 8).toUpperCase() : "N/A",
+    userId: reservation.userId || reservation.user_id || user.id || "",
     customerName,
     customerEmail,
     customerPhone,
+    parkingSlotId:
+      reservation.parkingSlotId ||
+      reservation.parking_slot_id ||
+      parkingSlot.id ||
+      "",
     slotName,
     zoneName,
+    vehicleTypeId:
+      reservation.vehicleTypeId ||
+      reservation.vehicle_type_id ||
+      vehicleType.id ||
+      "",
     vehicleTypeName,
     status,
     expectedStartTime,
@@ -233,7 +332,7 @@ function PageHeader() {
               <span className="material-symbols-outlined text-[16px]">
                 event_seat
               </span>
-              Slot Reservation Flow
+              Reservation CRUD API
             </div>
 
             <h2 className="font-['Geist'] text-3xl font-bold tracking-tight text-[#191b23]">
@@ -241,9 +340,8 @@ function PageHeader() {
             </h2>
 
             <p className="mt-2 max-w-3xl font-['Inter'] text-sm leading-6 text-[#6b7280]">
-              Quản lý người dùng đang đặt trước slot gửi xe. Các reservation có
-              trạng thái Pending hoặc Confirmed sẽ tương ứng với slot đang được
-              giữ trước trong parking slots.
+              Quản lý lịch đặt chỗ gửi xe, kiểm tra trùng lịch, trạng thái đặt
+              chỗ và thông tin user, slot, zone, vehicle type từ backend.
             </p>
           </div>
 
@@ -307,25 +405,15 @@ function StatsGrid({ reservations }) {
   const confirmed = reservations.filter(
     (item) => item.status === "CONFIRMED",
   ).length;
+  const checkedIn = reservations.filter(
+    (item) => item.status === "CHECKED_IN",
+  ).length;
+  const completed = reservations.filter(
+    (item) => item.status === "COMPLETED",
+  ).length;
   const activeReservations = reservations.filter((item) =>
-    ["PENDING", "CONFIRMED"].includes(item.status),
+    ACTIVE_STATUSES.includes(item.status),
   ).length;
-  const fulfilled = reservations.filter(
-    (item) => item.status === "FULFILLED",
-  ).length;
-
-  const totalDuration = reservations.reduce((sum, item) => {
-    return sum + (item.durationHours || 0);
-  }, 0);
-
-  const durationCount = reservations.filter(
-    (item) => item.durationHours !== null,
-  ).length;
-
-  const avgDuration =
-    durationCount > 0
-      ? `${Math.round((totalDuration / durationCount) * 10) / 10}h`
-      : "N/A";
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -337,9 +425,9 @@ function StatsGrid({ reservations }) {
         className="bg-slate-100 text-slate-700"
       />
       <SummaryCard
-        title="Reserved Slots"
+        title="Active"
         value={activeReservations}
-        subtitle="Pending + confirmed"
+        subtitle="Pending + confirmed + checked-in"
         icon="local_parking"
         className="bg-blue-50 text-blue-700"
       />
@@ -358,10 +446,10 @@ function StatsGrid({ reservations }) {
         className="bg-emerald-50 text-emerald-700"
       />
       <SummaryCard
-        title="Avg Duration"
-        value={avgDuration}
-        subtitle={`${fulfilled} fulfilled`}
-        icon="timer"
+        title="Done"
+        value={completed + checkedIn}
+        subtitle={`${checkedIn} checked-in, ${completed} completed`}
+        icon="task_alt"
         className="bg-violet-50 text-violet-700"
       />
     </div>
@@ -378,6 +466,26 @@ function StatusBadge({ status }) {
       <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
       {meta.label}
     </span>
+  );
+}
+
+function Alert({ type = "info", message, onClose }) {
+  if (!message) return null;
+
+  const config =
+    type === "error"
+      ? "border-rose-200 bg-rose-50 text-rose-700"
+      : "border-emerald-200 bg-emerald-50 text-emerald-700";
+
+  return (
+    <div
+      className={`mb-5 flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 font-['Inter'] text-sm ${config}`}
+    >
+      <span>{message}</span>
+      <button onClick={onClose} className="font-semibold hover:opacity-70">
+        Close
+      </button>
+    </div>
   );
 }
 
@@ -437,10 +545,11 @@ function FilterToolbar({
           className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
         >
           <option value="ALL">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="CONFIRMED">Confirmed</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="CANCELLED">Cancelled</option>
+          {RESERVATION_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {getStatusMeta(status).label}
+            </option>
+          ))}
         </select>
 
         <select
@@ -482,7 +591,7 @@ function FilterToolbar({
 
 function ReservationTimeline({ reservation }) {
   return (
-    <div className="flex min-w-[190px] items-center gap-3">
+    <div className="flex min-w-47.5 items-center gap-3">
       <div className="flex flex-col items-center">
         <span className="h-2.5 w-2.5 rounded-full bg-[#2563eb]" />
         <span className="h-8 w-px bg-[#d7d9e4]" />
@@ -509,8 +618,11 @@ function ReservationTimeline({ reservation }) {
   );
 }
 
-function ReservationRow({ reservation }) {
+function ReservationRow({ reservation, onView, onEdit, onCancel }) {
   const meta = getStatusMeta(reservation.status);
+  const canCancel = !["CHECKED_IN", "COMPLETED", "CANCELLED"].includes(
+    reservation.status,
+  );
 
   return (
     <tr className="transition hover:bg-[#fafbff]">
@@ -545,7 +657,7 @@ function ReservationRow({ reservation }) {
       </td>
 
       <td className="px-6 py-5">
-        <div className="inline-flex min-w-[130px] items-center gap-2 rounded-xl bg-[#eef3ff] px-3 py-2">
+        <div className="inline-flex min-w-32.5 items-center gap-2 rounded-xl bg-[#eef3ff] px-3 py-2">
           <span className="material-symbols-outlined text-[18px] text-[#2563eb]">
             local_parking
           </span>
@@ -565,7 +677,7 @@ function ReservationRow({ reservation }) {
           <p className="font-['Inter'] text-sm font-semibold text-[#191b23]">
             {reservation.vehicleTypeName}
           </p>
-          <p className="mt-1 max-w-[240px] truncate font-['Inter'] text-xs text-[#6b7280]">
+          <p className="mt-1 max-w-60 truncate font-['Inter'] text-xs text-[#6b7280]">
             {reservation.zoneName}
           </p>
         </div>
@@ -588,6 +700,7 @@ function ReservationRow({ reservation }) {
         <div className="flex items-center justify-end gap-1">
           <button
             title="View details"
+            onClick={() => onView(reservation)}
             className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8] hover:text-[#2563eb]"
           >
             <span className="material-symbols-outlined text-[20px]">
@@ -597,6 +710,7 @@ function ReservationRow({ reservation }) {
 
           <button
             title="Edit reservation"
+            onClick={() => onEdit(reservation)}
             className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8] hover:text-[#2563eb]"
           >
             <span className="material-symbols-outlined text-[20px]">edit</span>
@@ -604,7 +718,9 @@ function ReservationRow({ reservation }) {
 
           <button
             title="Cancel reservation"
-            className="rounded-lg p-2 text-[#6b7280] transition hover:bg-rose-50 hover:text-rose-600"
+            disabled={!canCancel}
+            onClick={() => onCancel(reservation)}
+            className="rounded-lg p-2 text-[#6b7280] transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span className="material-symbols-outlined text-[20px]">
               event_busy
@@ -674,7 +790,14 @@ function EmptyState() {
   );
 }
 
-function ReservationsTable({ reservations, loading, error }) {
+function ReservationsTable({
+  reservations,
+  loading,
+  error,
+  onView,
+  onEdit,
+  onCancel,
+}) {
   if (loading) return <LoadingState />;
   if (error) return <ErrorState error={error} />;
   if (reservations.length === 0) return <EmptyState />;
@@ -726,11 +849,11 @@ function ReservationsTable({ reservations, loading, error }) {
           <tbody className="divide-y divide-[#eceef5]">
             {reservations.map((reservation) => (
               <ReservationRow
-                key={
-                  reservation.id ||
-                  `${reservation.slotName}-${reservation.customerName}`
-                }
+                key={reservation.id}
                 reservation={reservation}
+                onView={onView}
+                onEdit={onEdit}
+                onCancel={onCancel}
               />
             ))}
           </tbody>
@@ -742,7 +865,7 @@ function ReservationsTable({ reservations, loading, error }) {
 
 function ReservationInsight({ reservations }) {
   const active = reservations.filter((item) =>
-    ["PENDING", "CONFIRMED"].includes(item.status),
+    ACTIVE_STATUSES.includes(item.status),
   );
 
   const byVehicleType = active.reduce((acc, item) => {
@@ -763,8 +886,8 @@ function ReservationInsight({ reservations }) {
               Active Reservation Flow
             </h3>
             <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
-              Pending/Confirmed reservations are the records that should match
-              RESERVED parking slots.
+              Pending/Confirmed/Checked-in reservations are active records and
+              must not overlap in the same parking slot.
             </p>
           </div>
         </div>
@@ -777,20 +900,20 @@ function ReservationInsight({ reservations }) {
           />
           <FlowInfoCard
             icon="event_available"
-            title="Reservation is active"
-            text="Pending hoặc Confirmed sẽ giữ trước slot."
+            title="Backend validates"
+            text="API kiểm tra slot tồn tại, trạng thái slot và trùng lịch."
           />
           <FlowInfoCard
             icon="local_parking"
-            title="Slot becomes reserved"
-            text="Parking slot tương ứng nên có status RESERVED."
+            title="Staff operates"
+            text="Staff có thể cập nhật trạng thái check-in/cancel/completed."
           />
         </div>
       </div>
 
       <div className="rounded-2xl border border-[#d7d9e4] bg-white p-5 shadow-sm">
         <h3 className="font-['Geist'] text-base font-semibold text-[#191b23]">
-          Reserved by Vehicle Type
+          Active by Vehicle Type
         </h3>
 
         <div className="mt-4 space-y-3">
@@ -837,37 +960,323 @@ function FlowInfoCard({ icon, title, text }) {
   );
 }
 
+function ModalShell({ title, subtitle, children, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#eceef5] px-6 py-5">
+          <div>
+            <h3 className="font-['Geist'] text-xl font-bold text-[#191b23]">
+              {title}
+            </h3>
+            {subtitle ? (
+              <p className="mt-1 font-['Inter'] text-sm text-[#6b7280]">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="rounded-xl p-2 text-[#6b7280] transition hover:bg-[#f3f4f8] hover:text-[#191b23]"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function ReservationFormModal({
+  mode,
+  form,
+  setForm,
+  slots,
+  vehicleTypes,
+  submitting,
+  onSubmit,
+  onClose,
+}) {
+  const selectedSlot = slots.find((slot) => slot.id === form.parkingSlotId);
+
+  const availableSlots = slots.filter((slot) => {
+    if (mode === "edit" && slot.id === form.parkingSlotId) return true;
+    return !["OCCUPIED", "MAINTENANCE"].includes(slot.status);
+  });
+
+  return (
+    <ModalShell
+      title={mode === "create" ? "New Reservation" : "Edit Reservation"}
+      subtitle="Dữ liệu gửi lên backend dùng camelCase, controller sẽ map sang Prisma snake_case."
+      onClose={onClose}
+    >
+      <form onSubmit={onSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
+              Parking Slot <span className="text-rose-600">*</span>
+            </label>
+            <select
+              value={form.parkingSlotId}
+              onChange={(event) => {
+                const nextSlot = slots.find(
+                  (slot) => slot.id === event.target.value,
+                );
+
+                setForm((prev) => ({
+                  ...prev,
+                  parkingSlotId: event.target.value,
+                  vehicleTypeId: nextSlot?.vehicleTypeId || prev.vehicleTypeId,
+                }));
+              }}
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              required
+            >
+              <option value="">Select parking slot</option>
+              {availableSlots.map((slot) => (
+                <option key={slot.id} value={slot.id}>
+                  {slot.slotName} - {slot.zoneName} - {slot.status}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 font-['Inter'] text-xs text-[#6b7280]">
+              Chỉ chọn slot thật lấy từ GET /api/parking-slots, không dùng
+              placeholder.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
+              Vehicle Type <span className="text-rose-600">*</span>
+            </label>
+            <select
+              value={form.vehicleTypeId}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  vehicleTypeId: event.target.value,
+                }))
+              }
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              required
+            >
+              <option value="">Select vehicle type</option>
+              {vehicleTypes.map((vehicleType) => (
+                <option key={vehicleType.id} value={vehicleType.id}>
+                  {vehicleType.typeName}
+                </option>
+              ))}
+            </select>
+            {selectedSlot?.vehicleTypeName &&
+            selectedSlot.vehicleTypeName !== "N/A" ? (
+              <p className="mt-2 font-['Inter'] text-xs text-[#6b7280]">
+                Slot này thuộc loại xe: {selectedSlot.vehicleTypeName}
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
+              Start Time <span className="text-rose-600">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={form.startTime}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, startTime: event.target.value }))
+              }
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
+              End Time <span className="text-rose-600">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={form.endTime}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, endTime: event.target.value }))
+              }
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              required
+            />
+          </div>
+
+          {mode === "edit" ? (
+            <div className="md:col-span-2">
+              <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
+                Status
+              </label>
+              <select
+                value={form.status}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, status: event.target.value }))
+                }
+                className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              >
+                {RESERVATION_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {getStatusMeta(status).label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 font-['Inter'] text-sm text-blue-700">
+          Backend sẽ tự chặn slot OCCUPIED/MAINTENANCE và chặn trùng lịch cùng
+          parkingSlotId với reservation đang PENDING/CONFIRMED/CHECKED_IN.
+        </div>
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[#d7d9e4] bg-white px-5 py-2.5 font-['Inter'] text-sm font-semibold text-[#374151] transition hover:bg-[#f8f9fc]"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-xl bg-[#2563eb] px-5 py-2.5 font-['Inter'] text-sm font-semibold text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting
+              ? "Saving..."
+              : mode === "create"
+                ? "Create Reservation"
+                : "Save Changes"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function ReservationDetailModal({ reservation, onClose }) {
+  if (!reservation) return null;
+
+  return (
+    <ModalShell
+      title={`Reservation RSV-${reservation.displayId}`}
+      subtitle="Chi tiết reservation lấy từ API backend."
+      onClose={onClose}
+    >
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <DetailCard label="Customer" value={reservation.customerName} />
+        <DetailCard
+          label="Contact"
+          value={
+            reservation.customerEmail || reservation.customerPhone || "N/A"
+          }
+        />
+        <DetailCard label="Parking Slot" value={reservation.slotName} />
+        <DetailCard label="Zone" value={reservation.zoneName} />
+        <DetailCard label="Vehicle Type" value={reservation.vehicleTypeName} />
+        <DetailCard
+          label="Status"
+          value={<StatusBadge status={reservation.status} />}
+        />
+        <DetailCard
+          label="Start Time"
+          value={formatDateTime(reservation.expectedStartTime)}
+        />
+        <DetailCard
+          label="End Time"
+          value={formatDateTime(reservation.expectedEndTime)}
+        />
+        <DetailCard
+          label="Duration"
+          value={
+            reservation.durationHours
+              ? `${reservation.durationHours} hours`
+              : "N/A"
+          }
+        />
+        <DetailCard
+          label="Created At"
+          value={formatDateTime(reservation.createdAt)}
+        />
+      </div>
+    </ModalShell>
+  );
+}
+
+function DetailCard({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-[#eceef5] bg-[#f8f9fc] p-4">
+      <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
+        {label}
+      </p>
+      <div className="mt-2 font-['Inter'] text-sm font-semibold text-[#191b23]">
+        {value}
+      </div>
+    </div>
+  );
+}
+
 export default function ReservationsPage() {
   const [reservations, setReservations] = useState([]);
+  const [parkingSlots, setParkingSlots] = useState([]);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const [keyword, setKeyword] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedVehicleType, setSelectedVehicleType] = useState("ALL");
   const [selectedZone, setSelectedZone] = useState("ALL");
 
+  const [modalMode, setModalMode] = useState(null);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [form, setForm] = useState(initialForm);
+
   useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        setLoading(true);
-        setError("");
+    let isMounted = true;
 
-        const result = await apiRequest("/api/reservations");
-        const apiData = Array.isArray(result) ? result : result.data || [];
+    Promise.all([
+      apiRequest("/api/reservations"),
+      apiRequest("/api/parking-slots"),
+      apiRequest("/api/vehicle-types"),
+    ])
+      .then(([reservationResult, slotResult, vehicleTypeResult]) => {
+        if (!isMounted) return;
 
-        setReservations(apiData.map(normalizeReservation));
-      } catch (error) {
+        setReservations(
+          getApiData(reservationResult).map(normalizeReservation),
+        );
+        setParkingSlots(getApiData(slotResult).map(normalizeSlot));
+        setVehicleTypes(
+          getApiData(vehicleTypeResult).map(normalizeVehicleType),
+        );
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+
         setError(error.message || "Cannot load reservations");
-      } finally {
-        setLoading(false);
-      }
-    };
+      })
+      .finally(() => {
+        if (!isMounted) return;
 
-    fetchReservations();
+        setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const vehicleTypes = useMemo(() => {
+  const filterVehicleTypes = useMemo(() => {
     return [...new Set(reservations.map((item) => item.vehicleTypeName))]
       .filter(Boolean)
       .sort();
@@ -924,8 +1333,163 @@ export default function ReservationsPage() {
     setSelectedZone("ALL");
   };
 
+  const openCreateModal = () => {
+    setSelectedReservation(null);
+    setForm(initialForm);
+    setModalMode("create");
+  };
+
+  const openEditModal = (reservation) => {
+    setSelectedReservation(reservation);
+    setForm({
+      parkingSlotId: reservation.parkingSlotId || "",
+      vehicleTypeId: reservation.vehicleTypeId || "",
+      startTime: toDateTimeLocalValue(reservation.expectedStartTime),
+      endTime: toDateTimeLocalValue(reservation.expectedEndTime),
+      status: reservation.status || "PENDING",
+    });
+    setModalMode("edit");
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setSelectedReservation(null);
+    setForm(initialForm);
+  };
+
+  const validateForm = () => {
+    if (
+      !form.parkingSlotId ||
+      !form.vehicleTypeId ||
+      !form.startTime ||
+      !form.endTime
+    ) {
+      return "Please fill in all required fields";
+    }
+
+    const startTime = new Date(form.startTime);
+    const endTime = new Date(form.endTime);
+
+    if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+      return "Invalid start time or end time";
+    }
+
+    if (startTime >= endTime) {
+      return "Start time must be before end time";
+    }
+
+    return "";
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationMessage = validateForm();
+    if (validationMessage) {
+      setError(validationMessage);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError("");
+      setNotice("");
+
+      const payload = {
+        parkingSlotId: form.parkingSlotId,
+        vehicleTypeId: form.vehicleTypeId,
+        startTime: toIsoDateTime(form.startTime),
+        endTime: toIsoDateTime(form.endTime),
+      };
+
+      if (modalMode === "edit") {
+        payload.status = form.status;
+      }
+
+      const endpoint =
+        modalMode === "create"
+          ? "/api/reservations"
+          : `/api/reservations/${selectedReservation.id}`;
+
+      const method = modalMode === "create" ? "POST" : "PUT";
+
+      const result = await apiRequest(endpoint, {
+        method,
+        body: JSON.stringify(payload),
+      });
+
+      const savedReservation = normalizeReservation(getApiItem(result));
+
+      if (modalMode === "create") {
+        setReservations((prev) => [savedReservation, ...prev]);
+        setNotice("Create reservation successfully");
+      } else {
+        setReservations((prev) =>
+          prev.map((item) =>
+            item.id === savedReservation.id ? savedReservation : item,
+          ),
+        );
+        setNotice("Update reservation successfully");
+      }
+
+      closeModal();
+    } catch (error) {
+      setError(error.message || "Cannot save reservation");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleView = async (reservation) => {
+    try {
+      setError("");
+      const result = await apiRequest(`/api/reservations/${reservation.id}`);
+      setSelectedReservation(normalizeReservation(getApiItem(result)));
+      setModalMode("detail");
+    } catch (error) {
+      setError(error.message || "Cannot load reservation detail");
+    }
+  };
+
+  const handleCancel = async (reservation) => {
+    if (
+      !window.confirm(
+        `Cancel reservation RSV-${reservation.displayId}? This will set status to CANCELLED.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError("");
+      setNotice("");
+
+      const result = await apiRequest(`/api/reservations/${reservation.id}`, {
+        method: "DELETE",
+      });
+
+      const cancelledReservation = normalizeReservation(getApiItem(result));
+
+      setReservations((prev) =>
+        prev.map((item) =>
+          item.id === cancelledReservation.id ? cancelledReservation : item,
+        ),
+      );
+
+      setNotice("Cancel reservation successfully");
+    } catch (error) {
+      setError(error.message || "Cannot cancel reservation");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const headerAction = (
-    <button className="flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-['Inter'] text-sm font-medium text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95">
+    <button
+      onClick={openCreateModal}
+      className="flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 font-['Inter'] text-sm font-medium text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95"
+    >
       <span className="material-symbols-outlined">add_circle</span>
       New Reservation
     </button>
@@ -938,6 +1502,9 @@ export default function ReservationsPage() {
       searchPlaceholder="Search reservations, customers, slots..."
     >
       <PageHeader />
+
+      <Alert type="error" message={error} onClose={() => setError("")} />
+      <Alert type="success" message={notice} onClose={() => setNotice("")} />
 
       <StatsGrid reservations={reservations} />
 
@@ -952,7 +1519,7 @@ export default function ReservationsPage() {
         setSelectedVehicleType={setSelectedVehicleType}
         selectedZone={selectedZone}
         setSelectedZone={setSelectedZone}
-        vehicleTypes={vehicleTypes}
+        vehicleTypes={filterVehicleTypes}
         zones={zones}
         filteredCount={filteredReservations.length}
         onResetFilters={resetFilters}
@@ -961,8 +1528,31 @@ export default function ReservationsPage() {
       <ReservationsTable
         reservations={filteredReservations}
         loading={loading}
-        error={error}
+        error={loading ? "" : ""}
+        onView={handleView}
+        onEdit={openEditModal}
+        onCancel={handleCancel}
       />
+
+      {(modalMode === "create" || modalMode === "edit") && (
+        <ReservationFormModal
+          mode={modalMode}
+          form={form}
+          setForm={setForm}
+          slots={parkingSlots}
+          vehicleTypes={vehicleTypes}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          onClose={closeModal}
+        />
+      )}
+
+      {modalMode === "detail" && (
+        <ReservationDetailModal
+          reservation={selectedReservation}
+          onClose={closeModal}
+        />
+      )}
     </AdminLayout>
   );
 }
