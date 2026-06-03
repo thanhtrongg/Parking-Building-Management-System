@@ -12,6 +12,68 @@ const RESERVATION_STATUSES = [
 
 const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN"];
 
+const decodeJwtPayload = (token) => {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((char) => `%${`00${char.charCodeAt(0).toString(16)}`.slice(-2)}`)
+        .join(""),
+    );
+
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
+
+const getStoredUserRole = () => {
+  const directRole = localStorage.getItem("role");
+  if (directRole) return directRole.toUpperCase();
+
+  const userStorageKeys = [
+    "user",
+    "currentUser",
+    "authUser",
+    "profile",
+    "auth",
+  ];
+
+  for (const key of userStorageKeys) {
+    try {
+      const value = localStorage.getItem(key);
+      if (!value) continue;
+
+      const parsedValue = JSON.parse(value);
+      const role =
+        parsedValue?.role ||
+        parsedValue?.user?.role ||
+        parsedValue?.data?.role ||
+        parsedValue?.data?.user?.role;
+
+      if (role) return role.toUpperCase();
+    } catch {
+      // Ignore invalid localStorage JSON.
+    }
+  }
+
+  const tokenKeys = ["token", "accessToken", "authToken"];
+
+  for (const key of tokenKeys) {
+    const token = localStorage.getItem(key);
+    const payload = token ? decodeJwtPayload(token) : null;
+    const role = payload?.role || payload?.user?.role;
+
+    if (role) return role.toUpperCase();
+  }
+
+  return "";
+};
+
 const statusConfig = {
   PENDING: {
     label: "Pending",
@@ -997,6 +1059,7 @@ function ReservationFormModal({
   slots,
   vehicleTypes,
   submitting,
+  isStaffEdit,
   onSubmit,
   onClose,
 }) {
@@ -1032,7 +1095,8 @@ function ReservationFormModal({
                   vehicleTypeId: nextSlot?.vehicleTypeId || prev.vehicleTypeId,
                 }));
               }}
-              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              disabled={isStaffEdit}
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
               required
             >
               <option value="">Select parking slot</option>
@@ -1060,7 +1124,8 @@ function ReservationFormModal({
                   vehicleTypeId: event.target.value,
                 }))
               }
-              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              disabled={isStaffEdit}
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
               required
             >
               <option value="">Select vehicle type</option>
@@ -1088,7 +1153,8 @@ function ReservationFormModal({
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, startTime: event.target.value }))
               }
-              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              disabled={isStaffEdit}
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
               required
             />
           </div>
@@ -1103,7 +1169,8 @@ function ReservationFormModal({
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, endTime: event.target.value }))
               }
-              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              disabled={isStaffEdit}
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
               required
             />
           </div>
@@ -1240,6 +1307,9 @@ export default function ReservationsPage() {
   const [modalMode, setModalMode] = useState(null);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [form, setForm] = useState(initialForm);
+
+  const currentUserRole = useMemo(() => getStoredUserRole(), []);
+  const isStaff = currentUserRole === "STAFF";
 
   useEffect(() => {
     let isMounted = true;
@@ -1395,16 +1465,18 @@ export default function ReservationsPage() {
       setError("");
       setNotice("");
 
-      const payload = {
-        parkingSlotId: form.parkingSlotId,
-        vehicleTypeId: form.vehicleTypeId,
-        startTime: toIsoDateTime(form.startTime),
-        endTime: toIsoDateTime(form.endTime),
-      };
-
-      if (modalMode === "edit") {
-        payload.status = form.status;
-      }
+      const payload =
+        modalMode === "edit" && isStaff
+          ? {
+              status: form.status,
+            }
+          : {
+              parkingSlotId: form.parkingSlotId,
+              vehicleTypeId: form.vehicleTypeId,
+              startTime: toIsoDateTime(form.startTime),
+              endTime: toIsoDateTime(form.endTime),
+              ...(modalMode === "edit" && { status: form.status }),
+            };
 
       const endpoint =
         modalMode === "create"
@@ -1542,6 +1614,7 @@ export default function ReservationsPage() {
           slots={parkingSlots}
           vehicleTypes={vehicleTypes}
           submitting={submitting}
+          isStaffEdit={modalMode === "edit" && isStaff}
           onSubmit={handleSubmit}
           onClose={closeModal}
         />
