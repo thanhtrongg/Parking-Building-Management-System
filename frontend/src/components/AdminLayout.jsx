@@ -1,42 +1,48 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 
-// Đã cập nhật: Bổ sung trang Parking Zones vào vị trí thứ 2 trong danh sách Menu
 const navItems = [
   {
     icon: "space_dashboard",
     label: "Dashboard",
     path: "/dashboard",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
-    icon: "grid_view", // Sử dụng icon grid_view trực quan cho danh sách khu vực
+    icon: "grid_view",
     label: "Parking Zones",
     path: "/admin-zones",
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     icon: "local_parking",
     label: "Parking Slots",
     path: "/parking-slots",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
     icon: "directions_car",
     label: "Vehicles",
     path: "/admin-vehicles",
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     icon: "event_available",
     label: "Reservations",
     path: "/reservations",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
     icon: "payments",
     label: "Payments",
     path: "/payments",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
     icon: "group",
     label: "Users",
     path: "/admin-users",
+    roles: ["ADMIN"],
   },
 ];
 
@@ -47,6 +53,12 @@ function getStoredUser() {
   } catch {
     return null;
   }
+}
+
+function normalizeRole(role) {
+  return String(role || "")
+    .trim()
+    .toUpperCase();
 }
 
 function getInitials(name = "System Admin") {
@@ -70,9 +82,15 @@ function getUserDisplay(user) {
     "System Admin";
 
   const email = user?.email || "admin@gmail.com";
-  const role = user?.role || "ADMIN";
+  const role = normalizeRole(user?.role || "ADMIN");
 
   return { name, email, role };
+}
+
+function getVisibleNavItems(role) {
+  const normalizedRole = normalizeRole(role);
+
+  return navItems.filter((item) => item.roles.includes(normalizedRole));
 }
 
 function Brand() {
@@ -98,6 +116,10 @@ function Brand() {
 
 function SidebarNav() {
   const location = useLocation();
+  const user = useMemo(() => getStoredUser(), []);
+  const { role } = getUserDisplay(user);
+
+  const visibleNavItems = useMemo(() => getVisibleNavItems(role), [role]);
 
   return (
     <nav className="mt-7 flex-1 px-3">
@@ -106,7 +128,7 @@ function SidebarNav() {
       </p>
 
       <div className="space-y-1.5">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
             location.pathname.startsWith(`${item.path}/`);
@@ -265,6 +287,7 @@ export default function AdminLayout({ children }) {
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/", { replace: true });
   };

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -10,52 +11,90 @@ import ReservationsPage from "./pages/ReservationsPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
 import UserMyBookingsPage from "./pages/UserMyBookingsPage";
 import UserSettingsPage from "./pages/UserSettingsPage";
-import ProtectedRoute from "./routes/ProtectedRoute";
 import ZonesPage from "./pages/ZonesPage";
 
+import ProtectedRoute from "./routes/ProtectedRoute";
+
 function App() {
-  const adminRoles = ["ADMIN", "MANAGER", "STAFF"];
+  const systemRoles = ["ADMIN", "MANAGER", "STAFF"];
+  const managementRoles = ["ADMIN", "MANAGER"];
+  const adminOnlyRoles = ["ADMIN"];
   const userRoles = ["USER"];
+
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<PublicLandingPage />} />
         <Route path="/login" element={<LoginPage />} />
 
+        {/* ADMIN / MANAGER / STAFF routes */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={adminRoles}>
+            <ProtectedRoute allowedRoles={systemRoles}>
               <DashboardPage />
             </ProtectedRoute>
           }
         />
+
         <Route
-          path="/admin-users"
+          path="/parking-slots"
           element={
-            <ProtectedRoute allowedRoles={adminRoles}>
-              <AdminUsersPage />
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <ParkingSlotsPage />
             </ProtectedRoute>
           }
         />
+
         <Route
-          path="/admin-vehicles"
+          path="/reservations"
           element={
-            <ProtectedRoute allowedRoles={adminRoles}>
-              <AdminVehiclesPage />
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <ReservationsPage />
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/payments"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <PaymentsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ADMIN / MANAGER only routes */}
         <Route
           path="/admin-zones"
           element={
-            <ProtectedRoute allowedRoles={adminRoles}>
+            <ProtectedRoute allowedRoles={managementRoles}>
               <ZonesPage />
             </ProtectedRoute>
           }
         />
-        <Route path="/payments" element={<PaymentsPage />} />
-        <Route path="/reservations" element={<ReservationsPage />} />
+
+        <Route
+          path="/admin-vehicles"
+          element={
+            <ProtectedRoute allowedRoles={managementRoles}>
+              <AdminVehiclesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ADMIN only routes */}
+        <Route
+          path="/admin-users"
+          element={
+            <ProtectedRoute allowedRoles={adminOnlyRoles}>
+              <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* USER routes */}
         <Route
           path="/user-dashboard"
           element={
@@ -64,6 +103,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/user-bookings"
           element={
@@ -72,6 +112,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/user-settings"
           element={
@@ -80,14 +121,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/parking-slots"
-          element={
-            <ProtectedRoute allowedRoles={adminRoles}>
-              <ParkingSlotsPage />
-            </ProtectedRoute>
-          }
-        />
+
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

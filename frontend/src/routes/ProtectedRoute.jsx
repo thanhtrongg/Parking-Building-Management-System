@@ -1,27 +1,54 @@
 import { Navigate } from "react-router-dom";
 
-export default function ProtectedRoute({ children, allowedRoles }) {
-  const token = localStorage.getItem("accessToken");
-  const user = JSON.parse(localStorage.getItem("user"));
+function getStoredUser() {
+  try {
+    const rawUser = localStorage.getItem("user");
+    return rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    return null;
+  }
+}
 
-  if (!token || !user) {
+function normalizeRole(role) {
+  return String(role || "")
+    .trim()
+    .toUpperCase();
+}
+
+function getRedirectPathByRole(role) {
+  const normalizedRole = normalizeRole(role);
+
+  if (["ADMIN", "MANAGER", "STAFF"].includes(normalizedRole)) {
+    return "/dashboard";
+  }
+
+  if (normalizedRole === "USER") {
+    return "/user-dashboard";
+  }
+
+  return "/login";
+}
+
+export default function ProtectedRoute({ children, allowedRoles = [] }) {
+  const token =
+    localStorage.getItem("accessToken") || localStorage.getItem("token");
+
+  const user = getStoredUser();
+  const userRole = normalizeRole(user?.role);
+
+  if (!token || !userRole) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    if (
-      user.role === "SYSTEM_ADMIN" ||
-      user.role === "FACILITY_MANAGER" ||
-      user.role === "PARKING_STAFF"
-    ) {
-      return <Navigate to="/dashboard" replace />;
-    }
+  const normalizedAllowedRoles = allowedRoles.map((role) =>
+    normalizeRole(role),
+  );
 
-    if (user.role === "DRIVER") {
-      return <Navigate to="/user-dashboard" replace />;
-    }
-
-    return <Navigate to="/login" replace />;
+  if (
+    normalizedAllowedRoles.length > 0 &&
+    !normalizedAllowedRoles.includes(userRole)
+  ) {
+    return <Navigate to={getRedirectPathByRole(userRole)} replace />;
   }
 
   return children;
