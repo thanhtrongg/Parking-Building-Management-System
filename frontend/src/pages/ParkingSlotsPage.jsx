@@ -2,72 +2,55 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
 import { apiRequest } from "../services/api";
 
+const SLOT_STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"];
+
 const statusConfig = {
   AVAILABLE: {
     label: "Available",
-    className: "bg-green-100 text-green-700 border-green-200",
-    dot: "bg-green-500",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    dot: "bg-emerald-500",
     icon: "check_circle",
   },
   OCCUPIED: {
     label: "Occupied",
-    className: "bg-blue-100 text-blue-700 border-blue-200",
+    className: "border-blue-200 bg-blue-50 text-blue-700",
     dot: "bg-blue-500",
     icon: "directions_car",
   },
   RESERVED: {
     label: "Reserved",
-    className: "bg-amber-100 text-amber-700 border-amber-200",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
     dot: "bg-amber-500",
     icon: "event_available",
   },
   MAINTENANCE: {
     label: "Maintenance",
-    className: "bg-red-100 text-red-700 border-red-200",
-    dot: "bg-red-500",
+    className: "border-rose-200 bg-rose-50 text-rose-700",
+    dot: "bg-rose-500",
     icon: "build",
   },
 };
+
+function getSlotNumber(slot) {
+  return slot?.slotNumber || slot?.slotName || slot?.slot_name || "";
+}
+
+function getZoneId(slot) {
+  return slot?.zoneId || slot?.zone_id || "";
+}
+
+function getDistance(slot) {
+  return slot?.distanceToGate ?? slot?.distance_to_gate ?? 0;
+}
 
 function getStatusMeta(status) {
   return (
     statusConfig[status] || {
       label: status || "Unknown",
-      className: "bg-slate-100 text-slate-700 border-slate-200",
+      className: "border-slate-200 bg-slate-50 text-slate-700",
       dot: "bg-slate-400",
       icon: "help",
     }
-  );
-}
-
-function SummaryCard({
-  title,
-  value,
-  icon,
-  iconWrapClass = "bg-slate-100",
-  iconClass = "text-slate-700",
-}) {
-  return (
-    <div className="rounded-2xl border border-[#d7d9e4] bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
-            {title}
-          </p>
-          <h3 className="mt-2 font-['Geist'] text-3xl font-bold text-[#191b23]">
-            {value}
-          </h3>
-        </div>
-
-        <div
-          className={`flex h-12 w-12 items-center justify-center rounded-full ${iconWrapClass}`}
-        >
-          <span className={`material-symbols-outlined ${iconClass}`}>
-            {icon}
-          </span>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -76,7 +59,7 @@ function StatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${meta.className}`}
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${meta.className}`}
     >
       <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
       {meta.label}
@@ -84,486 +67,208 @@ function StatusBadge({ status }) {
   );
 }
 
-function ZoneChips({ zones, selectedZone, setSelectedZone }) {
+function StatCard({ title, value, icon, subtitle }) {
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        onClick={() => setSelectedZone("ALL")}
-        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-          selectedZone === "ALL"
-            ? "border-[#2563eb] bg-[#2563eb] text-white"
-            : "border-[#d7d9e4] bg-white text-[#374151] hover:bg-[#f8f9fc]"
-        }`}
-      >
-        All Zones
-      </button>
+    <div className="group relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-5 shadow-sm ring-1 ring-slate-100 backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/70">
+      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-100/60 blur-2xl transition group-hover:bg-blue-200/70" />
 
-      {zones.map((zone) => (
-        <button
-          key={zone}
-          onClick={() => setSelectedZone(zone)}
-          className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-            selectedZone === zone
-              ? "border-[#2563eb] bg-[#2563eb] text-white"
-              : "border-[#d7d9e4] bg-white text-[#374151] hover:bg-[#f8f9fc]"
-          }`}
-        >
-          {zone}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function FilterToolbar({
-  keyword,
-  setKeyword,
-  selectedStatus,
-  setSelectedStatus,
-  selectedType,
-  setSelectedType,
-  selectedZone,
-  setSelectedZone,
-  zones,
-  vehicleTypes,
-  filteredCount,
-  onResetFilters,
-}) {
-  return (
-    <div className="rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-[#eceef5] p-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative w-full lg:max-w-md">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
-              search
-            </span>
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search slot name, zone, vehicle type..."
-              className="h-11 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] pl-11 pr-4 text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
-            />
-          </div>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 text-sm outline-none transition focus:border-[#2563eb]"
-          >
-            <option value="ALL">All Status</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="OCCUPIED">Occupied</option>
-            <option value="RESERVED">Reserved</option>
-            <option value="MAINTENANCE">Maintenance</option>
-          </select>
-
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 text-sm outline-none transition focus:border-[#2563eb]"
-          >
-            <option value="ALL">All Types</option>
-            {vehicleTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={onResetFilters}
-            className="h-11 rounded-xl border border-[#d7d9e4] bg-white px-4 text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]"
-          >
-            Reset Filters
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 lg:justify-end">
-          <p className="text-sm text-[#6b7280]">
-            Showing{" "}
-            <span className="font-semibold text-[#191b23]">
-              {filteredCount}
-            </span>{" "}
-            slots
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            {title}
           </p>
-
-          <div className="flex items-center gap-1">
-            <button className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8]">
-              <span className="material-symbols-outlined">download</span>
-            </button>
-            <button className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8]">
-              <span className="material-symbols-outlined">print</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4">
-        <ZoneChips
-          zones={zones}
-          selectedZone={selectedZone}
-          setSelectedZone={setSelectedZone}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SlotsTable({ slots, loading, error, onView, onEdit }) {
-  if (loading) {
-    return (
-      <div className="rounded-2xl border border-[#d7d9e4] bg-white p-10 text-center text-sm text-[#6b7280] shadow-sm">
-        Loading parking slots...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center text-sm text-red-600 shadow-sm">
-        {error}
-      </div>
-    );
-  }
-
-  if (slots.length === 0) {
-    return (
-      <div className="rounded-2xl border border-[#d7d9e4] bg-white p-10 text-center text-sm text-[#6b7280] shadow-sm">
-        No parking slots found.
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-hidden rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse">
-          <thead className="bg-[#f7f8fc]">
-            <tr>
-              {[
-                "Slot",
-                "Zone",
-                "Vehicle Type",
-                "Status",
-                "Vehicle",
-                "Distance",
-                "Actions",
-              ].map((heading) => (
-                <th
-                  key={heading}
-                  className={`px-6 py-4 text-left font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] ${
-                    heading === "Actions" ? "text-right" : ""
-                  }`}
-                >
-                  {heading}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-[#eceef5]">
-            {slots.map((slot) => (
-              <tr key={slot.id} className="transition hover:bg-[#fafbff]">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef3ff]">
-                      <span className="material-symbols-outlined text-[#2563eb]">
-                        local_parking
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-['Geist'] text-sm font-semibold text-[#191b23]">
-                        {slot.slotName}
-                      </p>
-                      <p className="text-xs text-[#6b7280]">Slot identifier</p>
-                    </div>
-                  </div>
-                </td>
-
-                <td className="px-6 py-4">
-                  <p className="max-w-[240px] text-sm font-medium text-[#191b23]">
-                    {slot.zoneName || "N/A"}
-                  </p>
-                </td>
-
-                <td className="px-6 py-4 text-sm text-[#374151]">
-                  {slot.vehicleTypeName || "N/A"}
-                </td>
-
-                <td className="px-6 py-4 text-sm text-[#374151]">
-                  <StatusBadge status={slot.status} />
-                </td>
-
-                <td className="px-6 py-4 text-sm text-[#374151]">
-                  {slot.currentVehicle || "-"}
-                </td>
-
-                <td className="px-6 py-4 text-sm text-[#374151]">
-                  {slot.distanceToGate ?? 0} m
-                </td>
-
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => onView(slot)}
-                      className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8] hover:text-[#2563eb]"
-                      title="View details"
-                    >
-                      <span className="material-symbols-outlined">
-                        visibility
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => onEdit(slot)}
-                      className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8] hover:text-[#2563eb]"
-                      title="Edit slot"
-                    >
-                      <span className="material-symbols-outlined">edit</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function FieldLabel({ children }) {
-  return (
-    <label className="font-['Geist'] text-[13px] font-semibold text-[#434655]">
-      {children}
-    </label>
-  );
-}
-
-function SlotDetailsModal({ slot, onClose }) {
-  const detailRows = [
-    ["Slot Name", slot.slotName],
-    ["Zone", slot.zoneName || "N/A"],
-    ["Vehicle Type", slot.vehicleTypeName || "N/A"],
-    ["Status", getStatusMeta(slot.status).label],
-    ["Distance to Gate", `${slot.distanceToGate ?? 0} m`],
-    ["Current Vehicle", slot.currentVehicle || "-"],
-    ["Entry Time", slot.entryTime || "-"],
-    ["Session Status", slot.sessionStatus || "-"],
-  ];
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#eceef5] px-6 py-5">
-          <h3 className="font-['Geist'] text-xl font-semibold text-[#191b23]">
-            Slot Details
-          </h3>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-[#6b7280] hover:bg-[#f3f4f8]"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+          <h3 className="mt-3 text-3xl font-black text-slate-950">{value}</h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>
         </div>
 
-        <div className="space-y-3 p-6">
-          {detailRows.map(([label, value]) => (
-            <div key={label} className="flex items-start justify-between gap-4">
-              <p className="font-['Geist'] text-[13px] font-semibold text-[#737686]">
-                {label}
-              </p>
-              <p className="text-right font-['Inter'] text-sm font-medium text-[#191b23]">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex justify-end border-t border-[#eceef5] px-6 py-4">
-          <button
-            onClick={onClose}
-            className="rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-medium text-white transition hover:brightness-110"
-          >
-            Close
-          </button>
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-300">
+          <span className="material-symbols-outlined">{icon}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function SlotFormModal({ mode, slot, zones, vehicleTypes, onClose, onSubmit }) {
-  const [form, setForm] = useState(() => ({
-    slotName: slot?.slotName || "",
-    zoneName: slot?.zoneName || "",
-    vehicleTypeName: slot?.vehicleTypeName || "",
+function EmptyState({ onCreate }) {
+  return (
+    <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white/80 p-12 text-center shadow-sm">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-600">
+        <span className="material-symbols-outlined text-3xl">
+          local_parking
+        </span>
+      </div>
+
+      <h3 className="mt-5 text-xl font-black text-slate-950">
+        No parking slots found
+      </h3>
+      <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+        Try changing your filters or create a new parking slot for this parking
+        building.
+      </p>
+
+      <button
+        onClick={onCreate}
+        className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700"
+      >
+        <span className="material-symbols-outlined text-lg">add</span>
+        Add First Slot
+      </button>
+    </div>
+  );
+}
+
+function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
+  const [form, setForm] = useState({
+    slotNumber: getSlotNumber(slot),
+    zoneId: getZoneId(slot),
     status: slot?.status || "AVAILABLE",
-    distanceToGate: slot?.distanceToGate ?? "",
-  }));
+    distanceToGate: getDistance(slot),
+  });
 
-  const title = mode === "edit" ? "Edit Slot" : "Add New Slot";
-  const submitLabel = mode === "edit" ? "Save" : "Create";
+  const isEdit = mode === "edit";
 
   const updateField = (field, value) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    onSubmit({
+      slotNumber: form.slotNumber.trim(),
+      zoneId: form.zoneId,
+      status: form.status,
+      distanceToGate: Number(form.distanceToGate || 0),
+    });
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#eceef5] px-6 py-5">
-          <h3 className="font-['Geist'] text-xl font-semibold text-[#191b23]">
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-[#6b7280] hover:bg-[#f3f4f8]"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-md">
+      <div className="w-full max-w-xl overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/20">
+        <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 px-6 py-6 text-white">
+          <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-500/30 blur-3xl" />
+
+          <div className="relative flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-200">
+                Parking Slot
+              </p>
+              <h3 className="mt-2 text-2xl font-black">
+                {isEdit ? "Edit Slot" : "Create New Slot"}
+              </h3>
+              <p className="mt-1 text-sm text-slate-300">
+                Connect slot data with zone, status and gate distance.
+              </p>
+            </div>
+
+            <button
+              onClick={onClose}
+              type="button"
+              className="rounded-2xl p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
         </div>
 
-        <form
-          className="space-y-4 p-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit({
-              ...slot,
-              ...form,
-              distanceToGate: Number(form.distanceToGate || 0),
-            });
-          }}
-        >
-          <div className="space-y-2">
-            <FieldLabel>Slot Name</FieldLabel>
+        <form className="space-y-5 p-6" onSubmit={handleSubmit}>
+          <div>
+            <label className="mb-2 block text-sm font-bold text-slate-700">
+              Slot Number
+            </label>
             <input
-              value={form.slotName}
-              onChange={(e) => updateField("slotName", e.target.value)}
-              className="h-11 w-full rounded-xl border border-[#d7d9e4] px-4 text-sm outline-none focus:border-[#2563eb]"
-              placeholder="Slot name"
+              value={form.slotNumber}
+              onChange={(event) =>
+                updateField("slotNumber", event.target.value)
+              }
+              placeholder="Example: A-D1-001"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
               required
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <FieldLabel>Zone</FieldLabel>
-              {zones.length > 0 ? (
-                <select
-                  value={form.zoneName}
-                  onChange={(e) => updateField("zoneName", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-[#d7d9e4] px-4 text-sm outline-none focus:border-[#2563eb]"
-                  required
-                >
-                  <option value="">Select zone</option>
-                  {zones.map((zone) => (
-                    <option key={zone} value={zone}>
-                      {zone}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  value={form.zoneName}
-                  onChange={(e) => updateField("zoneName", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-[#d7d9e4] px-4 text-sm outline-none focus:border-[#2563eb]"
-                  placeholder="Zone"
-                  required
-                />
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <FieldLabel>Type</FieldLabel>
-              {vehicleTypes.length > 0 ? (
-                <select
-                  value={form.vehicleTypeName}
-                  onChange={(e) =>
-                    updateField("vehicleTypeName", e.target.value)
-                  }
-                  className="h-11 w-full rounded-xl border border-[#d7d9e4] px-4 text-sm outline-none focus:border-[#2563eb]"
-                  required
-                >
-                  <option value="">Select type</option>
-                  {vehicleTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  value={form.vehicleTypeName}
-                  onChange={(e) =>
-                    updateField("vehicleTypeName", e.target.value)
-                  }
-                  className="h-11 w-full rounded-xl border border-[#d7d9e4] px-4 text-sm outline-none focus:border-[#2563eb]"
-                  placeholder="Vehicle type"
-                  required
-                />
-              )}
-            </div>
+          <div>
+            <label className="mb-2 block text-sm font-bold text-slate-700">
+              Parking Zone
+            </label>
+            <select
+              value={form.zoneId}
+              onChange={(event) => updateField("zoneId", event.target.value)}
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              required
+            >
+              <option value="">Select zone</option>
+              {zones.map((zone) => (
+                <option key={zone.id} value={zone.id}>
+                  {zone.zoneName || zone.zone_name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <FieldLabel>Status</FieldLabel>
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700">
+                Status
+              </label>
               <select
                 value={form.status}
-                onChange={(e) => updateField("status", e.target.value)}
-                className="h-11 w-full rounded-xl border border-[#d7d9e4] px-4 text-sm outline-none focus:border-[#2563eb]"
+                onChange={(event) => updateField("status", event.target.value)}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
               >
-                <option value="AVAILABLE">AVAILABLE</option>
-                <option value="OCCUPIED">OCCUPIED</option>
-                <option value="RESERVED">RESERVED</option>
-                <option value="MAINTENANCE">MAINTENANCE</option>
+                {SLOT_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
               </select>
             </div>
 
-            <div className="space-y-2">
-              <FieldLabel>Distance to Gate</FieldLabel>
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700">
+                Distance To Gate
+              </label>
               <div className="flex items-center gap-2">
                 <input
                   value={form.distanceToGate}
-                  onChange={(e) =>
-                    updateField("distanceToGate", e.target.value)
+                  onChange={(event) =>
+                    updateField("distanceToGate", event.target.value)
                   }
-                  className="h-11 w-full rounded-xl border border-[#d7d9e4] px-4 text-sm outline-none focus:border-[#2563eb]"
-                  min="0"
-                  placeholder="25"
                   type="number"
+                  min="0"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 />
-                <span className="font-['Geist'] text-sm font-semibold text-[#737686]">
+                <span className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-500">
                   m
                 </span>
               </div>
             </div>
           </div>
 
-          {mode === "edit" && slot?.status === "OCCUPIED" && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
-              This slot has an active vehicle session. Status changes only
-              update the current view until the API supports write operations.
-            </div>
-          )}
-
-          {mode === "create" && zones.length === 0 && (
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-700">
-              Load parking slot data first so zone and type options are
-              available.
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-[#d7d9e4] px-5 py-2.5 text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]"
+              disabled={saving}
+              className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
             >
               Cancel
             </button>
-            <button className="rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-medium text-white transition hover:brightness-110">
-              {submitLabel}
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving && (
+                <span className="material-symbols-outlined animate-spin text-lg">
+                  progress_activity
+                </span>
+              )}
+              {isEdit ? "Save Changes" : "Create Slot"}
             </button>
           </div>
         </form>
@@ -574,64 +279,79 @@ function SlotFormModal({ mode, slot, zones, vehicleTypes, onClose, onSubmit }) {
 
 export default function ParkingSlotsPage() {
   const [parkingSlots, setParkingSlots] = useState([]);
+  const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
+
   const [keyword, setKeyword] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
-  const [selectedType, setSelectedType] = useState("ALL");
   const [selectedZone, setSelectedZone] = useState("ALL");
+
   const [modalMode, setModalMode] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
-    const fetchParkingSlots = async () => {
+    let ignore = false;
+
+    async function loadInitialData() {
       try {
-        setLoading(true);
+        const [slotResult, zoneResult] = await Promise.all([
+          apiRequest("/api/parking-slots"),
+          apiRequest("/api/zones"),
+        ]);
+
+        if (ignore) return;
+
+        setParkingSlots(slotResult.data || []);
+        setZones(zoneResult.data || []);
         setError("");
+      } catch (err) {
+        if (ignore) return;
 
-        const result = await apiRequest("/api/parking-slots");
-        setParkingSlots(result.data || []);
-      } catch (error) {
-        setError(error.message || "Cannot load parking slots");
+        setError(err.message || "Cannot load parking slot data");
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
-    };
+    }
 
-    fetchParkingSlots();
+    loadInitialData();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  const zones = useMemo(() => {
-    const zoneNames = parkingSlots.map((slot) => slot.zoneName).filter(Boolean);
-    return [...new Set(zoneNames)];
-  }, [parkingSlots]);
+  const fetchData = async () => {
+    try {
+      setRefreshing(true);
+      setError("");
 
-  const vehicleTypes = useMemo(() => {
-    const typeNames = parkingSlots
-      .map((slot) => slot.vehicleTypeName)
-      .filter(Boolean);
-    return [...new Set(typeNames)];
-  }, [parkingSlots]);
+      const [slotResult, zoneResult] = await Promise.all([
+        apiRequest("/api/parking-slots"),
+        apiRequest("/api/zones"),
+      ]);
 
-  const filteredSlots = useMemo(() => {
-    return parkingSlots.filter((slot) => {
-      const matchesKeyword =
-        `${slot.slotName || ""} ${slot.zoneName || ""} ${slot.vehicleTypeName || ""}`
-          .toLowerCase()
-          .includes(keyword.toLowerCase());
+      setParkingSlots(slotResult.data || []);
+      setZones(zoneResult.data || []);
+    } catch (err) {
+      setError(err.message || "Cannot refresh parking slot data");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-      const matchesStatus =
-        selectedStatus === "ALL" || slot.status === selectedStatus;
-
-      const matchesZone =
-        selectedZone === "ALL" || slot.zoneName === selectedZone;
-
-      const matchesType =
-        selectedType === "ALL" || slot.vehicleTypeName === selectedType;
-
-      return matchesKeyword && matchesStatus && matchesZone && matchesType;
-    });
-  }, [parkingSlots, keyword, selectedStatus, selectedZone, selectedType]);
+  const zoneMap = useMemo(() => {
+    return zones.reduce((map, zone) => {
+      map[zone.id] = zone.zoneName || zone.zone_name;
+      return map;
+    }, {});
+  }, [zones]);
 
   const summary = useMemo(() => {
     const countByStatus = (status) =>
@@ -646,26 +366,29 @@ export default function ParkingSlotsPage() {
     };
   }, [parkingSlots]);
 
-  const resetFilters = () => {
-    setKeyword("");
-    setSelectedStatus("ALL");
-    setSelectedType("ALL");
-    setSelectedZone("ALL");
-  };
+  const filteredSlots = useMemo(() => {
+    return parkingSlots.filter((slot) => {
+      const slotNumber = getSlotNumber(slot);
+      const zoneName = slot.zoneName || zoneMap[getZoneId(slot)] || "";
+      const vehicleTypeName = slot.vehicleTypeName || "";
 
-  const closeModal = () => {
-    setModalMode(null);
-    setSelectedSlot(null);
-  };
+      const matchesKeyword = `${slotNumber} ${zoneName} ${vehicleTypeName}`
+        .toLowerCase()
+        .includes(keyword.toLowerCase());
 
-  const openViewModal = (slot) => {
-    setSelectedSlot(slot);
-    setModalMode("view");
-  };
+      const matchesStatus =
+        selectedStatus === "ALL" || slot.status === selectedStatus;
 
-  const openEditModal = (slot) => {
-    setSelectedSlot(slot);
-    setModalMode("edit");
+      const matchesZone =
+        selectedZone === "ALL" || getZoneId(slot) === selectedZone;
+
+      return matchesKeyword && matchesStatus && matchesZone;
+    });
+  }, [parkingSlots, keyword, selectedStatus, selectedZone, zoneMap]);
+
+  const showToast = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2500);
   };
 
   const openCreateModal = () => {
@@ -673,32 +396,82 @@ export default function ParkingSlotsPage() {
     setModalMode("create");
   };
 
-  const handleCreateSlot = (slotData) => {
-    const newSlot = {
-      ...slotData,
-      id: `local-${Date.now()}`,
-      currentVehicle: slotData.status === "OCCUPIED" ? "51A-12345" : "-",
-      entryTime: slotData.status === "OCCUPIED" ? "08:30 AM" : "-",
-      sessionStatus: slotData.status === "OCCUPIED" ? "ACTIVE" : "-",
-    };
-
-    setParkingSlots((current) => [newSlot, ...current]);
-    closeModal();
+  const openEditModal = (slot) => {
+    setSelectedSlot(slot);
+    setModalMode("edit");
   };
 
-  const handleUpdateSlot = (slotData) => {
-    setParkingSlots((current) =>
-      current.map((slot) =>
-        slot.id === slotData.id ? { ...slot, ...slotData } : slot,
-      ),
+  const closeModal = () => {
+    setModalMode(null);
+    setSelectedSlot(null);
+  };
+
+  const handleSubmitSlot = async (payload) => {
+    try {
+      setSaving(true);
+
+      if (modalMode === "create") {
+        await apiRequest("/api/parking-slots", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+
+        showToast("Create parking slot successfully");
+      }
+
+      if (modalMode === "edit") {
+        await apiRequest(`/api/parking-slots/${selectedSlot.id}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+
+        showToast("Update parking slot successfully");
+      }
+
+      closeModal();
+      await fetchData();
+    } catch (err) {
+      alert(err.message || "Save parking slot failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteSlot = async (slot) => {
+    const slotNumber = getSlotNumber(slot);
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete slot "${slotNumber}"?`,
     );
-    closeModal();
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(slot.id);
+
+      await apiRequest(`/api/parking-slots/${slot.id}`, {
+        method: "DELETE",
+      });
+
+      showToast("Delete parking slot successfully");
+      await fetchData();
+    } catch (err) {
+      alert(err.message || "Delete parking slot failed");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const resetFilters = () => {
+    setKeyword("");
+    setSelectedStatus("ALL");
+    setSelectedZone("ALL");
   };
 
   const headerAction = (
     <button
       onClick={openCreateModal}
-      className="flex items-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95"
+      className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 active:scale-95"
     >
       <span className="material-symbols-outlined text-lg">add</span>
       Add Slot
@@ -706,106 +479,320 @@ export default function ParkingSlotsPage() {
   );
 
   return (
-    <AdminLayout
-      activeLabel="Parking Slots"
-      headerAction={headerAction}
-      searchPlaceholder="Search slot name, zone, vehicle type..."
-    >
-      <div className="mb-8">
-        <h2 className="font-['Geist'] text-3xl font-semibold text-[#191b23]">
-          Parking Slot Management
-        </h2>
-        <p className="mt-2 max-w-3xl text-sm text-[#6b7280]">
-          Manage parking slots more easily with a clear table view, fast
-          filters, and real-time status tracking by zone and vehicle type.
-        </p>
+    <AdminLayout activeLabel="Parking Slots" headerAction={headerAction}>
+      <div className="mb-8 overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-white via-blue-50/80 to-sky-50 p-6 shadow-sm ring-1 ring-white">
+        <div className="relative">
+          <div className="absolute -right-10 -top-16 h-40 w-40 rounded-full bg-blue-200/60 blur-3xl" />
+          <div className="absolute bottom-0 right-32 h-24 w-24 rounded-full bg-cyan-200/60 blur-2xl" />
+          <div className="absolute -bottom-14 left-20 h-28 w-28 rounded-full bg-indigo-100/70 blur-3xl" />
+
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-blue-600 shadow-sm">
+                <span className="material-symbols-outlined text-[16px]">
+                  local_parking
+                </span>
+                Parking Operations
+              </div>
+
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                Parking Slot Management
+              </h2>
+
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
+                Manage parking slots with a modern CRUD dashboard. Create new
+                slots, update zone/status, monitor availability, and keep the
+                parking building organized.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                  {summary.available} Available
+                </span>
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                  {summary.occupied} Occupied
+                </span>
+                <span className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                  {summary.reserved} Reserved
+                </span>
+                <span className="rounded-full border border-rose-100 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
+                  {summary.maintenance} Maintenance
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-lg">add</span>
+                New Slot
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {toast && (
+        <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm">
+          {toast}
+        </div>
+      )}
+
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <SummaryCard
+        <StatCard
           title="Total Slots"
           value={summary.total}
           icon="grid_view"
-          iconWrapClass="bg-slate-100"
-          iconClass="text-slate-700"
+          subtitle="All managed slots"
         />
-        <SummaryCard
+        <StatCard
           title="Available"
           value={summary.available}
           icon="check_circle"
-          iconWrapClass="bg-green-50"
-          iconClass="text-green-600"
+          subtitle="Ready for parking"
         />
-        <SummaryCard
+        <StatCard
           title="Occupied"
           value={summary.occupied}
           icon="directions_car"
-          iconWrapClass="bg-blue-50"
-          iconClass="text-blue-600"
+          subtitle="Currently in use"
         />
-        <SummaryCard
+        <StatCard
           title="Reserved"
           value={summary.reserved}
           icon="event_available"
-          iconWrapClass="bg-amber-50"
-          iconClass="text-amber-600"
+          subtitle="Booked by users"
         />
-        <SummaryCard
+        <StatCard
           title="Maintenance"
           value={summary.maintenance}
           icon="build"
-          iconWrapClass="bg-red-50"
-          iconClass="text-red-600"
+          subtitle="Need attention"
         />
       </div>
 
-      <div className="mb-6">
-        <FilterToolbar
-          keyword={keyword}
-          setKeyword={setKeyword}
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-          selectedType={selectedType}
-          setSelectedType={setSelectedType}
-          selectedZone={selectedZone}
-          setSelectedZone={setSelectedZone}
-          zones={zones}
-          vehicleTypes={vehicleTypes}
-          filteredCount={filteredSlots.length}
-          onResetFilters={resetFilters}
-        />
+      <div className="mb-6 rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm ring-1 ring-slate-100 backdrop-blur-xl">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px_260px_auto]">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              search
+            </span>
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="Search slot number, zone, vehicle type..."
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <select
+            value={selectedStatus}
+            onChange={(event) => setSelectedStatus(event.target.value)}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="ALL">All Status</option>
+            {SLOT_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedZone}
+            onChange={(event) => setSelectedZone(event.target.value)}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="ALL">All Zones</option>
+            {zones.map((zone) => (
+              <option key={zone.id} value={zone.id}>
+                {zone.zoneName || zone.zone_name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={resetFilters}
+            className="h-12 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-600 transition hover:bg-slate-50"
+          >
+            Reset
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-medium text-slate-500">
+            Showing{" "}
+            <span className="font-black text-slate-950">
+              {filteredSlots.length}
+            </span>{" "}
+            of{" "}
+            <span className="font-black text-slate-950">
+              {parkingSlots.length}
+            </span>{" "}
+            slots
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {SLOT_STATUSES.map((status) => (
+              <button
+                key={status}
+                onClick={() => setSelectedStatus(status)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${
+                  selectedStatus === status
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                }`}
+              >
+                {getStatusMeta(status).label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <SlotsTable
-        slots={filteredSlots}
-        loading={loading}
-        error={error}
-        onView={openViewModal}
-        onEdit={openEditModal}
-      />
+      {loading ? (
+        <div className="rounded-[2rem] border border-white/70 bg-white/85 p-12 text-center shadow-sm ring-1 ring-slate-100 backdrop-blur-xl">
+          <span className="material-symbols-outlined animate-spin text-4xl text-blue-600">
+            progress_activity
+          </span>
+          <p className="mt-4 text-sm font-bold text-slate-500">
+            Loading parking slots...
+          </p>
+        </div>
+      ) : error ? (
+        <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-12 text-center text-sm font-bold text-rose-700">
+          {error}
+        </div>
+      ) : filteredSlots.length === 0 ? (
+        <EmptyState onCreate={openCreateModal} />
+      ) : (
+        <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-sm ring-1 ring-slate-100 backdrop-blur-xl">
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/80">
+                  <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                    Slot
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                    Zone
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                    Vehicle Type
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                    Distance
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
 
-      {modalMode === "view" && selectedSlot && (
-        <SlotDetailsModal slot={selectedSlot} onClose={closeModal} />
+              <tbody className="divide-y divide-slate-100">
+                {filteredSlots.map((slot) => {
+                  const slotNumber = getSlotNumber(slot);
+                  const zoneName =
+                    slot.zoneName || zoneMap[getZoneId(slot)] || "N/A";
+                  const distance = getDistance(slot);
+
+                  return (
+                    <tr
+                      key={slot.id}
+                      className="group transition hover:bg-blue-50/40"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
+                            <span className="material-symbols-outlined">
+                              local_parking
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-950">
+                              {slotNumber}
+                            </p>
+                            <p className="mt-0.5 max-w-[160px] truncate text-xs font-medium text-slate-400">
+                              {slot.id}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p className="max-w-[240px] text-sm font-bold text-slate-800">
+                          {zoneName}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                          {slot.vehicleTypeName || "N/A"}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <StatusBadge status={slot.status} />
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-black text-slate-800">
+                          {distance} m
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEditModal(slot)}
+                            className="rounded-2xl p-2.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                            title="Edit"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">
+                              edit
+                            </span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteSlot(slot)}
+                            disabled={deletingId === slot.id}
+                            className="rounded-2xl p-2.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                            title="Delete"
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[20px] ${
+                                deletingId === slot.id ? "animate-spin" : ""
+                              }`}
+                            >
+                              {deletingId === slot.id
+                                ? "progress_activity"
+                                : "delete"}
+                            </span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
-      {modalMode === "edit" && selectedSlot && (
+      {(modalMode === "create" || modalMode === "edit") && (
         <SlotFormModal
-          mode="edit"
+          mode={modalMode}
           slot={selectedSlot}
           zones={zones}
-          vehicleTypes={vehicleTypes}
+          saving={saving}
           onClose={closeModal}
-          onSubmit={handleUpdateSlot}
-        />
-      )}
-
-      {modalMode === "create" && (
-        <SlotFormModal
-          mode="create"
-          zones={zones}
-          vehicleTypes={vehicleTypes}
-          onClose={closeModal}
-          onSubmit={handleCreateSlot}
+          onSubmit={handleSubmitSlot}
         />
       )}
     </AdminLayout>
