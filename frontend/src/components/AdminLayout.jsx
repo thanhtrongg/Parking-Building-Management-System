@@ -39,6 +39,12 @@ const navItems = [
     roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
+    icon: "price_change",
+    label: "Pricing Policies",
+    path: "/pricing-policies",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
+  },
+  {
     icon: "group",
     label: "Users",
     path: "/admin-users",
