@@ -54,6 +54,26 @@ function getStatusMeta(status) {
   );
 }
 
+function getStoredUser() {
+  try {
+    const rawUser = localStorage.getItem("user");
+    return rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeRole(role) {
+  return String(role || "")
+    .trim()
+    .toUpperCase();
+}
+
+function getUserRole() {
+  const user = getStoredUser();
+  return normalizeRole(user?.role || localStorage.getItem("role"));
+}
+
 function StatusBadge({ status }) {
   const meta = getStatusMeta(status);
 
@@ -89,7 +109,7 @@ function StatCard({ title, value, icon, subtitle }) {
   );
 }
 
-function EmptyState({ onCreate }) {
+function EmptyState({ canManage, onCreate }) {
   return (
     <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white/80 p-12 text-center shadow-sm">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-600">
@@ -106,13 +126,15 @@ function EmptyState({ onCreate }) {
         building.
       </p>
 
-      <button
-        onClick={onCreate}
-        className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700"
-      >
-        <span className="material-symbols-outlined text-lg">add</span>
-        Add First Slot
-      </button>
+      {canManage && (
+        <button
+          onClick={onCreate}
+          className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700"
+        >
+          <span className="material-symbols-outlined text-lg">add</span>
+          Add First Slot
+        </button>
+      )}
     </div>
   );
 }
@@ -281,7 +303,6 @@ export default function ParkingSlotsPage() {
   const [parkingSlots, setParkingSlots] = useState([]);
   const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
@@ -293,6 +314,9 @@ export default function ParkingSlotsPage() {
 
   const [modalMode, setModalMode] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const role = getUserRole();
+  const canManage = ["ADMIN", "MANAGER"].includes(role);
 
   useEffect(() => {
     let ignore = false;
@@ -329,7 +353,6 @@ export default function ParkingSlotsPage() {
 
   const fetchData = async () => {
     try {
-      setRefreshing(true);
       setError("");
 
       const [slotResult, zoneResult] = await Promise.all([
@@ -341,8 +364,6 @@ export default function ParkingSlotsPage() {
       setZones(zoneResult.data || []);
     } catch (err) {
       setError(err.message || "Cannot refresh parking slot data");
-    } finally {
-      setRefreshing(false);
     }
   };
 
@@ -392,11 +413,15 @@ export default function ParkingSlotsPage() {
   };
 
   const openCreateModal = () => {
+    if (!canManage) return;
+
     setSelectedSlot(null);
     setModalMode("create");
   };
 
   const openEditModal = (slot) => {
+    if (!canManage) return;
+
     setSelectedSlot(slot);
     setModalMode("edit");
   };
@@ -407,6 +432,8 @@ export default function ParkingSlotsPage() {
   };
 
   const handleSubmitSlot = async (payload) => {
+    if (!canManage) return;
+
     try {
       setSaving(true);
 
@@ -438,6 +465,8 @@ export default function ParkingSlotsPage() {
   };
 
   const handleDeleteSlot = async (slot) => {
+    if (!canManage) return;
+
     const slotNumber = getSlotNumber(slot);
 
     const confirmed = window.confirm(
@@ -468,7 +497,7 @@ export default function ParkingSlotsPage() {
     setSelectedZone("ALL");
   };
 
-  const headerAction = (
+  const headerAction = canManage ? (
     <button
       onClick={openCreateModal}
       className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 active:scale-95"
@@ -476,7 +505,7 @@ export default function ParkingSlotsPage() {
       <span className="material-symbols-outlined text-lg">add</span>
       Add Slot
     </button>
-  );
+  ) : null;
 
   return (
     <AdminLayout activeLabel="Parking Slots" headerAction={headerAction}>
@@ -521,15 +550,17 @@ export default function ParkingSlotsPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={openCreateModal}
-                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 active:scale-95"
-              >
-                <span className="material-symbols-outlined text-lg">add</span>
-                New Slot
-              </button>
-            </div>
+            {canManage && (
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={openCreateModal}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-lg">add</span>
+                  New Slot
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -666,7 +697,7 @@ export default function ParkingSlotsPage() {
           {error}
         </div>
       ) : filteredSlots.length === 0 ? (
-        <EmptyState onCreate={openCreateModal} />
+        <EmptyState canManage={canManage} onCreate={openCreateModal} />
       ) : (
         <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-sm ring-1 ring-slate-100 backdrop-blur-xl">
           <div className="overflow-x-auto">
@@ -688,9 +719,11 @@ export default function ParkingSlotsPage() {
                   <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                     Distance
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                    Actions
-                  </th>
+                  {canManage && (
+                    <th className="px-6 py-4 text-right text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
 
@@ -746,36 +779,38 @@ export default function ParkingSlotsPage() {
                         </p>
                       </td>
 
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => openEditModal(slot)}
-                            className="rounded-2xl p-2.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
-                            title="Edit"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">
-                              edit
-                            </span>
-                          </button>
-
-                          <button
-                            onClick={() => handleDeleteSlot(slot)}
-                            disabled={deletingId === slot.id}
-                            className="rounded-2xl p-2.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
-                            title="Delete"
-                          >
-                            <span
-                              className={`material-symbols-outlined text-[20px] ${
-                                deletingId === slot.id ? "animate-spin" : ""
-                              }`}
+                      {canManage && (
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openEditModal(slot)}
+                              className="rounded-2xl p-2.5 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+                              title="Edit"
                             >
-                              {deletingId === slot.id
-                                ? "progress_activity"
-                                : "delete"}
-                            </span>
-                          </button>
-                        </div>
-                      </td>
+                              <span className="material-symbols-outlined text-[20px]">
+                                edit
+                              </span>
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteSlot(slot)}
+                              disabled={deletingId === slot.id}
+                              className="rounded-2xl p-2.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                              title="Delete"
+                            >
+                              <span
+                                className={`material-symbols-outlined text-[20px] ${
+                                  deletingId === slot.id ? "animate-spin" : ""
+                                }`}
+                              >
+                                {deletingId === slot.id
+                                  ? "progress_activity"
+                                  : "delete"}
+                              </span>
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -785,7 +820,7 @@ export default function ParkingSlotsPage() {
         </div>
       )}
 
-      {(modalMode === "create" || modalMode === "edit") && (
+      {canManage && (modalMode === "create" || modalMode === "edit") && (
         <SlotFormModal
           mode={modalMode}
           slot={selectedSlot}

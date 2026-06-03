@@ -6,6 +6,7 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminVehiclesPage from "./pages/AdminVehiclesPage";
 import ParkingSlotsPage from "./pages/ParkingSlotsPage";
 import PaymentsPage from "./pages/PaymentsPage";
+import PricingPoliciesPage from "./pages/PricingPoliciesPage";
 import PublicLandingPage from "./pages/PublicLandingPage";
 import ReservationsPage from "./pages/ReservationsPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
@@ -61,6 +62,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={systemRoles}>
               <PaymentsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pricing-policies"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <PricingPoliciesPage />
             </ProtectedRoute>
           }
         />
