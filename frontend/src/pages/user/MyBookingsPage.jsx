@@ -1,255 +1,60 @@
-import { Link } from "react-router-dom";
+import UserLayout from "../../components/UserLayout";
 
-const navItems = [
-  ["dashboard", "Dashboard", "/user-dashboard"],
-  ["event_available", "My Bookings", "/user-bookings"],
-  ["settings", "Settings", "/user-settings"],
-];
-
-const upcomingReservations = [
+const bookings = [
   {
-    title: "North Campus Hub",
-    slotId: "B-124",
-    date: "Oct 24, 2023",
-    time: "08:00 AM - 05:00 PM",
-    status: "Active",
+    code: "BK-1024",
+    building: "North Tower",
+    area: "Basement 2",
+    slot: "B2-14",
+    vehicleType: "Car",
+    startTime: "08:00, Jun 08",
+    endTime: "17:30, Jun 08",
+    status: "CONFIRMED",
   },
   {
-    title: "East Gate Plaza",
-    slotId: "A-089",
-    date: "Oct 26, 2023",
-    time: "10:00 AM - 02:00 PM",
-    status: "Upcoming",
+    code: "BK-1027",
+    building: "East Wing",
+    area: "Level 1",
+    slot: "A1-08",
+    vehicleType: "Motorbike",
+    startTime: "09:15, Jun 10",
+    endTime: "12:00, Jun 10",
+    status: "PENDING",
+  },
+  {
+    code: "BK-0988",
+    building: "South Gate",
+    area: "Outdoor Zone",
+    slot: "S-22",
+    vehicleType: "Car",
+    startTime: "07:30, May 28",
+    endTime: "18:00, May 28",
+    status: "COMPLETED",
+  },
+  {
+    code: "BK-0971",
+    building: "North Tower",
+    area: "Basement 1",
+    slot: "B1-05",
+    vehicleType: "Car",
+    startTime: "13:00, May 21",
+    endTime: "16:00, May 21",
+    status: "CANCELLED",
   },
 ];
 
-const historyRows = [
-  ["Oct 20, 2023", "Library West Garage", "C-45", "4h 30m", "$12.50", "Completed"],
-  ["Oct 18, 2023", "North Campus Hub", "B-201", "8h 00m", "$22.00", "Completed"],
-  ["Oct 15, 2023", "South Science Wing", "S-12", "2h 15m", "$6.50", "Cancelled"],
-  ["Oct 12, 2023", "East Gate Plaza", "A-012", "5h 00m", "$15.00", "Completed"],
-];
+const statusStyles = {
+  PENDING: "bg-amber-50 text-amber-700 ring-amber-100",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  CANCELLED: "bg-red-50 text-red-700 ring-red-100",
+  COMPLETED: "bg-slate-100 text-slate-700 ring-slate-200",
+};
 
-function Brand() {
-  return (
-    <div className="mb-10 flex items-center gap-3 px-6">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2563eb] text-3xl font-medium text-white shadow-lg shadow-blue-950/20">
-        P
-      </div>
-      <div>
-        <h1 className="font-['Geist'] text-xl font-bold leading-none text-[#2563eb]">
-          ParkControl
-        </h1>
-        <p className="font-['Geist'] text-[11px] font-semibold text-[#bec6e0]">
-          Enterprise Suite
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function Sidebar() {
-  return (
-    <aside className="fixed left-0 top-0 z-50 hidden h-dvh w-[260px] flex-col overflow-hidden bg-[#2e3039] py-4 lg:flex">
-      <Brand />
-
-      <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-3">
-        {navItems.map(([icon, label, path]) => {
-          const isActive = label === "My Bookings";
-          const className = `flex items-center gap-3 rounded-lg px-4 py-3 font-['Geist'] text-[13px] font-medium transition active:scale-95 ${
-            isActive
-              ? "border-l-4 border-[#2563eb] bg-white/20 text-[#2563eb]"
-              : "text-[#bec6e0] hover:bg-white/10 hover:text-[#dbe1ff]"
-          }`;
-
-          if (path === "#") {
-            return (
-              <a key={label} href="#" className={className}>
-                <span className="material-symbols-outlined">{icon}</span>
-                <span>{label}</span>
-              </a>
-            );
-          }
-
-          return (
-            <Link key={label} to={path} className={className}>
-              <span
-                className="material-symbols-outlined"
-                style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
-              >
-                {icon}
-              </span>
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="mx-4 shrink-0">
-        <div className="rounded-xl border border-[#c3c6d7] bg-[#f3f3fe] p-4 shadow-sm">
-          <h4 className="mb-2 font-['Geist'] text-[13px] font-bold text-[#191b23]">Support</h4>
-          <p className="mb-3 font-['Inter'] text-xs leading-5 text-[#434655]">
-            Need assistance with your parking spot?
-          </p>
-          <a
-            className="flex items-center gap-1 font-['Geist'] text-[11px] font-semibold text-[#004ac6] hover:underline"
-            href="#"
-          >
-            Contact Help Desk
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </a>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function Topbar() {
-  return (
-    <header className="fixed right-0 top-0 z-40 flex h-16 w-full items-center justify-between gap-3 border-b border-[#c3c6d7] bg-[#faf8ff] px-4 shadow-sm sm:px-6 lg:w-[calc(100%-260px)] lg:px-8">
-      <div className="flex min-w-0 items-center gap-3 lg:hidden">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2563eb] text-2xl font-medium text-white">
-          P
-        </div>
-      </div>
-
-      <div className="relative hidden w-full max-w-[420px] sm:block">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#737686]">
-          search
-        </span>
-        <input
-          className="h-12 w-full rounded-full border border-[#c3c6d7] bg-[#f3f3fe] pl-10 pr-4 font-['Inter'] text-sm text-[#191b23] outline-none transition placeholder:text-[#737686] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20"
-          placeholder="Search bookings, locations..."
-        />
-      </div>
-
-      <div className="flex min-w-0 items-center gap-3 sm:gap-6">
-        <button className="relative rounded-full p-2 transition hover:bg-[#f3f3fe]">
-          <span className="material-symbols-outlined text-[#434655]">notifications</span>
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ba1a1a] ring-2 ring-[#faf8ff]" />
-        </button>
-
-        <div className="flex min-w-0 items-center gap-3 border-l border-[#c3c6d7] pl-3 sm:pl-4">
-          <div className="hidden text-right sm:block">
-            <p className="font-['Geist'] text-[13px] font-bold text-[#191b23]">John Doe</p>
-            <p className="text-[11px] text-[#434655]">Student ID: #29401</p>
-          </div>
-          <img
-            className="h-9 w-9 rounded-full border border-[#c3c6d7] object-cover"
-            src="https://i.pravatar.cc/100?img=12"
-            alt="John Doe profile"
-          />
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function PageHeader() {
-  return (
-    <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end sm:gap-6">
-      <div>
-        <h2 className="mb-2 font-['Geist'] text-3xl font-bold leading-tight text-[#191b23] sm:text-4xl sm:leading-[44px]">
-          My Bookings
-        </h2>
-        <p className="font-['Inter'] text-base text-[#434655]">
-          Manage your active reservations and review history
-        </p>
-      </div>
-
-      <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#004ac6] px-6 py-3 font-['Geist'] text-[13px] font-medium text-white shadow-md transition hover:bg-[#2563eb] active:scale-95 sm:w-auto">
-        <span className="material-symbols-outlined">add</span>
-        New Booking
-      </button>
-    </div>
-  );
-}
-
-function ReservationCard({ reservation }) {
-  const isActive = reservation.status === "Active";
-
-  return (
-    <div className="rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm transition hover:shadow-md">
-      <div className="mb-5 flex items-start justify-between">
-        <div className="rounded-lg bg-[#dae2fd] p-2">
-          <span
-            className="material-symbols-outlined text-[#004ac6]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            location_on
-          </span>
-        </div>
-        <span
-          className={`rounded-full px-3 py-1 font-['Geist'] text-xs font-bold uppercase ${
-            isActive
-              ? "bg-[#ffdbcd] text-[#7d2d00]"
-              : "bg-[#e7e7f3] text-[#434655]"
-          }`}
-        >
-          {reservation.status}
-        </span>
-      </div>
-
-      <h4 className="mb-1 font-['Geist'] text-xl font-semibold text-[#191b23]">
-        {reservation.title}
-      </h4>
-      <p className="mb-5 font-['Geist'] text-[13px] font-medium text-[#004ac6]">
-        Slot ID: {reservation.slotId}
-      </p>
-
-      <div className="mb-6 space-y-2 border-t border-[#c3c6d7] pt-4 font-['Inter'] text-sm text-[#434655]">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-lg">calendar_today</span>
-          <span>{reservation.date}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-lg">schedule</span>
-          <span>{reservation.time}</span>
-        </div>
-      </div>
-
-      <button className="w-full rounded-lg border border-[#ba1a1a] py-2.5 font-['Geist'] text-[13px] font-medium text-[#ba1a1a] transition hover:bg-red-50">
-        Cancel Booking
-      </button>
-    </div>
-  );
-}
-
-function AddSpotCard() {
-  return (
-    <button className="flex min-h-[302px] flex-col items-center justify-center rounded-xl border border-dashed border-[#c3c6d7] bg-[#f3f3fe] p-6 text-center opacity-80 transition hover:opacity-100">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
-        <span className="material-symbols-outlined text-[#737686]">add_circle</span>
-      </div>
-      <p className="font-['Geist'] text-[13px] font-medium text-[#434655]">Need another spot?</p>
-      <p className="text-xs text-[#737686]">Browse available slots on campus</p>
-    </button>
-  );
-}
-
-function UpcomingReservations() {
-  return (
-    <section className="mb-12">
-      <h3 className="mb-6 font-['Geist'] text-xl font-semibold text-[#191b23]">
-        Upcoming Reservations
-      </h3>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {upcomingReservations.map((reservation) => (
-          <ReservationCard key={reservation.slotId} reservation={reservation} />
-        ))}
-        <AddSpotCard />
-      </div>
-    </section>
-  );
-}
-
-function StatusChip({ status }) {
-  const isCancelled = status === "Cancelled";
-
+function StatusBadge({ status }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-        isCancelled ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black uppercase ring-1 ${
+        statusStyles[status] || statusStyles.PENDING
       }`}
     >
       {status}
@@ -257,119 +62,107 @@ function StatusChip({ status }) {
   );
 }
 
-function BookingHistory() {
+function PageHeader() {
   return (
-    <section>
-      <div className="mb-6 flex items-center justify-between">
-        <h3 className="font-['Geist'] text-xl font-semibold text-[#191b23]">Booking History</h3>
-        <button className="flex items-center gap-1 font-['Geist'] text-[13px] font-medium text-[#004ac6] hover:underline">
-          View Full Report
-          <span className="material-symbols-outlined text-base">open_in_new</span>
-        </button>
+    <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div>
+        <h1 className="font-['Geist'] text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+          My Bookings
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Review reservations, parking location, vehicle type, schedule, and current status.
+        </p>
       </div>
-
-      <div className="overflow-hidden rounded-xl border border-[#c3c6d7] bg-white shadow-sm">
-        <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-left">
-          <thead className="border-b border-[#c3c6d7] bg-[#f3f3fe]">
-            <tr>
-              {["Date", "Location", "Duration", "Amount", "Status"].map((heading) => (
-                <th
-                  key={heading}
-                  className={`px-6 py-4 font-['Geist'] text-[11px] font-semibold uppercase text-[#434655] ${
-                    heading === "Status" ? "text-right" : ""
-                  }`}
-                >
-                  {heading}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#c3c6d7]">
-            {historyRows.map(([date, location, slot, duration, amount, status]) => (
-              <tr key={`${date}-${slot}`} className="transition hover:bg-[#f3f3fe]">
-                <td className="px-6 py-4 font-['Inter'] text-sm text-[#191b23]">{date}</td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <span className="font-['Inter'] text-sm font-medium text-[#191b23]">
-                      {location}
-                    </span>
-                    <span className="text-xs text-[#434655]">Slot: {slot}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 font-['Inter'] text-sm text-[#191b23]">{duration}</td>
-                <td className="px-6 py-4 font-['Inter'] text-sm text-[#191b23]">{amount}</td>
-                <td className="px-6 py-4 text-right">
-                  <StatusChip status={status} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-[#c3c6d7] bg-[#f3f3fe] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-[#434655]">Showing 4 of 24 bookings</p>
-          <div className="flex gap-2">
-            <button className="rounded-lg border border-[#c3c6d7] bg-white px-3 py-1 text-[#434655] transition hover:bg-[#faf8ff]">
-              Previous
-            </button>
-            <button className="rounded-lg border border-[#c3c6d7] bg-white px-3 py-1 text-[#434655] transition hover:bg-[#faf8ff]">
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
+      <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:bg-blue-700">
+        <span className="material-symbols-outlined text-[20px]">add_circle</span>
+        New Booking
+      </button>
+    </div>
   );
 }
 
-function MobileNav() {
+function EmptyState() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#2e3039]/95 px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl lg:hidden">
-      <div className="mx-auto flex max-w-3xl items-center justify-around gap-1">
-        {navItems.map(([icon, label, path]) => {
-          const isActive = label === "My Bookings";
-
-          return (
-            <Link
-              key={label}
-              to={path}
-              className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black transition ${
-                isActive
-                  ? "bg-white/10 text-[#dbe1ff]"
-                  : "text-[#bec6e0] hover:bg-white/10 hover:text-[#dbe1ff]"
-              }`}
-            >
-              <span
-                className="material-symbols-outlined text-[22px] leading-none"
-                style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
-              >
-                {icon}
-              </span>
-              <span className="w-full truncate text-center">{label}</span>
-            </Link>
-          );
-        })}
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
+      <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
+        <span className="material-symbols-outlined text-[34px]">event_busy</span>
       </div>
-    </nav>
+      <h2 className="mt-5 font-['Geist'] text-xl font-black text-slate-950">
+        No bookings yet
+      </h2>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+        Your reservations will appear here after you book a parking slot.
+      </p>
+    </div>
+  );
+}
+
+function BookingCard({ booking }) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-['Geist'] text-lg font-black text-slate-950">
+              {booking.code}
+            </h2>
+            <StatusBadge status={booking.status} />
+          </div>
+          <p className="mt-2 text-sm font-semibold text-slate-700">
+            {booking.building} · {booking.area}
+          </p>
+        </div>
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+          <span className="material-symbols-outlined text-[24px]">
+            local_parking
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+        <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+            Slot
+          </p>
+          <p className="mt-1 font-black text-slate-950">{booking.slot}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+            Vehicle
+          </p>
+          <p className="mt-1 font-black text-slate-950">{booking.vehicleType}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+            Start
+          </p>
+          <p className="mt-1 font-black text-slate-950">{booking.startTime}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+            End
+          </p>
+          <p className="mt-1 font-black text-slate-950">{booking.endTime}</p>
+        </div>
+      </div>
+    </article>
   );
 }
 
 export default function UserMyBookingsPage() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-['Inter'] text-[#191b23]">
-      <Sidebar />
-      <Topbar />
+    <UserLayout>
+      <PageHeader />
 
-      <main className="min-h-screen pt-16 lg:ml-[260px]">
-        <div className="mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 sm:pb-28 lg:px-8 lg:py-10">
-          <PageHeader />
-          <UpcomingReservations />
-          <BookingHistory />
+      {bookings.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          {bookings.map((booking) => (
+            <BookingCard key={booking.code} booking={booking} />
+          ))}
         </div>
-      </main>
-      <MobileNav />
-    </div>
+      )}
+    </UserLayout>
   );
 }
