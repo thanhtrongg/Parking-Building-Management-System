@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ParkingSlotsPage from "../pages/ParkingSlotsPage";
+import ParkingSlotsPage from "../pages/system/ParkingSlotsPage";
 
 export default function AppRoutes() {
   return (

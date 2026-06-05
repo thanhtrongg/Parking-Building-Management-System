@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import AdminLayout from "../components/AdminLayout";
-import { apiRequest } from "../services/api";
+import AdminLayout from "../../components/AdminLayout";
+import { apiRequest } from "../../services/api";
 
 const SLOT_STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"];
 

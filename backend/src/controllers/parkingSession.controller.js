@@ -4,19 +4,192 @@ const generateTicketCode = () => {
     return `TK-${Date.now()}`;
 };
 
+const BASE_PRICE_HOURS = 2;
+const NIGHT_START_HOUR = 22;
+const NIGHT_END_HOUR = 6;
+
+const toNumber = (value, fallback = 0) => {
+    if (value === null || value === undefined) return fallback;
+
+    const number = Number(value);
+
+    return Number.isNaN(number) ? fallback : number;
+};
+
+const getPricingPolicyForSession = async (
+    vehicleTypeId,
+    checkInTime
+) => {
+    const effectiveDate = new Date(checkInTime);
+
+    const vehicleTypePolicy = vehicleTypeId
+        ? await prisma.pricing_policies.findFirst({
+            where: {
+                vehicle_type_id: vehicleTypeId,
+                effective_date: {
+                    lte: effectiveDate,
+                },
+            },
+            orderBy: {
+                effective_date: "desc",
+            },
+        })
+        : null;
+
+    if (vehicleTypePolicy) return vehicleTypePolicy;
+
+    return prisma.pricing_policies.findFirst({
+        where: {
+            vehicle_type_id: null,
+            effective_date: {
+                lte: effectiveDate,
+            },
+        },
+        orderBy: {
+            effective_date: "desc",
+        },
+    });
+};
+
+const isNightHour = (date) => {
+    const hour = date.getHours();
+
+    return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
+};
+
+const calculateParkingFee = (
+    checkInTime,
+    checkOutTime,
+    pricingPolicy
+) => {
+    if (!pricingPolicy) {
+        return {
+            totalAmount: 0,
+            parkingHours: calculateParkingHours(checkInTime, checkOutTime),
+            basePrice: 0,
+            hourlyRate: 0,
+            nightRate: 0,
+            billableHourlyHours: 0,
+            billableNightHours: 0,
+        };
+    }
+
+    const parkingHours = calculateParkingHours(checkInTime, checkOutTime);
+    const basePrice = toNumber(pricingPolicy.base_price);
+    const hourlyRate = toNumber(pricingPolicy.hourly_rate);
+    const nightRate = toNumber(pricingPolicy.night_rate, hourlyRate);
+
+    let billableHourlyHours = 0;
+    let billableNightHours = 0;
+    const checkInDate = new Date(checkInTime);
+
+    for (let hourIndex = BASE_PRICE_HOURS; hourIndex < parkingHours; hourIndex += 1) {
+        const hourStart = new Date(checkInDate);
+        hourStart.setHours(checkInDate.getHours() + hourIndex);
+
+        if (isNightHour(hourStart)) {
+            billableNightHours += 1;
+        } else {
+            billableHourlyHours += 1;
+        }
+    }
+
+    const totalAmount =
+        basePrice +
+        billableHourlyHours * hourlyRate +
+        billableNightHours * nightRate;
+
+    return {
+        totalAmount,
+        parkingHours,
+        basePrice,
+        hourlyRate,
+        nightRate,
+        billableHourlyHours,
+        billableNightHours,
+    };
+};
+
 export const getParkingSessions = async (req, res) => {
     try {
-        const sessions = await prisma.$queryRaw`
+        const sessionRows = await prisma.$queryRaw`
             SELECT
                 ps.id,
                 ps.ticket_code AS "ticketCode",
                 ps.license_plate AS "licensePlate",
+                ps.vehicle_type_id AS "vehicleTypeId",
+                ps.user_id AS "userId",
+                ps.parking_slot_id AS "parkingSlotId",
                 ps.entry_time AS "checkInTime",
+                ps.entry_time AS "startTime",
                 ps.exit_time AS "checkOutTime",
-                ps.status
+                ps.exit_time AS "endTime",
+                ps.status,
+
+                u.full_name AS "userFullName",
+                u.phone AS "userPhone",
+
+                vt.type_name AS "vehicleTypeName",
+
+                slot.slot_name AS "slotName",
+                z.zone_name AS "zoneName"
             FROM parking_sessions ps
+            LEFT JOIN users u ON ps.user_id = u.id
+            LEFT JOIN vehicle_types vt ON ps.vehicle_type_id = vt.id
+            LEFT JOIN parking_slots slot ON ps.parking_slot_id = slot.id
+            LEFT JOIN zones z ON slot.zone_id = z.id
             ORDER BY ps.entry_time DESC
         `;
+
+        const sessions = await Promise.all(sessionRows.map(async (session) => {
+            const endTime = session.endTime ? new Date(session.endTime) : new Date();
+            const pricingPolicy = await getPricingPolicyForSession(
+                session.vehicleTypeId,
+                session.startTime
+            );
+            const fee = calculateParkingFee(
+                session.startTime,
+                endTime,
+                pricingPolicy
+            );
+
+            return {
+                id: session.id,
+                ticketCode: session.ticketCode,
+                licensePlate: session.licensePlate,
+                checkInTime: session.checkInTime,
+                checkOutTime: session.checkOutTime,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                status: session.status,
+                totalFee: fee.totalAmount,
+                parkingHours: fee.parkingHours,
+                billableHourlyHours: fee.billableHourlyHours,
+                billableNightHours: fee.billableNightHours,
+                user: session.userId
+                    ? {
+                        id: session.userId,
+                        fullName: session.userFullName,
+                        phone: session.userPhone,
+                    }
+                    : null,
+                vehicleType: session.vehicleTypeId
+                    ? {
+                        id: session.vehicleTypeId,
+                        typeName: session.vehicleTypeName,
+                    }
+                    : null,
+                parkingSlot: session.parkingSlotId
+                    ? {
+                        id: session.parkingSlotId,
+                        slotName: session.slotName,
+                        zone: {
+                            zoneName: session.zoneName,
+                        },
+                    }
+                    : null,
+            };
+        }));
 
         return res.json({
             success: true,
@@ -179,12 +352,23 @@ export const checkOutVehicle = async (req, res) => {
 
         const checkOutTime = new Date();
 
-        const parkingHours = calculateParkingHours(
-            session.entry_time,
-            checkOutTime
+        const pricingPolicy = await getPricingPolicyForSession(
+            session.vehicle_type_id,
+            session.entry_time
         );
 
-        const totalAmount = parkingHours * 10000;
+        if (!pricingPolicy) {
+            return res.status(400).json({
+                success: false,
+                message: "Pricing policy not found for this vehicle type",
+            });
+        }
+
+        const fee = calculateParkingFee(
+            session.entry_time,
+            checkOutTime,
+            pricingPolicy
+        );
 
         await prisma.parking_sessions.update({
             where: { id },
@@ -192,8 +376,6 @@ export const checkOutVehicle = async (req, res) => {
                 exit_time: checkOutTime,
 
                 checkout_staff_id: checkOutStaffId,
-
-                total_amount: totalAmount,
 
                 status: "COMPLETED",
             },
@@ -210,8 +392,10 @@ export const checkOutVehicle = async (req, res) => {
 
         return res.json({
             success: true,
-            totalAmount,
-            parkingHours,
+            totalAmount: fee.totalAmount,
+            parkingHours: fee.parkingHours,
+            billableHourlyHours: fee.billableHourlyHours,
+            billableNightHours: fee.billableNightHours,
         });
     } catch (error) {
         console.error("Check out error:", error);

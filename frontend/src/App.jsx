@@ -1,18 +1,19 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import AdminUsersPage from "./pages/AdminUsersPage";
-import AdminVehiclesPage from "./pages/AdminVehiclesPage";
-import ParkingSlotsPage from "./pages/ParkingSlotsPage";
-import PaymentsPage from "./pages/PaymentsPage";
-import PricingPoliciesPage from "./pages/PricingPoliciesPage";
-import PublicLandingPage from "./pages/PublicLandingPage";
-import ReservationsPage from "./pages/ReservationsPage";
-import UserDashboardPage from "./pages/UserDashboardPage";
-import UserMyBookingsPage from "./pages/UserMyBookingsPage";
-import UserSettingsPage from "./pages/UserSettingsPage";
-import ZonesPage from "./pages/ZonesPage";
+import LoginPage from "./pages/auth/LoginPage";
+import PublicLandingPage from "./pages/public/LandingPage";
+import DashboardPage from "./pages/system/DashboardPage";
+import ParkingSessionsPage from "./pages/system/ParkingSessionsPage";
+import ParkingSlotsPage from "./pages/system/ParkingSlotsPage";
+import PaymentsPage from "./pages/system/PaymentsPage";
+import PricingPoliciesPage from "./pages/system/PricingPoliciesPage";
+import ReservationsPage from "./pages/system/ReservationsPage";
+import AdminUsersPage from "./pages/system/UsersPage";
+import AdminVehiclesPage from "./pages/system/VehiclesPage";
+import ZonesPage from "./pages/system/ZonesPage";
+import UserDashboardPage from "./pages/user/DashboardPage";
+import UserMyBookingsPage from "./pages/user/MyBookingsPage";
+import UserSettingsPage from "./pages/user/SettingsPage";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -44,6 +45,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={systemRoles}>
               <ParkingSlotsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/parking-sessions"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <ParkingSessionsPage />
             </ProtectedRoute>
           }
         />

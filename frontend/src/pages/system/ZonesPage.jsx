@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import AdminLayout from "../components/AdminLayout";
-import { apiRequest } from "../services/api";
+import AdminLayout from "../../components/AdminLayout";
+import { apiRequest } from "../../services/api";
 
 // Theme map cho các loại xe để hiển thị icon/màu sắc tương ứng trên Card
 const vehicleThemes = {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import AdminLayout from "../components/AdminLayout";
-import { apiRequest } from "../services/api";
+import AdminLayout from "../../components/AdminLayout";
+import { apiRequest } from "../../services/api";
 
 // Helper để định dạng thời gian
 const formatDateTime = (dateString) => {
@@ -200,7 +200,7 @@ function SessionCard({ session, onView, onCheckout }) {
                             onClick={() => onCheckout(session)}
                             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 font-['Inter'] text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
                         >
-                            <span className="material-symbols-outlined text-lg">checkout</span>
+                            <span className="material-symbols-outlined text-lg">logout</span>
                             Complete
                         </button>
                     )}
@@ -344,7 +344,7 @@ function CheckoutModal({ session, processing, onClose, onConfirm }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl shadow-slate-950/30">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                    <span className="material-symbols-outlined text-3xl">checkout</span>
+                    <span className="material-symbols-outlined text-3xl">logout</span>
                 </div>
                 <h3 className="mt-5 font-['Geist'] text-2xl font-bold text-slate-950">
                     Complete Session?
