@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { apiRequest } from "../../services/api";
 import UserLayout from "../../components/UserLayout";
 
 function getStoredUser() {
@@ -31,11 +32,10 @@ function Field({ label, name, value, onChange, type = "text", readOnly = false }
         onChange={onChange}
         type={type}
         readOnly={readOnly}
-        className={`mt-2 h-12 w-full rounded-xl border px-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 ${
-          readOnly
-            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
-            : "border-slate-200 bg-white text-slate-900"
-        }`}
+        className={`mt-2 h-12 w-full rounded-xl border px-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 ${readOnly
+          ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
+          : "border-slate-200 bg-white text-slate-900"
+          }`}
       />
     </label>
   );
@@ -48,11 +48,10 @@ function Alert({ type, message }) {
 
   return (
     <div
-      className={`mb-5 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-emerald-200 bg-emerald-50 text-emerald-700"
-      }`}
+      className={`mb-5 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${isError
+        ? "border-red-200 bg-red-50 text-red-700"
+        : "border-emerald-200 bg-emerald-50 text-emerald-700"
+        }`}
     >
       <span className="material-symbols-outlined text-[20px]">
         {isError ? "error" : "check_circle"}
@@ -97,10 +96,88 @@ export default function UserSettingsPage() {
   const [form, setForm] = useState(() => getInitialForm(user));
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handlePasswordChange = (event) => {
+    const { name, value } = event.target;
+
+    setPasswordForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      setAlert({ type: "", message: "" });
+
+      if (
+        !passwordForm.currentPassword ||
+        !passwordForm.newPassword ||
+        !passwordForm.confirmPassword
+      ) {
+        setAlert({
+          type: "error",
+          message: "Please fill all password fields",
+        });
+        return;
+      }
+
+      if (
+        passwordForm.newPassword !==
+        passwordForm.confirmPassword
+      ) {
+        setAlert({
+          type: "error",
+          message: "Confirm password does not match",
+        });
+        return;
+      }
+
+      setChangingPassword(true);
+
+      const response = await apiRequest(
+        "/api/users/profile/password",
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            currentPassword:
+              passwordForm.currentPassword,
+            newPassword:
+              passwordForm.newPassword,
+          }),
+        }
+      );
+
+      setAlert({
+        type: "success",
+        message: response.message,
+      });
+
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      setAlert({
+        type: "error",
+        message: error.message,
+      });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -200,24 +277,43 @@ export default function UserSettingsPage() {
             <h2 className="font-['Geist'] text-lg font-black text-slate-950">
               Security
             </h2>
-            <div className="mt-4 space-y-3">
-              <button className="flex h-12 w-full items-center justify-between rounded-xl bg-slate-50 px-4 text-sm font-black text-slate-700 ring-1 ring-slate-100 transition hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-100">
-                <span className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-[21px]">lock</span>
-                  Change Password
-                </span>
-                <span className="material-symbols-outlined text-[20px]">
-                  chevron_right
-                </span>
-              </button>
-              <button className="flex h-12 w-full items-center justify-between rounded-xl bg-red-50 px-4 text-sm font-black text-red-700 ring-1 ring-red-100 transition hover:bg-red-100">
-                <span className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-[21px]">logout</span>
-                  Sign Out All Devices
-                </span>
-                <span className="material-symbols-outlined text-[20px]">
-                  chevron_right
-                </span>
+
+            <div className="mt-4 space-y-4">
+              <input
+                type="password"
+                name="currentPassword"
+                placeholder="Current Password"
+                value={passwordForm.currentPassword}
+                onChange={handlePasswordChange}
+                className="h-11 w-full rounded-xl border border-slate-200 px-4"
+              />
+
+              <input
+                type="password"
+                name="newPassword"
+                placeholder="New Password"
+                value={passwordForm.newPassword}
+                onChange={handlePasswordChange}
+                className="h-11 w-full rounded-xl border border-slate-200 px-4"
+              />
+
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm New Password"
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordChange}
+                className="h-11 w-full rounded-xl border border-slate-200 px-4"
+              />
+
+              <button
+                onClick={handleChangePassword}
+                disabled={changingPassword}
+                className="h-11 w-full rounded-xl bg-blue-600 text-white font-bold"
+              >
+                {changingPassword
+                  ? "Changing Password..."
+                  : "Change Password"}
               </button>
             </div>
           </section>
