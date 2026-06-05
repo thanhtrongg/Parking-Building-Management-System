@@ -309,8 +309,8 @@ function MobileNav() {
   const visibleNavItems = useMemo(() => getVisibleNavItems(role), [role]);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 overflow-x-auto border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:hidden">
-      <div className="mx-auto flex min-w-max max-w-3xl items-center justify-start gap-1">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:hidden">
+      <div className="mx-auto grid max-w-3xl grid-cols-4 gap-1">
         {visibleNavItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
@@ -321,7 +321,7 @@ function MobileNav() {
               key={item.path}
               to={item.path}
               className={[
-                "flex w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black transition",
+                "flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[10px] font-black transition",
                 isActive
                   ? "bg-blue-50 text-blue-700"
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
@@ -337,7 +337,9 @@ function MobileNav() {
               >
                 {item.icon}
               </span>
-              <span className="w-full truncate text-center">{item.label}</span>
+              <span className="w-full truncate text-center leading-tight">
+                {item.label}
+              </span>
             </NavLink>
           );
         })}
@@ -362,7 +364,7 @@ export default function AdminLayout({ children }) {
       <Header />
 
       <main className="min-h-screen pt-16 lg:ml-[260px]">
-        <div className="p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">{children}</div>
+        <div className="p-4 pb-40 sm:p-6 sm:pb-40 lg:p-8">{children}</div>
       </main>
       <MobileNav />
     </div>
