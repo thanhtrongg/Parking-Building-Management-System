@@ -128,7 +128,7 @@ function SidebarNav() {
   const visibleNavItems = useMemo(() => getVisibleNavItems(role), [role]);
 
   return (
-    <nav className="mt-7 flex-1 px-3">
+    <nav className="mt-5 min-h-0 flex-1 overflow-y-auto px-3 pb-3">
       <p className="mb-3 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
         Main Menu
       </p>
@@ -196,8 +196,8 @@ function UserProfile({ onLogout }) {
   const { name, email, role } = getUserDisplay(user);
 
   return (
-    <div className="px-4 pb-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="shrink-0 px-4 pb-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm xl:p-4">
         <div className="flex items-center gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-600 text-xs font-black text-white shadow-md shadow-blue-200">
             {getInitials(name)}
@@ -211,7 +211,7 @@ function UserProfile({ onLogout }) {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+        <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
             Role
           </span>
@@ -237,7 +237,7 @@ function UserProfile({ onLogout }) {
 
 function Sidebar({ onLogout }) {
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-screen w-[260px] flex-col border-r border-slate-200 bg-white py-5">
+    <aside className="fixed left-0 top-0 z-50 hidden h-dvh w-[260px] flex-col overflow-hidden border-r border-slate-200 bg-white py-4 lg:flex">
       <Brand />
       <SidebarNav />
       <UserProfile onLogout={onLogout} />
@@ -250,11 +250,25 @@ function Header() {
   const { name } = getUserDisplay(user);
 
   return (
-    <header className="fixed right-0 top-0 z-40 flex h-16 w-[calc(100%-260px)] items-center justify-end border-b border-slate-200 bg-white/90 px-8 shadow-sm backdrop-blur-xl">
-      <div className="flex items-center gap-3">
+    <header className="fixed right-0 top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-4 shadow-sm backdrop-blur-xl sm:px-6 lg:w-[calc(100%-260px)] lg:justify-end lg:px-8">
+      <div className="flex items-center gap-3 lg:hidden">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-lg font-black text-white">
+          P
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-slate-950">
+            ParkMaster
+          </p>
+          <p className="truncate text-[11px] font-semibold text-slate-500">
+            Management
+          </p>
+        </div>
+      </div>
+
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
-          className="relative grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+          className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
         >
           <span className="material-symbols-outlined text-[21px] leading-none">
             notifications
@@ -264,20 +278,20 @@ function Header() {
 
         <button
           type="button"
-          className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
         >
           <span className="material-symbols-outlined text-[21px] leading-none">
             settings
           </span>
         </button>
 
-        <div className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
+        <div className="flex h-11 min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-2 shadow-sm sm:px-3">
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-blue-600 text-xs font-black text-white">
             {getInitials(name)}
           </div>
 
-          <div className="min-w-0">
-            <p className="max-w-[160px] truncate text-sm font-black text-slate-950">
+          <div className="hidden min-w-0 sm:block">
+            <p className="max-w-[120px] truncate text-sm font-black text-slate-950 lg:max-w-[160px]">
               {name}
             </p>
             <p className="text-xs font-semibold text-emerald-600">Online</p>
@@ -285,6 +299,52 @@ function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+function MobileNav() {
+  const location = useLocation();
+  const user = useMemo(() => getStoredUser(), []);
+  const { role } = getUserDisplay(user);
+  const visibleNavItems = useMemo(() => getVisibleNavItems(role), [role]);
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl lg:hidden">
+      <div className="mx-auto grid max-w-3xl grid-cols-4 gap-1">
+        {visibleNavItems.map((item) => {
+          const isActive =
+            location.pathname === item.path ||
+            location.pathname.startsWith(`${item.path}/`);
+
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={[
+                "flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[10px] font-black transition",
+                isActive
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+              ].join(" ")}
+            >
+              <span
+                className="material-symbols-outlined text-[22px] leading-none"
+                style={{
+                  fontVariationSettings: isActive
+                    ? "'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+                    : "'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24",
+                }}
+              >
+                {item.icon}
+              </span>
+              <span className="w-full truncate text-center leading-tight">
+                {item.label}
+              </span>
+            </NavLink>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -303,9 +363,10 @@ export default function AdminLayout({ children }) {
       <Sidebar onLogout={handleLogout} />
       <Header />
 
-      <main className="ml-[260px] min-h-screen pt-16">
-        <div className="p-8">{children}</div>
+      <main className="min-h-screen pt-16 lg:ml-[260px]">
+        <div className="p-4 pb-40 sm:p-6 sm:pb-40 lg:p-8">{children}</div>
       </main>
+      <MobileNav />
     </div>
   );
 }

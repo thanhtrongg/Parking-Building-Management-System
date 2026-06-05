@@ -50,10 +50,10 @@ function Brand() {
 
 function Sidebar() {
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-full w-[260px] flex-col bg-[#2e3039] py-6">
+    <aside className="fixed left-0 top-0 z-50 hidden h-dvh w-[260px] flex-col overflow-hidden bg-[#2e3039] py-4 lg:flex">
       <Brand />
 
-      <nav className="flex-1 space-y-2 px-4">
+      <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-3">
         {navItems.map(([icon, label, path]) => {
           const isActive = label === "My Bookings";
           const className = `flex items-center gap-3 rounded-lg px-4 py-3 font-['Geist'] text-[13px] font-medium transition active:scale-95 ${
@@ -85,7 +85,7 @@ function Sidebar() {
         })}
       </nav>
 
-      <div className="mx-4 mt-auto">
+      <div className="mx-4 shrink-0">
         <div className="rounded-xl border border-[#c3c6d7] bg-[#f3f3fe] p-4 shadow-sm">
           <h4 className="mb-2 font-['Geist'] text-[13px] font-bold text-[#191b23]">Support</h4>
           <p className="mb-3 font-['Inter'] text-xs leading-5 text-[#434655]">
@@ -106,8 +106,14 @@ function Sidebar() {
 
 function Topbar() {
   return (
-    <header className="fixed right-0 top-0 z-40 flex h-16 w-[calc(100%-260px)] items-center justify-between border-b border-[#c3c6d7] bg-[#faf8ff] px-8 shadow-sm">
-      <div className="relative w-full max-w-[420px]">
+    <header className="fixed right-0 top-0 z-40 flex h-16 w-full items-center justify-between gap-3 border-b border-[#c3c6d7] bg-[#faf8ff] px-4 shadow-sm sm:px-6 lg:w-[calc(100%-260px)] lg:px-8">
+      <div className="flex min-w-0 items-center gap-3 lg:hidden">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2563eb] text-2xl font-medium text-white">
+          P
+        </div>
+      </div>
+
+      <div className="relative hidden w-full max-w-[420px] sm:block">
         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#737686]">
           search
         </span>
@@ -117,14 +123,14 @@ function Topbar() {
         />
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-6">
         <button className="relative rounded-full p-2 transition hover:bg-[#f3f3fe]">
           <span className="material-symbols-outlined text-[#434655]">notifications</span>
           <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ba1a1a] ring-2 ring-[#faf8ff]" />
         </button>
 
-        <div className="flex items-center gap-3 border-l border-[#c3c6d7] pl-4">
-          <div className="text-right">
+        <div className="flex min-w-0 items-center gap-3 border-l border-[#c3c6d7] pl-3 sm:pl-4">
+          <div className="hidden text-right sm:block">
             <p className="font-['Geist'] text-[13px] font-bold text-[#191b23]">John Doe</p>
             <p className="text-[11px] text-[#434655]">Student ID: #29401</p>
           </div>
@@ -141,9 +147,9 @@ function Topbar() {
 
 function PageHeader() {
   return (
-    <div className="mb-8 flex items-end justify-between gap-6">
+    <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end sm:gap-6">
       <div>
-        <h2 className="mb-2 font-['Geist'] text-4xl font-bold leading-[44px] text-[#191b23]">
+        <h2 className="mb-2 font-['Geist'] text-3xl font-bold leading-tight text-[#191b23] sm:text-4xl sm:leading-[44px]">
           My Bookings
         </h2>
         <p className="font-['Inter'] text-base text-[#434655]">
@@ -151,7 +157,7 @@ function PageHeader() {
         </p>
       </div>
 
-      <button className="flex items-center gap-2 rounded-lg bg-[#004ac6] px-6 py-3 font-['Geist'] text-[13px] font-medium text-white shadow-md transition hover:bg-[#2563eb] active:scale-95">
+      <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#004ac6] px-6 py-3 font-['Geist'] text-[13px] font-medium text-white shadow-md transition hover:bg-[#2563eb] active:scale-95 sm:w-auto">
         <span className="material-symbols-outlined">add</span>
         New Booking
       </button>
@@ -263,7 +269,8 @@ function BookingHistory() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-[#c3c6d7] bg-white shadow-sm">
-        <table className="w-full border-collapse text-left">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] border-collapse text-left">
           <thead className="border-b border-[#c3c6d7] bg-[#f3f3fe]">
             <tr>
               {["Date", "Location", "Duration", "Amount", "Status"].map((heading) => (
@@ -299,8 +306,9 @@ function BookingHistory() {
             ))}
           </tbody>
         </table>
+        </div>
 
-        <div className="flex items-center justify-between border-t border-[#c3c6d7] bg-[#f3f3fe] px-6 py-4">
+        <div className="flex flex-col gap-3 border-t border-[#c3c6d7] bg-[#f3f3fe] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-[#434655]">Showing 4 of 24 bookings</p>
           <div className="flex gap-2">
             <button className="rounded-lg border border-[#c3c6d7] bg-white px-3 py-1 text-[#434655] transition hover:bg-[#faf8ff]">
@@ -316,19 +324,52 @@ function BookingHistory() {
   );
 }
 
+function MobileNav() {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#2e3039]/95 px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl lg:hidden">
+      <div className="mx-auto flex max-w-3xl items-center justify-around gap-1">
+        {navItems.map(([icon, label, path]) => {
+          const isActive = label === "My Bookings";
+
+          return (
+            <Link
+              key={label}
+              to={path}
+              className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black transition ${
+                isActive
+                  ? "bg-white/10 text-[#dbe1ff]"
+                  : "text-[#bec6e0] hover:bg-white/10 hover:text-[#dbe1ff]"
+              }`}
+            >
+              <span
+                className="material-symbols-outlined text-[22px] leading-none"
+                style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+              >
+                {icon}
+              </span>
+              <span className="w-full truncate text-center">{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export default function UserMyBookingsPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] font-['Inter'] text-[#191b23]">
       <Sidebar />
       <Topbar />
 
-      <main className="ml-[260px] min-h-screen pt-16">
-        <div className="mx-auto max-w-7xl px-8 py-10">
+      <main className="min-h-screen pt-16 lg:ml-[260px]">
+        <div className="mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 sm:pb-28 lg:px-8 lg:py-10">
           <PageHeader />
           <UpcomingReservations />
           <BookingHistory />
         </div>
       </main>
+      <MobileNav />
     </div>
   );
 }
