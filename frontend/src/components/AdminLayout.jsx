@@ -21,6 +21,12 @@ const navItems = [
     roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
+    icon: "confirmation_number",
+    label: "Parking Sessions",
+    path: "/parking-sessions",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
+  },
+  {
     icon: "directions_car",
     label: "Vehicles",
     path: "/admin-vehicles",

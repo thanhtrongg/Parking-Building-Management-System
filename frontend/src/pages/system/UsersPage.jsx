@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import AdminLayout from "../components/AdminLayout";
-import { apiRequest } from "../services/api";
+import AdminLayout from "../../components/AdminLayout";
+import { apiRequest } from "../../services/api";
 
 const roleOptions = ["ADMIN", "MANAGER", "STAFF", "USER"];
 const statusOptions = ["ACTIVE", "INACTIVE", "SUSPENDED"];
@@ -222,7 +222,9 @@ function StatusLabel({ status }) {
   const style = statusStyles[status] || statusStyles.INACTIVE;
 
   return (
-    <span className={`inline-flex items-center gap-2 font-['Geist'] text-[13px] font-semibold ${style.split(" ")[0]}`}>
+    <span
+      className={`inline-flex items-center gap-2 font-['Geist'] text-[13px] font-semibold ${style.split(" ")[0]}`}
+    >
       <span className={`h-2 w-2 rounded-full ${style.split(" ")[1]}`} />
       {status}
     </span>
@@ -408,7 +410,9 @@ function UsersTable({
       <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4 md:flex-row md:items-center md:justify-between">
         <p className="font-['Geist'] text-[13px] font-medium text-slate-500">
           Showing{" "}
-          <span className="font-bold text-slate-950">{loading ? 0 : users.length}</span>{" "}
+          <span className="font-bold text-slate-950">
+            {loading ? 0 : users.length}
+          </span>{" "}
           users
         </p>
         <p className="font-['Inter'] text-xs font-semibold text-slate-400">
@@ -504,7 +508,9 @@ function UserFormModal({ mode, user, saving, onClose, onSubmit }) {
             <FormField label="Full name" required>
               <input
                 value={form.fullName}
-                onChange={(event) => updateField("fullName", event.target.value)}
+                onChange={(event) =>
+                  updateField("fullName", event.target.value)
+                }
                 required
                 className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
               />
@@ -513,7 +519,9 @@ function UserFormModal({ mode, user, saving, onClose, onSubmit }) {
             <FormField label="Username">
               <input
                 value={form.username}
-                onChange={(event) => updateField("username", event.target.value)}
+                onChange={(event) =>
+                  updateField("username", event.target.value)
+                }
                 placeholder="Auto-generated if empty"
                 className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
               />
@@ -566,7 +574,10 @@ function UserFormModal({ mode, user, saving, onClose, onSubmit }) {
             </FormField>
           </div>
 
-          <FormField label={isEdit ? "New password" : "Password"} required={!isEdit}>
+          <FormField
+            label={isEdit ? "New password" : "Password"}
+            required={!isEdit}
+          >
             <input
               value={form.password}
               onChange={(event) => updateField("password", event.target.value)}
@@ -619,7 +630,8 @@ function DeleteModal({ user, deleting, onClose, onConfirm }) {
         <p className="mt-2 font-['Inter'] text-sm leading-6 text-slate-500">
           This will permanently remove{" "}
           <span className="font-bold text-slate-800">{user.fullName}</span>.
-          Backend will block the action if this user is referenced by other records.
+          Backend will block the action if this user is referenced by other
+          records.
         </p>
 
         <div className="mt-6 flex justify-end gap-3">

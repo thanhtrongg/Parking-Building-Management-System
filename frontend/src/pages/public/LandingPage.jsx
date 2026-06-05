@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import PremiumHero3D from "../components/public/PremiumHero3D";
+import PremiumHero3D from "../../components/public/PremiumHero3D";
 
 const navItems = [
   ["Home", "#home", 0],
