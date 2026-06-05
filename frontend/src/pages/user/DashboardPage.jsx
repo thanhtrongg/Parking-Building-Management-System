@@ -54,10 +54,10 @@ function Brand() {
 
 function Sidebar({ onLogout }) {
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-full w-[260px] flex-col border-r border-[#c3c6d7] bg-[#2e3039] py-6">
+    <aside className="fixed left-0 top-0 z-50 hidden h-dvh w-[260px] flex-col overflow-hidden border-r border-[#c3c6d7] bg-[#2e3039] py-4 lg:flex">
       <Brand />
 
-      <nav className="flex-1 space-y-1 px-4">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 pb-3">
         {navItems.map(([icon, label, path], index) => {
           const isActive = index === 0;
 
@@ -78,8 +78,8 @@ function Sidebar({ onLogout }) {
         })}
       </nav>
 
-      <div className="px-4">
-        <div className="rounded-xl bg-white/10 p-4">
+      <div className="shrink-0 px-4">
+        <div className="rounded-xl bg-white/10 p-3 xl:p-4">
           <div className="mb-3 flex items-center justify-between">
             <span className="font-['Geist'] text-[11px] font-semibold uppercase text-[#bec6e0]">
               Balance
@@ -105,8 +105,14 @@ function Sidebar({ onLogout }) {
 
 function Topbar() {
   return (
-    <header className="fixed right-0 top-0 z-40 flex h-16 w-[calc(100%-260px)] items-center justify-between border-b border-[#c3c6d7] bg-[#faf8ff] px-8 shadow-sm">
-      <div className="flex h-12 w-full max-w-[480px] items-center rounded-full bg-[#f3f3fe] px-4">
+    <header className="fixed right-0 top-0 z-40 flex h-16 w-full items-center justify-between gap-3 border-b border-[#c3c6d7] bg-[#faf8ff] px-4 shadow-sm sm:px-6 lg:w-[calc(100%-260px)] lg:px-8">
+      <div className="flex min-w-0 items-center gap-3 lg:hidden">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#2563eb] text-2xl font-medium text-white">
+          P
+        </div>
+      </div>
+
+      <div className="hidden h-12 w-full max-w-[480px] items-center rounded-full bg-[#f3f3fe] px-4 sm:flex">
         <span className="material-symbols-outlined mr-2 text-xl text-[#737686]">search</span>
         <input
           className="w-full border-none bg-transparent font-['Geist'] text-[13px] text-[#191b23] outline-none placeholder:text-[#737686] focus:ring-0"
@@ -114,14 +120,14 @@ function Topbar() {
         />
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-6">
         <button className="relative rounded-full p-2 transition hover:bg-[#f3f3fe]">
           <span className="material-symbols-outlined text-[#434655]">notifications</span>
           <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ba1a1a] ring-2 ring-[#faf8ff]" />
         </button>
 
-        <div className="flex items-center gap-3 border-l border-[#c3c6d7] pl-4">
-          <div className="text-right">
+        <div className="flex min-w-0 items-center gap-3 border-l border-[#c3c6d7] pl-3 sm:pl-4">
+          <div className="hidden text-right sm:block">
             <p className="font-['Geist'] text-[13px] font-bold text-[#191b23]">
               Welcome back, John
             </p>
@@ -140,16 +146,16 @@ function Topbar() {
 
 function WelcomeBanner() {
   return (
-    <section className="relative mb-6 overflow-hidden rounded-xl bg-[#2563eb] p-8 shadow-sm">
+    <section className="relative mb-6 overflow-hidden rounded-xl bg-[#2563eb] p-5 shadow-sm sm:p-8">
       <div className="relative z-10 max-w-2xl">
-        <h2 className="mb-2 font-['Geist'] text-4xl font-bold leading-[44px] text-white">
+        <h2 className="mb-2 font-['Geist'] text-2xl font-bold leading-tight text-white sm:text-4xl sm:leading-[44px]">
           Welcome back, John.
         </h2>
         <p className="mb-6 font-['Inter'] text-base leading-6 text-white/90">
           You have one active session at the{" "}
           <span className="font-bold underline">North Campus Parking Hub</span>.
         </p>
-        <button className="flex items-center gap-2 rounded-xl bg-white px-8 py-3 font-['Geist'] text-[13px] font-bold text-[#004ac6] shadow-lg transition hover:bg-[#faf8ff] active:scale-95">
+        <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-['Geist'] text-[13px] font-bold text-[#004ac6] shadow-lg transition hover:bg-[#faf8ff] active:scale-95 sm:w-auto sm:px-8">
           <span className="material-symbols-outlined text-lg">add_circle</span>
           Book Slot
         </button>
@@ -271,7 +277,7 @@ function RecentBookings() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left">
+        <table className="w-full min-w-[620px] text-left">
           <thead>
             <tr className="bg-[#f3f3fe]">
               {["Date", "Slot", "Duration", "Payment", "Status"].map((heading) => (
@@ -374,6 +380,45 @@ function NearbyAvailability() {
   );
 }
 
+function MobileNav({ onLogout }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#2e3039]/95 px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl lg:hidden">
+      <div className="mx-auto flex max-w-3xl items-center justify-around gap-1">
+        {navItems.map(([icon, label, path], index) => {
+          const isActive = index === 0;
+
+          return (
+            <a
+              key={label}
+              href={path}
+              className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black transition ${
+                isActive
+                  ? "bg-white/10 text-[#dbe1ff]"
+                  : "text-[#bec6e0] hover:bg-white/10 hover:text-[#dbe1ff]"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px] leading-none">
+                {icon}
+              </span>
+              <span className="w-full truncate text-center">{label}</span>
+            </a>
+          );
+        })}
+        <button
+          type="button"
+          onClick={onLogout}
+          className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black text-[#bec6e0] transition hover:bg-white/10 hover:text-red-100"
+        >
+          <span className="material-symbols-outlined text-[22px] leading-none">
+            logout
+          </span>
+          <span className="w-full truncate text-center">Logout</span>
+        </button>
+      </div>
+    </nav>
+  );
+}
+
 export default function UserDashboardPage() {
   const navigate = useNavigate();
 
@@ -388,8 +433,8 @@ export default function UserDashboardPage() {
       <Sidebar onLogout={handleLogout} />
       <Topbar />
 
-      <main className="ml-[260px] min-h-screen bg-[#f8fafc] pt-16">
-        <div className="space-y-6 p-8">
+      <main className="min-h-screen bg-[#f8fafc] pt-16 lg:ml-[260px]">
+        <div className="space-y-6 p-4 pb-28 sm:p-6 sm:pb-28 lg:p-8">
           <WelcomeBanner />
           <StatsGrid />
 
@@ -405,6 +450,7 @@ export default function UserDashboardPage() {
           </div>
         </div>
       </main>
+      <MobileNav onLogout={handleLogout} />
     </div>
   );
 }

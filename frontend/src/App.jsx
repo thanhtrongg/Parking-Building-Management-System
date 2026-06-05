@@ -1,4 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import LoginPage from "./pages/auth/LoginPage";
 import PublicLandingPage from "./pages/public/LandingPage";
@@ -17,6 +25,105 @@ import UserSettingsPage from "./pages/user/SettingsPage";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+
+function getStoredUser() {
+  try {
+    const rawUser = localStorage.getItem("user");
+    return rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeRole(role) {
+  return String(role || "")
+    .trim()
+    .toUpperCase();
+}
+
+function getHomePathByRole(role) {
+  const normalizedRole = normalizeRole(role);
+
+  if (["ADMIN", "MANAGER", "STAFF"].includes(normalizedRole)) {
+    return "/dashboard";
+  }
+
+  if (normalizedRole === "USER") {
+    return "/user-dashboard";
+  }
+
+  return "/login";
+}
+
+function PublicRoute({ children }) {
+  const token =
+    localStorage.getItem("accessToken") || localStorage.getItem("token");
+  const user = getStoredUser();
+  const role = normalizeRole(user?.role || localStorage.getItem("role"));
+
+  if (token && role) {
+    return <Navigate to={getHomePathByRole(role)} replace />;
+  }
+
+  return children;
+}
+
+function clearSession() {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("role");
+}
+
+function hasActiveSession() {
+  return Boolean(
+    localStorage.getItem("accessToken") || localStorage.getItem("token"),
+  );
+}
+
+function InactivityTimeout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!hasActiveSession()) return undefined;
+
+    let timeoutId;
+
+    const resetTimer = () => {
+      window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        clearSession();
+        navigate("/", { replace: true });
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    const events = [
+      "click",
+      "keydown",
+      "mousemove",
+      "scroll",
+      "touchstart",
+      "wheel",
+    ];
+
+    resetTimer();
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, resetTimer, { passive: true });
+    });
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      events.forEach((eventName) => {
+        window.removeEventListener(eventName, resetTimer);
+      });
+    };
+  }, [location.pathname, navigate]);
+
+  return null;
+}
+
 function App() {
   const systemRoles = ["ADMIN", "MANAGER", "STAFF"];
   const managementRoles = ["ADMIN", "MANAGER"];
@@ -25,10 +132,25 @@ function App() {
 
   return (
     <BrowserRouter>
+      <InactivityTimeout />
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<PublicLandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <PublicLandingPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
 
         {/* ADMIN / MANAGER / STAFF routes */}
         <Route
