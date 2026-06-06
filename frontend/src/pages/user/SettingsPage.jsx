@@ -96,6 +96,8 @@ export default function UserSettingsPage() {
   const [form, setForm] = useState(() => getInitialForm(user));
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
+  const [showPasswordForm, setShowPasswordForm] =
+    useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -170,6 +172,7 @@ export default function UserSettingsPage() {
         newPassword: "",
         confirmPassword: "",
       });
+      setShowPasswordForm(false);
     } catch (error) {
       setAlert({
         type: "error",
@@ -278,44 +281,111 @@ export default function UserSettingsPage() {
               Security
             </h2>
 
-            <div className="mt-4 space-y-4">
-              <input
-                type="password"
-                name="currentPassword"
-                placeholder="Current Password"
-                value={passwordForm.currentPassword}
-                onChange={handlePasswordChange}
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-              />
+            {!showPasswordForm ? (
+              <div className="mt-4 space-y-3">
 
-              <input
-                type="password"
-                name="newPassword"
-                placeholder="New Password"
-                value={passwordForm.newPassword}
-                onChange={handlePasswordChange}
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-              />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordForm(true)}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:bg-slate-100"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined">
+                      lock
+                    </span>
 
-              <input
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm New Password"
-                value={passwordForm.confirmPassword}
-                onChange={handlePasswordChange}
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-              />
+                    <span className="font-black text-slate-700">
+                      Change Password
+                    </span>
+                  </div>
 
-              <button
-                onClick={handleChangePassword}
-                disabled={changingPassword}
-                className="h-11 w-full rounded-xl bg-blue-600 text-white font-bold"
-              >
-                {changingPassword
-                  ? "Changing Password..."
-                  : "Change Password"}
-              </button>
-            </div>
+                  <span className="material-symbols-outlined">
+                    chevron_right
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-red-600 transition hover:bg-red-100"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined">
+                      logout
+                    </span>
+
+                    <span className="font-black">
+                      Sign Out All Devices
+                    </span>
+                  </div>
+
+                  <span className="material-symbols-outlined">
+                    chevron_right
+                  </span>
+                </button>
+
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+
+                <input
+                  type="password"
+                  name="currentPassword"
+                  placeholder="Current Password"
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordChange}
+                  className="h-12 w-full rounded-xl border border-slate-200 px-4"
+                />
+
+                <input
+                  type="password"
+                  name="newPassword"
+                  placeholder="New Password"
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordChange}
+                  className="h-12 w-full rounded-xl border border-slate-200 px-4"
+                />
+
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm New Password"
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordChange}
+                  className="h-12 w-full rounded-xl border border-slate-200 px-4"
+                />
+
+                <div className="flex gap-3">
+
+                  <button
+                    type="button"
+                    onClick={handleChangePassword}
+                    disabled={changingPassword}
+                    className="flex-1 rounded-xl bg-blue-600 py-3 font-black text-white"
+                  >
+                    {changingPassword
+                      ? "Changing Password..."
+                      : "Change Password"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordForm(false);
+
+                      setPasswordForm({
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: "",
+                      });
+                    }}
+                    className="rounded-xl border border-slate-200 px-4"
+                  >
+                    Cancel
+                  </button>
+
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </div>
