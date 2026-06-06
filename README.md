@@ -1,581 +1,295 @@
 # Parking Building Management System
 
-A full-stack web application for managing parking buildings, parking slots, vehicle types, reservations, payments, parking sessions, feedbacks, pricing policies, and user roles.
+A full-stack parking building management system for managing users, parking zones, parking slots, reservations, parking sessions, payments, vehicle types, pricing policies, and role-based workflows.
 
-This project is developed as a modern parking building management platform to help parking operators manage slot availability, vehicle flow, reservations, payments, and system users more efficiently.
+The current `main` branch uses:
 
----
+- Backend: Node.js, Express.js, Prisma ORM, PostgreSQL
+- Frontend: React, Vite, Tailwind CSS
+- Authentication: JWT with role-based access control
 
-## Table of Contents
+There is no Java backend in `main`.
 
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [System Roles](#system-roles)
-- [Project Structure](#project-structure)
-- [Database Design](#database-design)
-- [Backend Progress](#backend-progress)
-- [Frontend Progress](#frontend-progress)
-- [API Endpoints](#api-endpoints)
-- [Authentication Flow](#authentication-flow)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Development Workflow](#development-workflow)
-- [Roadmap](#roadmap)
-- [Contributors](#contributors)
-- [Project Status](#project-status)
+## Features
 
----
+### Authentication
 
-## Overview
+- Login with JWT authentication
+- Sign up for user accounts
+- Remember me support with longer token lifetime
+- Current-user lookup via protected API
+- Protected frontend routes
+- Role-based backend middleware
 
-**Parking Building Management System** is a web-based application designed to support the daily operation of a multi-floor parking building.
+### User Features
 
-The system helps manage:
+- User dashboard connected to real API data
+- View reservation summary
+- Book an available parking slot
+- Search available slots by vehicle type and reservation time
+- Create reservation from available slots
+- View booking history on a separate page
+- User settings page
 
-- Vehicle types
-- Parking zones and parking slots
-- Slot status and availability
-- Parking reservations
-- Parking sessions
-- Payment records
-- User authentication
-- Role-based access
-- Feedback and issue reports
-- Pricing policies and system configurations
+### Admin and System Features
 
-The goal of this project is to reduce manual parking management errors, improve slot tracking, support revenue management, and provide a clear workflow for administrators, managers, staff, and drivers.
-
----
-
-## Key Features
-
-### Completed Features
-
-- Backend setup with Node.js and Express.js
-- Backend uses ES Module syntax
-- PostgreSQL local database connection
-- Prisma ORM integration
-- Database schema design for core parking management modules
-- JWT-based authentication
-- Login API
-- Get current authenticated user API
-- Logout API
-- Vehicle type API
-- Parking slot API
-- Reservation API
-- Payment API
-- Frontend setup with ReactJS, Vite, and Tailwind CSS
-- Login page connected to backend API
-- Token storage using Local Storage
-- Admin vehicle type page connected to API
-- Parking slot management page connected to API
-- Reservation page connected to API
-- Payment page connected to API
-- Improved UI for parking slots and vehicle type management
-
-### Current Development Focus
-
-- Building admin and management dashboard pages
-- Improving role-based UI rendering
-- Expanding CRUD operations for management pages
-- Enhancing parking slot, reservation, and payment workflows
-- Preparing frontend pages for real database data
-
----
+- System dashboard connected to API data
+- Parking slot management
+- Parking session management
+- Reservation management
+- Payment management
+- Vehicle type management
+- Zone management
+- Pricing policy management
+- User management
 
 ## Tech Stack
 
 ### Frontend
 
-- ReactJS
+- React 19
 - Vite
 - Tailwind CSS
 - React Router DOM
-- JavaScript
+- Framer Motion
+- Three.js / React Three Fiber for visual landing page elements
 
 ### Backend
 
 - Node.js
 - Express.js
-- ES Module
 - Prisma ORM
-- JWT Authentication
+- PostgreSQL
+- JWT
 - bcryptjs
 - CORS
 - dotenv
 
 ### Database
 
-- PostgreSQL
-- Prisma Migration
-- pgAdmin 4
+The Prisma schema currently includes:
 
-### Development Tools
-
-- Visual Studio Code
-- Thunder Client / Postman
-- Git & GitHub
-- GitHub Issues
-- GitHub Pull Requests
-
----
-
-## System Roles
-
-The current database supports the following roles:
-
-| Role | Description |
-|---|---|
-| `ADMIN` | Manages system users, roles, configurations, and overall system data |
-| `MANAGER` | Manages parking zones, parking slots, pricing policies, reports, and operations |
-| `STAFF` | Handles vehicle entry, exit, reservations, payments, and daily parking activities |
-| `USER` | Uses the system to view parking information, make reservations, and track parking sessions |
-
----
+- `users`
+- `vehicle_types`
+- `zones`
+- `parking_slots`
+- `reservations`
+- `parking_sessions`
+- `payments`
+- `feedbacks`
+- `pricing_policies`
+- `system_configs`
 
 ## Project Structure
 
-```bash
+```text
 Parking-Building-Management-System/
-│
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── migrations/
-│   │
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middlewares/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── server.js
-│   │
-│   ├── .env
-│   ├── .env.example
-│   ├── package.json
-│   └── package-lock.json
-│
-├── frontend/
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   ├── layouts/
-│   │   ├── pages/
-│   │   │   ├── LoginPage.jsx
-│   │   │   ├── AdminVehiclesPage.jsx
-│   │   │   ├── ParkingSlotsPage.jsx
-│   │   │   ├── ReservationsPage.jsx
-│   │   │   └── PaymentsPage.jsx
-│   │   │
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   │
-│   ├── package.json
-│   └── package-lock.json
-│
-├── .gitignore
-├── README.md
-└── LICENSE
+|-- backend/
+|   |-- prisma/
+|   |   |-- schema.prisma
+|   |   `-- migrations/
+|   |-- src/
+|   |   |-- config/
+|   |   |-- controllers/
+|   |   |-- middlewares/
+|   |   |-- routes/
+|   |   `-- server.js
+|   |-- package.json
+|   `-- package-lock.json
+|-- frontend/
+|   |-- src/
+|   |   |-- components/
+|   |   |-- pages/
+|   |   |   |-- auth/
+|   |   |   |-- public/
+|   |   |   |-- system/
+|   |   |   `-- user/
+|   |   |-- routes/
+|   |   |-- services/
+|   |   |-- App.jsx
+|   |   `-- main.jsx
+|   |-- package.json
+|   `-- package-lock.json
+|-- .gitignore
+|-- LICENSE
+`-- README.md
 ```
 
----
+## Main API Groups
 
-## Database Design
+Backend base URL:
 
-The current PostgreSQL database includes the following main tables:
-
-| Table | Description |
-|---|---|
-| `users` | Stores system users and authentication-related information |
-| `vehicle_types` | Stores supported vehicle types such as car, motorbike, truck, etc. |
-| `zones` | Stores parking building zones or floors |
-| `parking_slots` | Stores parking slot information and slot status |
-| `reservations` | Stores parking reservation records |
-| `parking_sessions` | Stores vehicle entry and exit session data |
-| `payments` | Stores payment information for reservations or parking sessions |
-| `feedbacks` | Stores user feedback and issue reports |
-| `pricing_policies` | Stores parking fee rules and pricing configuration |
-| `system_configs` | Stores system-level configuration values |
-
----
-
-## Backend Progress
-
-The backend is currently running on:
-
-```bash
+```text
 http://localhost:5000
 ```
 
-### Completed Backend APIs
+### Auth
 
 | Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/login` | Authenticates user and returns JWT token |
-| `GET` | `/api/auth/me` | Gets current authenticated user information |
-| `POST` | `/api/auth/logout` | Logs out current user |
-| `GET` | `/api/vehicle-types` | Gets all vehicle types |
-| `GET` | `/api/parking-slots` | Gets all parking slots |
-| `GET` | `/api/reservations` | Gets all reservations |
-| `GET` | `/api/payments` | Gets all payment records |
-
----
-
-## Frontend Progress
-
-The frontend is currently running on:
-
-```bash
-http://localhost:5173
-```
-
-### Completed Frontend Pages
-
-| Page | API Connected | Description |
-|---|---|---|
-| `LoginPage.jsx` | `POST /api/auth/login` | Login page with backend authentication |
-| `AdminVehiclesPage.jsx` | `GET /api/vehicle-types` | Displays vehicle type data from database |
-| `ParkingSlotsPage.jsx` | `GET /api/parking-slots` | Displays parking slot data from database |
-| `ReservationsPage.jsx` | `GET /api/reservations` | Displays reservation data from database |
-| `PaymentsPage.jsx` | `GET /api/payments` | Displays payment data from database |
-
-### UI Improvements Completed
-
-- Redesigned parking slot management page
-- Improved parking slot status display
-- Improved floor/zone display logic
-- Redesigned admin vehicle type page
-- Added suitable vehicle icons/SVGs for each vehicle type
-- Fixed payment page display issues
-- Connected frontend pages to real backend APIs
-
----
-
-## API Endpoints
-
-### Authentication
-
-#### Login
-
-```http
-POST /api/auth/login
-```
-
-Request body:
-
-```json
-{
-  "email": "admin@example.com",
-  "password": "password123"
-}
-```
-
-Response example:
-
-```json
-{
-  "message": "Login successful",
-  "token": "jwt_token_here",
-  "user": {
-    "id": 1,
-    "fullName": "Admin User",
-    "email": "admin@example.com",
-    "role": "ADMIN"
-  }
-}
-```
-
-#### Get Current User
-
-```http
-GET /api/auth/me
-```
-
-Headers:
-
-```http
-Authorization: Bearer jwt_token_here
-```
-
-#### Logout
-
-```http
-POST /api/auth/logout
-```
-
----
-
-### Vehicle Types
-
-```http
-GET /api/vehicle-types
-```
-
-Returns all vehicle types stored in the database.
-
----
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Create a new user account |
+| `POST` | `/api/auth/login` | Login and return JWT |
+| `GET` | `/api/auth/me` | Get current authenticated user |
+| `POST` | `/api/auth/logout` | Logout current user |
 
 ### Parking Slots
 
-```http
-GET /api/parking-slots
-```
-
-Returns all parking slots with related zone and status information.
-
----
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/parking-slots` | List parking slots |
+| `GET` | `/api/parking-slots/available-for-reservation` | List available slots for booking |
+| `POST` | `/api/parking-slots` | Create parking slot |
+| `PUT` | `/api/parking-slots/:id` | Update parking slot |
+| `DELETE` | `/api/parking-slots/:id` | Delete parking slot |
 
 ### Reservations
 
-```http
-GET /api/reservations
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/reservations` | List reservations |
+| `GET` | `/api/reservations/:id` | Get reservation detail |
+| `POST` | `/api/reservations` | Create reservation |
+| `PUT` | `/api/reservations/:id` | Update reservation |
+| `DELETE` | `/api/reservations/:id` | Delete reservation |
+
+### Parking Sessions
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/parking-sessions` | List parking sessions |
+| `GET` | `/api/parking-sessions/:id` | Get parking session detail |
+| `POST` | `/api/parking-sessions/check-in` | Check in a vehicle |
+| `PUT` | `/api/parking-sessions/:id/checkout` | Check out a vehicle |
+
+### Other API Groups
+
+- `/api/vehicle-types`
+- `/api/zones`
+- `/api/pricing-policies`
+- `/api/payments`
+- `/api/users`
+- `/api/test-db`
+
+## Frontend Pages
+
+Frontend dev URL:
+
+```text
+http://localhost:5173
 ```
 
-Returns all reservation records.
+### Public and Auth
 
----
+- Public landing page
+- Login page
+- Sign up page
 
-### Payments
+### User
 
-```http
-GET /api/payments
+- User dashboard
+- Book slot page
+- Booking history page
+- Settings page
+
+### System
+
+- Dashboard
+- Parking slots
+- Parking sessions
+- Reservations
+- Payments
+- Vehicle types
+- Zones
+- Pricing policies
+- Users
+
+## Environment Variables
+
+Create `backend/.env`:
+
+```env
+DATABASE_URL="postgresql://postgres:your_password@localhost:5432/parking_management"
+JWT_SECRET="change_this_secret"
+JWT_EXPIRES_IN="1d"
+PORT=5000
 ```
 
-Returns all payment records.
+Create or update `frontend/.env`:
 
----
-
-## Authentication Flow
-
-The current authentication flow works as follows:
-
-1. User enters email and password on the login page.
-2. Frontend sends login request to the backend.
-3. Backend validates user credentials.
-4. Backend returns a JWT token after successful login.
-5. Frontend stores the token in Local Storage.
-6. Frontend uses the token to access protected APIs.
-7. Backend verifies the token through authentication middleware.
-8. User can logout and remove the stored token.
-
----
+```env
+VITE_API_URL=http://localhost:5000
+```
 
 ## Getting Started
 
 ### Prerequisites
 
-Make sure you have installed:
-
 - Node.js
 - npm
 - PostgreSQL
-- pgAdmin 4
 - Git
 
----
-
-## Backend Setup
-
-Go to the backend folder:
+### Backend Setup
 
 ```bash
 cd backend
-```
-
-Install dependencies:
-
-```bash
 npm install
-```
-
-Create a `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-Update your database connection string in `.env`:
-
-```env
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/parking_building_db"
-JWT_SECRET="your_jwt_secret"
-PORT=5000
-```
-
-Run Prisma migration:
-
-```bash
-npx prisma migrate dev
-```
-
-Generate Prisma Client:
-
-```bash
 npx prisma generate
-```
-
-Start backend server:
-
-```bash
+npx prisma migrate dev
 npm run dev
 ```
 
-Backend will run at:
+The backend should run at:
 
-```bash
+```text
 http://localhost:5000
 ```
 
----
+Test database connection:
 
-## Frontend Setup
+```text
+GET http://localhost:5000/api/test-db
+```
 
-Go to the frontend folder:
+### Frontend Setup
 
 ```bash
 cd frontend
-```
-
-Install dependencies:
-
-```bash
 npm install
-```
-
-Start frontend development server:
-
-```bash
 npm run dev
 ```
 
-Frontend will run at:
+The frontend should run at:
 
-```bash
+```text
 http://localhost:5173
 ```
 
----
-
-## Environment Variables
-
-Backend `.env` example:
-
-```env
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/parking_building_db"
-JWT_SECRET="your_jwt_secret_key"
-PORT=5000
-```
-
----
-
-## Development Workflow
-
-This project follows a GitHub-based development workflow:
+### Production Build
 
 ```bash
-Create issue
-→ Create feature branch
-→ Develop feature
-→ Commit changes
-→ Push branch
-→ Create pull request
-→ Review
-→ Merge into main
+cd frontend
+npm run build
 ```
 
-### Example Branch Naming
+## Development Notes
+
+- `main` is currently the Node.js backend branch.
+- Java backend files should not be committed to `main`.
+- Frontend API calls are centralized in `frontend/src/services/api.js`.
+- Backend route registration starts from `backend/src/server.js`.
+- Prisma database models are defined in `backend/prisma/schema.prisma`.
+
+## Commit Style
+
+Use short conventional commit messages:
 
 ```bash
-feature/connect-reservations-api
-feature/connect-payments-api
-feature/redesign-parking-slots-page
-feature/auth-login-api
+feat: add user reservation flow
+fix: update parking slot display
+docs: refresh project readme
 ```
-
-### Example Commit Messages
-
-```bash
-feat: connect reservations page to API
-feat: connect payments page to API
-feat: redesign parking slots page
-fix: update payments page display
-```
-
----
-
-## Roadmap
-
-### Backend
-
-- [x] Setup Express server
-- [x] Connect PostgreSQL database
-- [x] Setup Prisma ORM
-- [x] Create authentication APIs
-- [x] Create vehicle type API
-- [x] Create parking slot API
-- [x] Create reservation API
-- [x] Create payment API
-- [ ] Add create/update/delete APIs for vehicle types
-- [ ] Add create/update/delete APIs for parking slots
-- [ ] Add parking entry session API
-- [ ] Add parking exit session API
-- [ ] Add fee calculation logic
-- [ ] Add feedback and incident APIs
-- [ ] Add report and analytics APIs
-- [ ] Add role-based authorization middleware
-
-### Frontend
-
-- [x] Setup ReactJS with Vite
-- [x] Setup Tailwind CSS
-- [x] Build login page
-- [x] Connect login page to backend
-- [x] Connect vehicle type page to API
-- [x] Connect parking slot page to API
-- [x] Connect reservation page to API
-- [x] Connect payment page to API
-- [x] Improve parking slot UI
-- [x] Improve admin vehicle UI
-- [x] Fix payment page display
-- [ ] Add dashboard statistics
-- [ ] Add create/update/delete forms
-- [ ] Add role-based sidebar/menu rendering
-- [ ] Add parking entry and exit screens
-- [ ] Add reservation management actions
-- [ ] Add payment confirmation workflow
-- [ ] Add report and analytics UI
-
----
-
-## Contributors
-
-This project is developed as part of a software engineering course project.
-
-Main responsibilities include:
-
-- Requirement analysis
-- Database design
-- Backend API development
-- Frontend UI development
-- Authentication flow
-- API integration
-- GitHub issue, branch, commit, push, and pull request workflow
-
----
 
 ## Project Status
 
-The project is currently under active development.
-
-Current stable progress:
-
-- Authentication flow is working
-- Backend connects successfully to PostgreSQL
-- Prisma is used for database access
-- Main read-only APIs are available
-- Core management pages are connected to backend data
-- Frontend and backend can run locally
+The project is under active development. Core authentication, user booking flow, admin/system pages, and main API integrations are in place. CRUD and role-based workflows continue to be expanded as the project evolves.
