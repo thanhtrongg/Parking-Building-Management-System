@@ -1,14 +1,24 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+
+const REMEMBER_ME_DAYS = 30;
+const DEFAULT_SESSION_DAYS = 1;
+
+function getExpiryTimestamp(rememberMe) {
+  const days = rememberMe ? REMEMBER_ME_DAYS : DEFAULT_SESSION_DAYS;
+  return Date.now() + days * 24 * 60 * 60 * 1000;
+}
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("123456");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -24,6 +34,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           email,
           password,
+          rememberMe,
         }),
       });
 
@@ -36,6 +47,11 @@ export default function LoginPage() {
 
       localStorage.setItem("accessToken", result.data.accessToken);
       localStorage.setItem("user", JSON.stringify(result.data.user));
+      localStorage.setItem("rememberMe", String(rememberMe));
+      localStorage.setItem(
+        "authExpiresAt",
+        String(getExpiryTimestamp(rememberMe)),
+      );
 
       const role = result.data.user.role;
 
@@ -58,9 +74,9 @@ export default function LoginPage() {
     <div className="min-h-screen w-full bg-[#eef2f7] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-5xl bg-white rounded-[26px] shadow-[0_25px_70px_rgba(15,23,42,0.16)] overflow-hidden grid grid-cols-1 lg:grid-cols-2">
         {/* Left panel */}
-        <div className="hidden lg:flex flex-col justify-between bg-[#0f1f3a] text-white p-10 min-h-[620px] relative overflow-hidden">
-          <div className="absolute right-[-80px] top-[-80px] h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
-          <div className="absolute left-[-80px] bottom-[-80px] h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
+        <div className="hidden lg:flex flex-col justify-between bg-[#0f1f3a] text-white p-10 min-h-155 relative overflow-hidden">
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
+          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
 
           <div className="relative z-10">
             <div className="flex items-center gap-3">
@@ -112,7 +128,7 @@ export default function LoginPage() {
         </div>
 
         {/* Right panel */}
-        <div className="min-h-[620px] flex items-center justify-center px-6 py-10 sm:px-12">
+        <div className="min-h-155 flex items-center justify-center px-6 py-10 sm:px-12">
           <div className="w-full max-w-md">
             <div className="lg:hidden mb-8 flex items-center gap-3">
               <div className="h-12 w-12 rounded-2xl bg-[#0f1f3a] flex items-center justify-center text-white font-bold text-2xl">
@@ -161,7 +177,7 @@ export default function LoginPage() {
                     placeholder="admin@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-[52px] rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm text-slate-800 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full h-13 rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm text-slate-800 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     required
                   />
                 </div>
@@ -191,7 +207,7 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-[52px] rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-12 text-sm text-slate-800 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full h-13 rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-12 text-sm text-slate-800 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     required
                   />
 
@@ -212,6 +228,8 @@ export default function LoginPage() {
                   <input
                     id="remember"
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
                     className="h-4 w-4 rounded border-slate-300"
                   />
                   Remember me
@@ -221,7 +239,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-[52px] rounded-2xl bg-[#0f1f3a] text-white font-semibold shadow-lg shadow-slate-900/20 transition hover:bg-[#182f58] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                className="w-full h-13 rounded-2xl bg-[#0f1f3a] text-white font-semibold shadow-lg shadow-slate-900/20 transition hover:bg-[#182f58] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -247,6 +265,16 @@ export default function LoginPage() {
                 admin@gmail.com / 123456
               </p>
             </div>
+
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Do not have an account?{" "}
+              <Link
+                to="/signup"
+                className="font-semibold text-blue-600 hover:text-blue-700"
+              >
+                Sign up
+              </Link>
+            </p>
 
             <p className="mt-8 text-center text-xs text-slate-400">
               © 2026 Parking Building Management System

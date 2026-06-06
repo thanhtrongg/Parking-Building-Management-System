@@ -29,12 +29,31 @@ function getRedirectPathByRole(role) {
   return "/login";
 }
 
+function clearSession() {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("role");
+  localStorage.removeItem("rememberMe");
+  localStorage.removeItem("authExpiresAt");
+}
+
+function isSessionExpired() {
+  const expiresAt = Number(localStorage.getItem("authExpiresAt") || 0);
+  return expiresAt > 0 && Date.now() > expiresAt;
+}
+
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const token =
     localStorage.getItem("accessToken") || localStorage.getItem("token");
 
   const user = getStoredUser();
   const userRole = normalizeRole(user?.role);
+
+  if (token && isSessionExpired()) {
+    clearSession();
+    return <Navigate to="/login" replace />;
+  }
 
   if (!token || !userRole) {
     return <Navigate to="/login" replace />;

@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import LoginPage from "./pages/auth/LoginPage";
+import SignUpPage from "./pages/auth/SignUpPage";
 import PublicLandingPage from "./pages/public/LandingPage";
 import DashboardPage from "./pages/system/DashboardPage";
 import ParkingSessionsPage from "./pages/system/ParkingSessionsPage";
@@ -20,6 +21,7 @@ import AdminUsersPage from "./pages/system/UsersPage";
 import AdminVehiclesPage from "./pages/system/VehiclesPage";
 import ZonesPage from "./pages/system/ZonesPage";
 import UserDashboardPage from "./pages/user/DashboardPage";
+import UserBookingHistoryPage from "./pages/user/BookingHistoryPage";
 import UserMyBookingsPage from "./pages/user/MyBookingsPage";
 import UserSettingsPage from "./pages/user/SettingsPage";
 
@@ -62,7 +64,9 @@ function PublicRoute({ children }) {
   const user = getStoredUser();
   const role = normalizeRole(user?.role || localStorage.getItem("role"));
 
-  if (token && role) {
+  if (token && isSessionExpired()) {
+    clearSession();
+  } else if (token && role) {
     return <Navigate to={getHomePathByRole(role)} replace />;
   }
 
@@ -74,9 +78,25 @@ function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   localStorage.removeItem("role");
+  localStorage.removeItem("rememberMe");
+  localStorage.removeItem("authExpiresAt");
+}
+
+function isSessionExpired() {
+  const expiresAt = Number(localStorage.getItem("authExpiresAt") || 0);
+  return expiresAt > 0 && Date.now() > expiresAt;
+}
+
+function shouldUseInactivityTimeout() {
+  return localStorage.getItem("rememberMe") !== "true";
 }
 
 function hasActiveSession() {
+  if (isSessionExpired()) {
+    clearSession();
+    return false;
+  }
+
   return Boolean(
     localStorage.getItem("accessToken") || localStorage.getItem("token"),
   );
@@ -88,6 +108,7 @@ function InactivityTimeout() {
 
   useEffect(() => {
     if (!hasActiveSession()) return undefined;
+    if (!shouldUseInactivityTimeout()) return undefined;
 
     let timeoutId;
 
@@ -148,6 +169,14 @@ function App() {
           element={
             <PublicRoute>
               <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <SignUpPage />
             </PublicRoute>
           }
         />
@@ -251,6 +280,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={userRoles}>
               <UserMyBookingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/user-booking-history"
+          element={
+            <ProtectedRoute allowedRoles={userRoles}>
+              <UserBookingHistoryPage />
             </ProtectedRoute>
           }
         />

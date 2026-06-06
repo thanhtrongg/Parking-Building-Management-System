@@ -1,0 +1,216 @@
+import { useEffect, useMemo, useState } from "react";
+import UserLayout from "../../components/UserLayout";
+import { apiRequest } from "../../services/api";
+
+const statusStyles = {
+  PENDING: "bg-amber-50 text-amber-700 ring-amber-100",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  CHECKED_IN: "bg-blue-50 text-blue-700 ring-blue-100",
+  CANCELLED: "bg-red-50 text-red-700 ring-red-100",
+  COMPLETED: "bg-slate-100 text-slate-700 ring-slate-200",
+};
+
+function formatDateTime(value) {
+  if (!value) return "N/A";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function normalizeBookings(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+}
+
+function StatusBadge({ status }) {
+  const normalizedStatus = String(status || "PENDING").toUpperCase();
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black uppercase ring-1 ${
+        statusStyles[normalizedStatus] || statusStyles.PENDING
+      }`}
+    >
+      {normalizedStatus}
+    </span>
+  );
+}
+
+function PageHeader({ total }) {
+  return (
+    <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div>
+        <h1 className="font-['Geist'] text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+          Booking History
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Review reservations, parking location, vehicle type, schedule, and
+          current status from your real account data.
+        </p>
+      </div>
+      <div className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm">
+        <span className="material-symbols-outlined text-[20px]">
+          event_available
+        </span>
+        {total} bookings
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
+      <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
+        <span className="material-symbols-outlined text-[34px]">
+          event_busy
+        </span>
+      </div>
+      <h2 className="mt-5 font-['Geist'] text-xl font-black text-slate-950">
+        No bookings yet
+      </h2>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+        Your reservations will appear here after you book a parking slot.
+      </p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      {[1, 2, 3, 4].map((item) => (
+        <div
+          key={item}
+          className="h-56 animate-pulse rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div className="h-6 w-32 rounded-full bg-slate-100" />
+          <div className="mt-5 h-4 w-2/3 rounded-full bg-slate-100" />
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            <div className="h-16 rounded-xl bg-slate-100" />
+            <div className="h-16 rounded-xl bg-slate-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BookingCard({ booking }) {
+  const slotName = booking.parkingSlot?.slotName || "Unassigned";
+  const zoneName = booking.parkingSlot?.zone?.zoneName || "N/A";
+  const vehicleType = booking.vehicleType?.typeName || "N/A";
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-['Geist'] text-lg font-black text-slate-950">
+              {booking.id?.slice(0, 8) || "Booking"}
+            </h2>
+            <StatusBadge status={booking.status} />
+          </div>
+          <p className="mt-2 text-sm font-semibold text-slate-700">
+            {zoneName}
+          </p>
+        </div>
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+          <span className="material-symbols-outlined text-[24px]">
+            local_parking
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+        <Info label="Slot" value={slotName} />
+        <Info label="Vehicle" value={vehicleType} />
+        <Info label="Start" value={formatDateTime(booking.startTime)} />
+        <Info label="End" value={formatDateTime(booking.endTime)} />
+      </div>
+    </article>
+  );
+}
+
+function Info({ label, value }) {
+  return (
+    <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+      <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 font-black text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+export default function BookingHistoryPage() {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadBookings() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const result = await apiRequest("/api/reservations");
+
+        if (!ignore) {
+          setBookings(normalizeBookings(result));
+        }
+      } catch (loadError) {
+        if (!ignore) {
+          setError(loadError.message || "Cannot load bookings");
+          setBookings([]);
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadBookings();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const sortedBookings = useMemo(() => {
+    return [...bookings].sort((a, b) => {
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+  }, [bookings]);
+
+  return (
+    <UserLayout>
+      <PageHeader total={bookings.length} />
+
+      {loading ? (
+        <LoadingState />
+      ) : error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-10 text-center text-sm font-bold text-red-700">
+          {error}
+        </div>
+      ) : sortedBookings.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          {sortedBookings.map((booking) => (
+            <BookingCard key={booking.id} booking={booking} />
+          ))}
+        </div>
+      )}
+    </UserLayout>
+  );
+}

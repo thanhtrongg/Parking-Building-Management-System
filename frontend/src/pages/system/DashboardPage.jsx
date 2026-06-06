@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = API_ROOT.endsWith("/api") ? API_ROOT : `${API_ROOT}/api`;
 
 function getAuthHeaders() {
   const token = localStorage.getItem("accessToken");
@@ -365,6 +365,8 @@ function RecentSessions({ sessions }) {
                 const slot =
                   session.slotCode ||
                   session.slot_code ||
+                  session.parkingSlot?.slotName ||
+                  session.parking_slot?.slot_name ||
                   session.parkingSlot?.slotCode ||
                   session.parking_slot?.slot_code ||
                   "Unassigned";

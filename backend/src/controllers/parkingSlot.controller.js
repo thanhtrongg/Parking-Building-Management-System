@@ -14,6 +14,111 @@ const isValidUUID = (id) => {
   return typeof id === "string" && UUID_REGEX.test(id);
 };
 
+const isValidDate = (date) => {
+  return date instanceof Date && !Number.isNaN(date.getTime());
+};
+
+export const getAvailableParkingSlotsForReservation = async (req, res) => {
+  try {
+    const { vehicleTypeId, startTime, endTime } = req.query;
+
+    if (vehicleTypeId && !isValidUUID(vehicleTypeId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid vehicleTypeId",
+      });
+    }
+
+    const parsedStartTime = startTime ? new Date(startTime) : null;
+    const parsedEndTime = endTime ? new Date(endTime) : null;
+
+    if (
+      (startTime && !isValidDate(parsedStartTime)) ||
+      (endTime && !isValidDate(parsedEndTime))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid startTime or endTime",
+      });
+    }
+
+    if (parsedStartTime && parsedEndTime && parsedStartTime >= parsedEndTime) {
+      return res.status(400).json({
+        success: false,
+        message: "startTime must be before endTime",
+      });
+    }
+
+    const parkingSlots = await prisma.parking_slots.findMany({
+      where: {
+        status: "AVAILABLE",
+        ...(vehicleTypeId && {
+          zones: {
+            vehicle_type_id: vehicleTypeId,
+          },
+        }),
+        ...(parsedStartTime &&
+          parsedEndTime && {
+            reservations: {
+              none: {
+                status: {
+                  in: ["PENDING", "CONFIRMED", "CHECKED_IN"],
+                },
+                expected_start_time: {
+                  lt: parsedEndTime,
+                },
+                expected_end_time: {
+                  gt: parsedStartTime,
+                },
+              },
+            },
+          }),
+      },
+      include: {
+        zones: {
+          include: {
+            vehicle_types: true,
+          },
+        },
+      },
+      orderBy: [
+        {
+          zones: {
+            zone_name: "asc",
+          },
+        },
+        {
+          slot_name: "asc",
+        },
+      ],
+    });
+
+    return res.json({
+      success: true,
+      message: "Get available parking slots successfully",
+      data: parkingSlots.map((slot) => ({
+        id: slot.id,
+        slotName: slot.slot_name,
+        slotNumber: slot.slot_name,
+        status: slot.status,
+        distanceToGate: slot.distance_to_gate,
+        zoneId: slot.zone_id,
+        zoneName: slot.zones?.zone_name || null,
+        vehicleTypeId: slot.zones?.vehicle_type_id || null,
+        vehicleTypeName: slot.zones?.vehicle_types?.type_name || null,
+      })),
+    });
+  } catch (error) {
+    console.error("Get available parking slots error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export const getParkingSlots = async (req, res) => {
   try {
     const parkingSlots = await prisma.$queryRaw`

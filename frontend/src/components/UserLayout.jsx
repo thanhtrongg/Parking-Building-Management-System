@@ -9,8 +9,13 @@ const navItems = [
   },
   {
     icon: "event_available",
-    label: "My Bookings",
+    label: "Book Slot",
     path: "/user-bookings",
+  },
+  {
+    icon: "history",
+    label: "History",
+    path: "/user-booking-history",
   },
   {
     icon: "settings",

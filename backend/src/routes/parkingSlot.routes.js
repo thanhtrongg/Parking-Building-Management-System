@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   getParkingSlots,
+  getAvailableParkingSlotsForReservation,
   createParkingSlot,
   updateParkingSlot,
   deleteParkingSlot,
@@ -10,6 +11,13 @@ import {
 import { verifyToken, requireRoles } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.get(
+  "/available-for-reservation",
+  verifyToken,
+  requireRoles("USER", "ADMIN", "MANAGER", "STAFF"),
+  getAvailableParkingSlotsForReservation,
+);
 
 router.get("/", verifyToken, getParkingSlots);
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 async function readResponse(response) {
   const contentType = response.headers.get("content-type") || "";
@@ -15,6 +15,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     username: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -45,6 +46,7 @@ export default function SignUpPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: form.username.trim(),
+          fullName: form.fullName.trim(),
           email: form.email.trim(),
           password: form.password,
         }),
@@ -93,8 +95,8 @@ export default function SignUpPage() {
                 Create an account for parking operations.
               </h2>
               <p className="mt-5 max-w-md leading-7 text-slate-300">
-                Register a staff or customer account and start using the Java
-                backend authentication flow.
+                Register a customer account and start using the parking
+                management system.
               </p>
             </div>
           </div>
@@ -131,7 +133,16 @@ export default function SignUpPage() {
                 label="Username"
                 value={form.username}
                 onChange={(value) => updateField("username", value)}
-                placeholder="admin"
+                placeholder="customer01"
+                required
+              />
+
+              <Field
+                icon="badge"
+                label="Full name"
+                value={form.fullName}
+                onChange={(value) => updateField("fullName", value)}
+                placeholder="Nguyen Van A"
                 required
               />
 
