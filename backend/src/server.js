@@ -12,6 +12,7 @@ import vehicleTypeRoutes from "./routes/vehicleType.routes.js";
 import zoneRoutes from "./routes/zone.routes.js";
 import pricingPolicyRoutes from "./routes/pricingPolicy.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import userFeedbackRoutes from "./routes/userFeedback.routes.js";
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use("/api/vehicle-types", vehicleTypeRoutes);
 app.use("/api/zones", zoneRoutes);
 app.use("/api/pricing-policies", pricingPolicyRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/user/feedbacks", userFeedbackRoutes);
 
 const PORT = process.env.PORT || 5000;
 

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import UserLayout from "../../components/UserLayout";
+import { apiRequest } from "../../services/api";
 
 function getStoredUser() {
   try {
@@ -92,6 +93,131 @@ function ToggleRow({ icon, label, checked }) {
   );
 }
 
+function FeedbackForm() {
+  const [feedbackForm, setFeedbackForm] = useState({
+    parkingSessionId: "",
+    subject: "",
+    message: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [feedbackAlert, setFeedbackAlert] = useState({
+    type: "",
+    message: "",
+  });
+
+  const handleFeedbackChange = (event) => {
+    const { name, value } = event.target;
+    setFeedbackForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handleFeedbackSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setFeedbackAlert({ type: "", message: "" });
+
+    try {
+      const payload = {
+        subject: feedbackForm.subject.trim(),
+        message: feedbackForm.message.trim(),
+      };
+
+      if (feedbackForm.parkingSessionId.trim()) {
+        payload.parkingSessionId = feedbackForm.parkingSessionId.trim();
+      }
+
+      await apiRequest("/api/user/feedbacks", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setFeedbackForm({
+        parkingSessionId: "",
+        subject: "",
+        message: "",
+      });
+      setFeedbackAlert({
+        type: "success",
+        message: "Feedback submitted successfully. Staff will review it soon.",
+      });
+    } catch (error) {
+      setFeedbackAlert({
+        type: "error",
+        message: error.message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+          <span className="material-symbols-outlined text-[24px]">
+            report_problem
+          </span>
+        </div>
+        <div>
+          <h2 className="font-['Geist'] text-lg font-black text-slate-950">
+            Feedback & Issue Report
+          </h2>
+          <p className="text-sm text-slate-500">
+            Send feedback or report a parking issue to the support team.
+          </p>
+        </div>
+      </div>
+
+      <Alert type={feedbackAlert.type} message={feedbackAlert.message} />
+
+      <form onSubmit={handleFeedbackSubmit} className="space-y-5">
+        <Field
+          label="Parking Session ID (Optional)"
+          name="parkingSessionId"
+          value={feedbackForm.parkingSessionId}
+          onChange={handleFeedbackChange}
+        />
+
+        <Field
+          label="Subject"
+          name="subject"
+          value={feedbackForm.subject}
+          onChange={handleFeedbackChange}
+        />
+
+        <label className="block">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+            Message
+          </span>
+          <textarea
+            name="message"
+            value={feedbackForm.message}
+            onChange={handleFeedbackChange}
+            rows={5}
+            className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+            placeholder="Describe what happened..."
+          />
+        </label>
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {submitting && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            )}
+            {submitting ? "Submitting..." : "Submit Feedback"}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 export default function UserSettingsPage() {
   const user = useMemo(() => getStoredUser(), []);
   const [form, setForm] = useState(() => getInitialForm(user));
@@ -123,66 +249,70 @@ export default function UserSettingsPage() {
       <Alert type={alert.type} message={alert.message} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-              <span className="material-symbols-outlined text-[24px]">person</span>
-            </div>
-            <div>
-              <h2 className="font-['Geist'] text-lg font-black text-slate-950">
-                Profile Information
-              </h2>
-              <p className="text-sm text-slate-500">
-                Basic information used for parking reservations.
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-5 md:grid-cols-2">
-              <Field
-                label="Full Name"
-                name="fullName"
-                value={form.fullName}
-                onChange={handleChange}
-              />
-              <Field
-                label="Email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                type="email"
-              />
-              <Field
-                label="Phone"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                type="tel"
-              />
-              <Field
-                label="Username"
-                name="username"
-                value={form.username}
-                onChange={handleChange}
-                readOnly
-              />
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                <span className="material-symbols-outlined text-[24px]">person</span>
+              </div>
+              <div>
+                <h2 className="font-['Geist'] text-lg font-black text-slate-950">
+                  Profile Information
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Basic information used for parking reservations.
+                </p>
+              </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {saving && (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                )}
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </form>
-        </section>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field
+                  label="Full Name"
+                  name="fullName"
+                  value={form.fullName}
+                  onChange={handleChange}
+                />
+                <Field
+                  label="Email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  type="email"
+                />
+                <Field
+                  label="Phone"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  type="tel"
+                />
+                <Field
+                  label="Username"
+                  name="username"
+                  value={form.username}
+                  onChange={handleChange}
+                  readOnly
+                />
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {saving && (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  )}
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <FeedbackForm />
+        </div>
 
         <div className="space-y-6">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
