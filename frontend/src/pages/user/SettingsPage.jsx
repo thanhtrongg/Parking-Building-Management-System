@@ -128,7 +128,7 @@ function FeedbackForm() {
         payload.parkingSessionId = feedbackForm.parkingSessionId.trim();
       }
 
-      await apiRequest("/api/user/feedbacks", {
+      await apiRequest("/api/feedbacks", {
         method: "POST",
         body: JSON.stringify(payload),
       });
