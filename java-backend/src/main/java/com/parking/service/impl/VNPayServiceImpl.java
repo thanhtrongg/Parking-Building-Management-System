@@ -171,7 +171,16 @@ public class VNPayServiceImpl implements VNPayService {
             }
 
             // Verify amount
-            BigDecimal sessionAmount = sessionService.calculateSessionFee(sessionId, LocalDateTime.now());
+            String createDateStr = params.get("vnp_CreateDate");
+            LocalDateTime checkoutTime = LocalDateTime.now();
+            if (createDateStr != null && !createDateStr.isEmpty()) {
+                try {
+                    checkoutTime = LocalDateTime.parse(createDateStr, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+                } catch (Exception e) {
+                    log.warn("Failed to parse vnp_CreateDate: {}", createDateStr, e);
+                }
+            }
+            BigDecimal sessionAmount = sessionService.calculateSessionFee(sessionId, checkoutTime);
             long expectedVnpAmount = sessionAmount.multiply(new BigDecimal("100")).longValue();
             long actualVnpAmount = Long.parseLong(params.get("vnp_Amount"));
 
@@ -192,7 +201,7 @@ public class VNPayServiceImpl implements VNPayService {
                 }
 
                 session.setStatus(SessionStatus.COMPLETED);
-                session.setCheckOutTime(LocalDateTime.now());
+                session.setCheckOutTime(checkoutTime);
                 sessionRepository.save(session);
 
                 Payment payment = Payment.builder()

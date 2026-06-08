@@ -83,7 +83,9 @@ public class SlotServiceImpl implements SlotService {
                 request.getBuildingId(), request.getVehicleType(), now, twoHoursFromNow);
 
         Set<UUID> reservedSlotIds = overlappingReservations.stream()
-                .map(r -> r.getSlot().getId())
+                .map(Reservation::getSlot)
+                .filter(java.util.Objects::nonNull)
+                .map(ParkingSlot::getId)
                 .collect(Collectors.toSet());
 
         List<ParkingSlot> candidates = availableSlots.stream()
