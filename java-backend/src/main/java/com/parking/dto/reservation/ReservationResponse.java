@@ -17,6 +17,7 @@ import java.util.UUID;
 public class ReservationResponse {
 
     private UUID id;
+    private UUID buildingId;
     private VehicleTypeEnum vehicleType;
     private LocalDateTime reservedFrom;
     private LocalDateTime reservedTo;

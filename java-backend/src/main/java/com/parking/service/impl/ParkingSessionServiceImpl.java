@@ -10,8 +10,11 @@ import com.parking.enums.VehicleTypeEnum;
 import com.parking.exception.BadRequestException;
 import com.parking.exception.ResourceNotFoundException;
 import com.parking.repository.*;
+import com.parking.service.AuditService;
 import com.parking.service.ParkingSessionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,7 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     private final UserRepository userRepository;
     private final VehicleTypeRepository vehicleTypeRepository;
     private final PricingRepository pricingRepository;
+    private final AuditService auditService;
 
     @Override
     public SessionResponse checkIn(CheckInRequest request, String currentUserEmail) {
@@ -67,19 +71,23 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
         // Generate clean ticket code
         String ticketCode = "TKT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
+        LocalDateTime checkInTime = LocalDateTime.now();
         ParkingSession session = ParkingSession.builder()
                 .licensePlate(request.getLicensePlate())
                 .vehicleType(request.getVehicleType())
                 .ticketCode(ticketCode)
-                .checkInTime(LocalDateTime.now())
+                .checkInTime(checkInTime)
                 .status(SessionStatus.ACTIVE)
                 .gateIn(request.getGateIn())
                 .slot(slot)
+                .parkedAt(slot != null ? checkInTime : null)
                 .driver(driver)
                 .staffIn(staffIn)
                 .build();
 
         session = sessionRepository.save(session);
+        auditService.log(currentUserEmail, "CHECK_IN", "ParkingSession", session.getId(),
+                "License: " + session.getLicensePlate() + ", Gate: " + session.getGateIn());
         return mapToResponse(session);
     }
 
@@ -129,12 +137,11 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SessionResponse> getMySessions(String currentUserEmail) {
+    public Page<SessionResponse> getMySessions(String currentUserEmail, Pageable pageable) {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
-        return sessionRepository.findByDriverId(driver.getId()).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return sessionRepository.findByDriverId(driver.getId(), pageable)
+                .map(this::mapToResponse);
     }
 
     @Override
@@ -256,6 +263,7 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
                 .ticketCode(session.getTicketCode())
                 .checkInTime(session.getCheckInTime())
                 .checkOutTime(session.getCheckOutTime())
+                .parkedAt(session.getParkedAt())
                 .status(session.getStatus())
                 .gateIn(session.getGateIn())
                 .gateOut(session.getGateOut())
@@ -282,9 +290,18 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     }
 
     @Override
-    public SessionResponse assignSlot(UUID sessionId, UUID slotId) {
+    public SessionResponse assignSlot(UUID sessionId, UUID slotId, String currentUserEmail) {
         ParkingSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Parking session not found with id: " + sessionId));
+
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
+
+        if (currentUser.getRole() == com.parking.enums.UserRole.DRIVER) {
+            if (session.getDriver() == null || !session.getDriver().getEmail().equalsIgnoreCase(currentUserEmail)) {
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to modify this session.");
+            }
+        }
 
         if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new BadRequestException("Cannot assign slot to an inactive parking session.");
@@ -321,6 +338,7 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
         slotRepository.save(newSlot);
 
         session.setSlot(newSlot);
+        session.setParkedAt(LocalDateTime.now());
         ParkingSession saved = sessionRepository.save(session);
         return mapToResponse(saved);
     }

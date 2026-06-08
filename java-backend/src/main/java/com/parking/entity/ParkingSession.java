@@ -37,6 +37,9 @@ public class ParkingSession {
     @Column(name = "check_out_time")
     private LocalDateTime checkOutTime;
 
+    @Column(name = "parked_at")
+    private LocalDateTime parkedAt;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

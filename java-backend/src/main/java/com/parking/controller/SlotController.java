@@ -6,6 +6,7 @@ import com.parking.dto.slot.SlotRecommendResponse;
 import com.parking.dto.slot.SlotResponse;
 import com.parking.dto.slot.SlotStatusUpdateRequest;
 import com.parking.service.SlotService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,23 +20,26 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/slots")
 @RequiredArgsConstructor
-@Tag(name = "Parking Slot Management", description = "Endpoints for managing parking slots")
+@Tag(name = "Parking Slots", description = "Parking slot management and AI recommendations")
 public class SlotController {
 
     private final SlotService slotService;
 
+    @Operation(summary = "Get slots by floor ID")
     @GetMapping("/floor/{floorId}")
     public ResponseEntity<ApiResponse<List<SlotResponse>>> getSlotsByFloor(@PathVariable UUID floorId) {
         List<SlotResponse> response = slotService.getSlotsByFloor(floorId);
         return ResponseEntity.ok(ApiResponse.success("Slots retrieved successfully", response));
     }
 
+    @Operation(summary = "Get available slots by floor ID")
     @GetMapping("/floor/{floorId}/available")
     public ResponseEntity<ApiResponse<List<SlotResponse>>> getAvailableSlotsByFloor(@PathVariable UUID floorId) {
         List<SlotResponse> response = slotService.getAvailableSlotsByFloor(floorId);
         return ResponseEntity.ok(ApiResponse.success("Available slots retrieved successfully", response));
     }
 
+    @Operation(summary = "Update slot status")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<SlotResponse>> updateSlotStatus(
@@ -45,6 +49,7 @@ public class SlotController {
         return ResponseEntity.ok(ApiResponse.success("Slot status updated successfully", response));
     }
 
+    @Operation(summary = "Get AI-recommended parking slot")
     @PostMapping("/recommend")
     @PreAuthorize("hasAnyRole('DRIVER', 'STAFF', 'MANAGER')")
     public ResponseEntity<ApiResponse<SlotRecommendResponse>> recommendSlot(

@@ -12,6 +12,7 @@ import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.UserRepository;
 import com.parking.service.AdminService;
+import com.parking.service.AuditService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public class AdminServiceImpl implements AdminService {
     private final ParkingSessionRepository sessionRepository;
     private final ParkingSlotRepository slotRepository;
     private final Environment environment;
+    private final AuditService auditService;
 
     @Override
     @Transactional(readOnly = true)
@@ -49,8 +51,11 @@ public class AdminServiceImpl implements AdminService {
             throw new BadRequestException("You cannot change your own role");
         }
 
+        UserRole oldRole = user.getRole();
         user.setRole(role);
         user = userRepository.save(user);
+        auditService.log(currentUserEmail, "ROLE_CHANGE", "User", userId,
+                "Role changed from " + oldRole + " to " + role);
         return mapToResponse(user);
     }
 
@@ -65,6 +70,8 @@ public class AdminServiceImpl implements AdminService {
 
         user.setActive(isActive);
         user = userRepository.save(user);
+        auditService.log(currentUserEmail, "STATUS_TOGGLE", "User", userId,
+                "Active status set to " + isActive);
         return mapToResponse(user);
     }
 

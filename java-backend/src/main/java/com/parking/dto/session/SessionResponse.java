@@ -22,6 +22,7 @@ public class SessionResponse {
     private String ticketCode;
     private LocalDateTime checkInTime;
     private LocalDateTime checkOutTime;
+    private LocalDateTime parkedAt;
     private SessionStatus status;
     private String gateIn;
     private String gateOut;

@@ -2,6 +2,7 @@ package com.parking.service.impl;
 
 import com.parking.dto.reservation.ReservationRequest;
 import com.parking.dto.reservation.ReservationResponse;
+import com.parking.entity.ParkingBuilding;
 import com.parking.entity.ParkingSlot;
 import com.parking.entity.Reservation;
 import com.parking.entity.User;
@@ -9,6 +10,7 @@ import com.parking.enums.ReservationStatus;
 import com.parking.enums.UserRole;
 import com.parking.exception.BadRequestException;
 import com.parking.exception.ResourceNotFoundException;
+import com.parking.repository.ParkingBuildingRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.ReservationRepository;
 import com.parking.repository.UserRepository;
@@ -30,14 +32,15 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final ParkingSlotRepository slotRepository;
     private final UserRepository userRepository;
+    private final ParkingBuildingRepository buildingRepository;
 
     @Override
     public ReservationResponse createReservation(ReservationRequest request, String currentUserEmail) {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
 
-        ParkingSlot slot = slotRepository.findById(request.getSlotId())
-                .orElseThrow(() -> new ResourceNotFoundException("Parking slot not found with id: " + request.getSlotId()));
+        ParkingBuilding building = buildingRepository.findById(request.getBuildingId())
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
 
         if (request.getReservedFrom().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Reservation start time must be in the future.");
@@ -46,26 +49,61 @@ public class ReservationServiceImpl implements ReservationService {
             throw new BadRequestException("Reservation end time must be after the start time.");
         }
 
-        // Validate vehicle type compatibility
-        if (slot.getVehicleType() != request.getVehicleType()) {
-            throw new BadRequestException("Vehicle type " + request.getVehicleType() + 
-                    " is not compatible with slot type " + slot.getVehicleType());
+        if (request.getReservedFrom().isAfter(LocalDateTime.now().plusDays(7))) {
+            throw new BadRequestException("Reservations can only be made up to 7 days in advance.");
         }
 
-        // Check for conflicting reservations
-        List<Reservation> activeReservations = reservationRepository.findBySlotIdAndStatusIn(
-                slot.getId(), List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED)
-        );
+        if (java.time.Duration.between(request.getReservedFrom(), request.getReservedTo()).toHours() > 24) {
+            throw new BadRequestException("Reservations cannot exceed a duration of 24 hours.");
+        }
 
-        for (Reservation res : activeReservations) {
-            if (request.getReservedFrom().isBefore(res.getReservedTo()) && 
-                request.getReservedTo().isAfter(res.getReservedFrom())) {
-                throw new BadRequestException("This slot is already reserved for the selected time window.");
+        ParkingSlot slot = null;
+        if (request.getSlotId() != null) {
+            slot = slotRepository.findById(request.getSlotId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Parking slot not found with id: " + request.getSlotId()));
+
+            // Validate building match
+            if (!slot.getFloor().getBuilding().getId().equals(building.getId())) {
+                throw new BadRequestException("Slot does not belong to the selected building.");
+            }
+
+            // Validate vehicle type compatibility
+            if (slot.getVehicleType() != request.getVehicleType()) {
+                throw new BadRequestException("Vehicle type " + request.getVehicleType() + 
+                        " is not compatible with slot type " + slot.getVehicleType());
+            }
+
+            // Check for conflicting reservations targeting this specific slot
+            List<Reservation> activeReservations = reservationRepository.findBySlotIdAndStatusIn(
+                    slot.getId(), List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED)
+            );
+
+            for (Reservation res : activeReservations) {
+                if (request.getReservedFrom().isBefore(res.getReservedTo()) && 
+                    request.getReservedTo().isAfter(res.getReservedFrom())) {
+                    throw new BadRequestException("This slot is already reserved for the selected time window.");
+                }
+            }
+        } else {
+            // Flexible allocation: check building capacity for the vehicle type
+            long totalCapacity = slotRepository.countByBuildingIdAndVehicleType(building.getId(), request.getVehicleType());
+            if (totalCapacity == 0) {
+                throw new BadRequestException("This building does not have any slots for vehicle type: " + request.getVehicleType());
+            }
+
+            List<Reservation> activeReservationsInBuilding = reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
+                    building.getId(), request.getVehicleType(), request.getReservedFrom(), request.getReservedTo()
+            );
+
+            if (activeReservationsInBuilding.size() >= totalCapacity) {
+                throw new BadRequestException("No available capacity for vehicle type " + request.getVehicleType() + 
+                        " in building " + building.getName() + " for the selected time window.");
             }
         }
 
         Reservation reservation = Reservation.builder()
                 .driver(driver)
+                .building(building)
                 .slot(slot)
                 .vehicleType(request.getVehicleType())
                 .reservedFrom(request.getReservedFrom())
@@ -132,6 +170,7 @@ public class ReservationServiceImpl implements ReservationService {
     private ReservationResponse mapToResponse(Reservation reservation) {
         return ReservationResponse.builder()
                 .id(reservation.getId())
+                .buildingId(reservation.getBuilding().getId())
                 .vehicleType(reservation.getVehicleType())
                 .reservedFrom(reservation.getReservedFrom())
                 .reservedTo(reservation.getReservedTo())
@@ -139,10 +178,10 @@ public class ReservationServiceImpl implements ReservationService {
                 .createdAt(reservation.getCreatedAt())
                 .driverId(reservation.getDriver().getId())
                 .driverName(reservation.getDriver().getFullName())
-                .slotId(reservation.getSlot().getId())
-                .slotCode(reservation.getSlot().getSlotCode())
-                .buildingName(reservation.getSlot().getFloor().getBuilding().getName())
-                .floorName(reservation.getSlot().getFloor().getFloorName())
+                .slotId(reservation.getSlot() != null ? reservation.getSlot().getId() : null)
+                .slotCode(reservation.getSlot() != null ? reservation.getSlot().getSlotCode() : null)
+                .buildingName(reservation.getBuilding().getName())
+                .floorName(reservation.getSlot() != null ? reservation.getSlot().getFloor().getFloorName() : null)
                 .build();
     }
 }

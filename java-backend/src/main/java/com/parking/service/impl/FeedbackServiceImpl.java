@@ -13,6 +13,8 @@ import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.UserRepository;
 import com.parking.service.FeedbackService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,10 @@ public class FeedbackServiceImpl implements FeedbackService {
         if (request.getSessionId() != null) {
             session = sessionRepository.findById(request.getSessionId())
                     .orElseThrow(() -> new ResourceNotFoundException("Parking session not found with id: " + request.getSessionId()));
+
+            if (session.getDriver() == null || !session.getDriver().getId().equals(driver.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("You can only associate feedback with your own sessions.");
+            }
         }
 
         Feedback feedback = Feedback.builder()
@@ -54,13 +60,12 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FeedbackResponse> getMyFeedback(String currentUserEmail) {
+    public Page<FeedbackResponse> getMyFeedback(String currentUserEmail, Pageable pageable) {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
 
-        return feedbackRepository.findByDriverId(driver.getId()).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return feedbackRepository.findByDriverId(driver.getId(), pageable)
+                .map(this::mapToResponse);
     }
 
     @Override

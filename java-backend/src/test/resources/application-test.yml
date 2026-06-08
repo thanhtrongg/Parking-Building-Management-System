@@ -13,3 +13,10 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
+
+app:
+  jwt:
+    secret: defaultTestSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm
+  vnpay:
+    tmn-code: 2QRY7YW8
+    hash-secret: GETJDYUXQLNYMXRZZDTVWJKEYXOTXTMI

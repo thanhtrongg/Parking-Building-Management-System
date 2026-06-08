@@ -22,6 +22,8 @@ import com.parking.service.SlotService;
 import com.parking.service.PaymentService;
 import com.parking.service.VNPayService;
 import com.parking.service.ParkingSessionService;
+import com.parking.service.FeedbackService;
+import com.parking.dto.feedback.FeedbackResponse;
 import com.parking.dto.payment.VNPayResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,9 @@ public class ControllerE2ETest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.parking.security.JwtTokenProvider jwtTokenProvider;
+
     @MockitoBean
     private SlotService slotService;
 
@@ -75,6 +80,9 @@ public class ControllerE2ETest {
 
     @MockitoBean
     private ParkingSessionService parkingSessionService;
+
+    @MockitoBean
+    private FeedbackService feedbackService;
 
     // --- SLOT CONTROLLER TESTS ---
 
@@ -373,7 +381,7 @@ public class ControllerE2ETest {
                 .slotCode("A-10")
                 .build();
 
-        when(parkingSessionService.assignSlot(eq(sessionId), eq(slotId))).thenReturn(response);
+        when(parkingSessionService.assignSlot(eq(sessionId), eq(slotId), any())).thenReturn(response);
 
         mockMvc.perform(patch("/sessions/" + sessionId + "/slot?slotId=" + slotId))
                 .andExpect(status().isOk())
@@ -389,6 +397,61 @@ public class ControllerE2ETest {
         UUID slotId = UUID.randomUUID();
 
         mockMvc.perform(patch("/sessions/" + sessionId + "/slot?slotId=" + slotId))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("GET /sessions/my - success for driver")
+    @WithMockUser(roles = "DRIVER", username = "driver@parking.com")
+    void testGetMySessions_Success() throws Exception {
+        SessionResponse sessionResponse = SessionResponse.builder()
+                .id(UUID.randomUUID())
+                .licensePlate("30A-12345")
+                .ticketCode("TKT-1234")
+                .build();
+
+        PageImpl<SessionResponse> page = new PageImpl<>(List.of(sessionResponse));
+
+        when(parkingSessionService.getMySessions(eq("driver@parking.com"), any())).thenReturn(page);
+
+        mockMvc.perform(get("/sessions/my"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].licensePlate").value("30A-12345"));
+    }
+
+    @Test
+    @DisplayName("GET /feedback/my - success for driver")
+    @WithMockUser(roles = "DRIVER", username = "driver@parking.com")
+    void testGetMyFeedback_Success() throws Exception {
+        FeedbackResponse feedbackResponse = FeedbackResponse.builder()
+                .id(UUID.randomUUID())
+                .content("Good service")
+                .build();
+
+        PageImpl<FeedbackResponse> page = new PageImpl<>(List.of(feedbackResponse));
+
+        when(feedbackService.getMyFeedback(eq("driver@parking.com"), any())).thenReturn(page);
+
+        mockMvc.perform(get("/feedback/my"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].content").value("Good service"));
+    }
+
+    @Test
+    @DisplayName("GET /sessions/my - fail with REFRESH token type")
+    void testGetMySessions_WithRefreshToken_Fails() throws Exception {
+        org.springframework.security.core.userdetails.User userDetails =
+                new org.springframework.security.core.userdetails.User(
+                        "driver@parking.com",
+                        "password",
+                        List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_DRIVER"))
+                );
+        String refreshToken = jwtTokenProvider.generateRefreshToken(userDetails);
+
+        mockMvc.perform(get("/sessions/my")
+                        .header("Authorization", "Bearer " + refreshToken))
                 .andExpect(status().isUnauthorized());
     }
 }

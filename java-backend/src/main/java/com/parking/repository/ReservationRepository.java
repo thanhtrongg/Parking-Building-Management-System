@@ -30,8 +30,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
         @Param("endTime") LocalDateTime endTime
     );
 
-    @Query("SELECT r FROM Reservation r JOIN FETCH r.slot s JOIN FETCH s.floor f " +
-           "WHERE f.building.id = :buildingId AND f.vehicleType = :vehicleType " +
+    @Query("SELECT r FROM Reservation r LEFT JOIN FETCH r.slot s " +
+           "WHERE r.building.id = :buildingId AND r.vehicleType = :vehicleType " +
            "AND r.status IN ('PENDING', 'CONFIRMED') " +
            "AND r.reservedFrom < :endTime AND r.reservedTo > :startTime")
     List<Reservation> findOverlappingReservationsByBuildingAndVehicleType(
@@ -42,4 +42,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     );
 
     List<Reservation> findByStatus(ReservationStatus status);
+
+    @Query("SELECT r FROM Reservation r LEFT JOIN FETCH r.slot WHERE r.status IN ('PENDING', 'CONFIRMED') AND r.reservedTo < :now")
+    List<Reservation> findExpiredActiveReservations(@Param("now") LocalDateTime now);
 }

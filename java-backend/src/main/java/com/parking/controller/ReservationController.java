@@ -4,6 +4,7 @@ import com.parking.dto.ApiResponse;
 import com.parking.dto.reservation.ReservationRequest;
 import com.parking.dto.reservation.ReservationResponse;
 import com.parking.service.ReservationService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +20,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/reservations")
 @RequiredArgsConstructor
-@Tag(name = "Reservation Management", description = "Endpoints for driver slot reservations")
+@Tag(name = "Reservations", description = "Parking slot reservation management")
 public class ReservationController {
 
     private final ReservationService reservationService;
 
+    @Operation(summary = "Create a new reservation")
     @PostMapping
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<ApiResponse<ReservationResponse>> createReservation(
@@ -34,6 +36,7 @@ public class ReservationController {
                 .body(ApiResponse.success("Slot reserved successfully", response));
     }
 
+    @Operation(summary = "Cancel a reservation")
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('DRIVER', 'MANAGER')")
     public ResponseEntity<ApiResponse<ReservationResponse>> cancelReservation(
@@ -43,6 +46,7 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Reservation cancelled successfully", response));
     }
 
+    @Operation(summary = "Get current driver's reservations")
     @GetMapping("/my")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<ApiResponse<List<ReservationResponse>>> getMyReservations(Principal principal) {
@@ -50,6 +54,7 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Your reservations retrieved successfully", response));
     }
 
+    @Operation(summary = "Get reservations by status (manager)")
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<List<ReservationResponse>>> getReservationsByStatus(

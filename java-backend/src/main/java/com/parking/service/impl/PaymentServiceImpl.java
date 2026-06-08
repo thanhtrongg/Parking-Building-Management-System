@@ -13,6 +13,7 @@ import com.parking.exception.ResourceNotFoundException;
 import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.PaymentRepository;
+import com.parking.service.AuditService;
 import com.parking.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ParkingSessionRepository sessionRepository;
     private final ParkingSlotRepository slotRepository;
+    private final AuditService auditService;
 
     @Override
     public PaymentResponse processPayment(PaymentRequest request) {
@@ -71,6 +73,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
 
         payment = paymentRepository.save(payment);
+        auditService.log(null, "PAYMENT_PROCESSED", "Payment", payment.getId(),
+                "Amount: " + payment.getAmount() + ", Method: " + payment.getMethod() + ", Session: " + session.getId());
         return mapToResponse(payment);
     }
 

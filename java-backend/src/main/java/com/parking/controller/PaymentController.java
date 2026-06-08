@@ -6,6 +6,7 @@ import com.parking.dto.payment.PaymentResponse;
 import com.parking.dto.payment.VNPayResponse;
 import com.parking.service.PaymentService;
 import com.parking.service.VNPayService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -22,12 +23,13 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/payments")
 @RequiredArgsConstructor
-@Tag(name = "Payment Management", description = "Endpoints for processing and querying payments")
+@Tag(name = "Payments", description = "Payment processing and VNPay integration")
 public class PaymentController {
 
     private final PaymentService paymentService;
     private final VNPayService vnpayService;
 
+    @Operation(summary = "Process a payment")
     @PostMapping
     @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<ApiResponse<PaymentResponse>> processPayment(@Valid @RequestBody PaymentRequest request) {
@@ -36,6 +38,7 @@ public class PaymentController {
                 .body(ApiResponse.success("Payment processed successfully", response));
     }
 
+    @Operation(summary = "Get payments by session ID")
     @GetMapping("/session/{sessionId}")
     @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsBySession(@PathVariable UUID sessionId) {
@@ -43,6 +46,7 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success("Session payments retrieved successfully", response));
     }
 
+    @Operation(summary = "Create a VNPay payment URL")
     @GetMapping("/vnpay/create")
     @PreAuthorize("hasAnyRole('DRIVER', 'STAFF', 'MANAGER')")
     public ResponseEntity<ApiResponse<VNPayResponse>> createVNPayPayment(
@@ -53,6 +57,7 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success("VNPay payment URL generated successfully", response));
     }
 
+    @Operation(summary = "Handle VNPay IPN callback")
     @GetMapping("/vnpay/ipn")
     public ResponseEntity<Map<String, String>> processVNPayIpn(@RequestParam Map<String, String> params) {
         Map<String, String> response = vnpayService.processIpn(params);

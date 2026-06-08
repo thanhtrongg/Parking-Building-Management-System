@@ -2,6 +2,7 @@ package com.parking.config;
 
 import com.parking.security.JwtAuthFilter;
 import com.parking.security.JwtAuthenticationEntryPoint;
+import com.parking.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -41,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/v3/api-docs").permitAll()
                         .requestMatchers("/payments/vnpay/ipn").permitAll()
                         .anyRequest().authenticated())
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

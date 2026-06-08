@@ -11,3 +11,10 @@ logging:
   level:
     com.parking: DEBUG
     org.springframework.security: DEBUG
+
+app:
+  jwt:
+    secret: defaultDevSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm
+  vnpay:
+    tmn-code: 2QRY7YW8
+    hash-secret: GETJDYUXQLNYMXRZZDTVWJKEYXOTXTMI

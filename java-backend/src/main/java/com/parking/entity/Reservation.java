@@ -46,6 +46,10 @@ public class Reservation {
     private User driver;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "slot_id", nullable = false)
+    @JoinColumn(name = "building_id", nullable = false)
+    private ParkingBuilding building;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "slot_id")
     private ParkingSlot slot;
 }

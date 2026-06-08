@@ -19,6 +19,8 @@ public class ReservationRequest {
     @NotNull(message = "Reserved to time is required")
     private LocalDateTime reservedTo;
 
-    @NotNull(message = "Slot ID is required")
+    @NotNull(message = "Building ID is required")
+    private UUID buildingId;
+
     private UUID slotId;
 }

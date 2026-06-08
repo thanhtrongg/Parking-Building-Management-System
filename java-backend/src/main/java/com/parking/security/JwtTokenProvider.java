@@ -31,14 +31,14 @@ public class JwtTokenProvider {
     }
 
     public String generateToken(UserDetails userDetails) {
-        return buildToken(userDetails, expirationMs);
+        return buildToken(userDetails, expirationMs, "ACCESS");
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(userDetails, refreshExpirationMs);
+        return buildToken(userDetails, refreshExpirationMs, "REFRESH");
     }
 
-    private String buildToken(UserDetails userDetails, long expiration) {
+    private String buildToken(UserDetails userDetails, long expiration, String tokenType) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
@@ -49,10 +49,16 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(userDetails.getUsername())
                 .claim("roles", roles)
+                .claim("type", tokenType)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public String getTokenTypeFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("type", String.class);
     }
 
     public String getEmailFromToken(String token) {

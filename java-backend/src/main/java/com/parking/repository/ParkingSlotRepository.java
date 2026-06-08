@@ -26,4 +26,10 @@ public interface ParkingSlotRepository extends JpaRepository<ParkingSlot, UUID> 
         @Param("buildingId") UUID buildingId,
         @Param("vehicleType") VehicleTypeEnum vehicleType
     );
+
+    @Query("SELECT COUNT(s) FROM ParkingSlot s WHERE s.floor.building.id = :buildingId AND s.vehicleType = :vehicleType")
+    long countByBuildingIdAndVehicleType(
+        @Param("buildingId") UUID buildingId,
+        @Param("vehicleType") VehicleTypeEnum vehicleType
+    );
 }

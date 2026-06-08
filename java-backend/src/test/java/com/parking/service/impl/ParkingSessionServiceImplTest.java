@@ -18,9 +18,16 @@ import com.parking.exception.BadRequestException;
 import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.UserRepository;
+import com.parking.service.AuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -54,6 +61,9 @@ public class ParkingSessionServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private ParkingSessionServiceImpl sessionService;
@@ -218,6 +228,7 @@ public class ParkingSessionServiceImplTest {
 
         assertNotNull(response);
         assertNull(response.getSlotId());
+        assertNull(response.getParkedAt());
         assertEquals("30A-99999", response.getLicensePlate());
         assertEquals(SessionStatus.ACTIVE, response.getStatus());
     }
@@ -243,6 +254,7 @@ public class ParkingSessionServiceImplTest {
 
         assertNotNull(response);
         assertEquals(slotId, response.getSlotId());
+        assertNotNull(response.getParkedAt());
         assertEquals(SlotStatus.OCCUPIED, slot.getStatus());
     }
 
@@ -262,11 +274,13 @@ public class ParkingSessionServiceImplTest {
                 .vehicleType(VehicleTypeEnum.CAR)
                 .build();
 
+        User staff = User.builder().email("staff@parking.com").role(com.parking.enums.UserRole.STAFF).build();
+        when(userRepository.findByEmail("staff@parking.com")).thenReturn(Optional.of(staff));
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(sessionEntity));
         when(slotRepository.findById(slotId)).thenReturn(Optional.of(newSlot));
         when(sessionRepository.save(any(ParkingSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        SessionResponse response = sessionService.assignSlot(sessionId, slotId);
+        SessionResponse response = sessionService.assignSlot(sessionId, slotId, "staff@parking.com");
 
         assertNotNull(response);
         assertEquals(slotId, response.getSlotId());
@@ -293,11 +307,13 @@ public class ParkingSessionServiceImplTest {
                 .vehicleType(VehicleTypeEnum.CAR)
                 .build();
 
+        User staff = User.builder().email("staff@parking.com").role(com.parking.enums.UserRole.STAFF).build();
+        when(userRepository.findByEmail("staff@parking.com")).thenReturn(Optional.of(staff));
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(sessionEntity));
         when(slotRepository.findById(newSlotId)).thenReturn(Optional.of(newSlot));
         when(sessionRepository.save(any(ParkingSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        SessionResponse response = sessionService.assignSlot(sessionId, newSlotId);
+        SessionResponse response = sessionService.assignSlot(sessionId, newSlotId, "staff@parking.com");
 
         assertNotNull(response);
         assertEquals(newSlotId, response.getSlotId());
@@ -319,5 +335,91 @@ public class ParkingSessionServiceImplTest {
 
         assertThrows(BadRequestException.class, () ->
                 sessionService.checkOut(sessionId, "Gate Out", "staff@parking.com"));
+    }
+
+    @Test
+    @DisplayName("Get my sessions - success")
+    void testGetMySessions_Success() {
+        String email = "driver@parking.com";
+        UUID driverId = UUID.randomUUID();
+        User driver = User.builder().id(driverId).email(email).build();
+
+        ParkingBuilding building = ParkingBuilding.builder().name("Building A").build();
+        Floor floor = Floor.builder().building(building).build();
+        ParkingSlot slot = ParkingSlot.builder().floor(floor).slotCode("A-10").build();
+
+        ParkingSession mySession = ParkingSession.builder()
+                .id(UUID.randomUUID())
+                .licensePlate("30A-12345")
+                .vehicleType(VehicleTypeEnum.CAR)
+                .ticketCode("TKT-1234")
+                .status(SessionStatus.ACTIVE)
+                .slot(slot)
+                .driver(driver)
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<ParkingSession> page = new PageImpl<>(List.of(mySession), pageable, 1);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
+        when(sessionRepository.findByDriverId(driverId, pageable)).thenReturn(page);
+
+        Page<SessionResponse> response = sessionService.getMySessions(email, pageable);
+
+        assertNotNull(response);
+        assertEquals(1, response.getTotalElements());
+        assertEquals("30A-12345", response.getContent().get(0).getLicensePlate());
+    }
+
+    @Test
+    @DisplayName("Assign slot - driver owned - success")
+    void testAssignSlot_DriverOwned_Success() {
+        UUID sessionId = UUID.randomUUID();
+        UUID slotId = UUID.randomUUID();
+        String email = "driver@parking.com";
+        User driver = User.builder().email(email).role(com.parking.enums.UserRole.DRIVER).build();
+        ParkingSession sessionEntity = ParkingSession.builder()
+                .id(sessionId)
+                .vehicleType(VehicleTypeEnum.CAR)
+                .status(SessionStatus.ACTIVE)
+                .driver(driver)
+                .build();
+        ParkingSlot newSlot = ParkingSlot.builder()
+                .id(slotId)
+                .status(SlotStatus.AVAILABLE)
+                .vehicleType(VehicleTypeEnum.CAR)
+                .build();
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(sessionEntity));
+        when(slotRepository.findById(slotId)).thenReturn(Optional.of(newSlot));
+        when(sessionRepository.save(any(ParkingSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SessionResponse response = sessionService.assignSlot(sessionId, slotId, email);
+
+        assertNotNull(response);
+        assertEquals(slotId, response.getSlotId());
+    }
+
+    @Test
+    @DisplayName("Assign slot - driver not owned - throws AccessDeniedException")
+    void testAssignSlot_DriverNotOwned_ThrowsAccessDeniedException() {
+        UUID sessionId = UUID.randomUUID();
+        UUID slotId = UUID.randomUUID();
+        String email = "hacker@parking.com";
+        User hacker = User.builder().email(email).role(com.parking.enums.UserRole.DRIVER).build();
+        User victim = User.builder().email("victim@parking.com").role(com.parking.enums.UserRole.DRIVER).build();
+        ParkingSession sessionEntity = ParkingSession.builder()
+                .id(sessionId)
+                .vehicleType(VehicleTypeEnum.CAR)
+                .status(SessionStatus.ACTIVE)
+                .driver(victim)
+                .build();
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(hacker));
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(sessionEntity));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
+                sessionService.assignSlot(sessionId, slotId, email));
     }
 }

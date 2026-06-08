@@ -7,6 +7,7 @@ import com.parking.dto.admin.UserStatusUpdateRequest;
 import com.parking.dto.user.UserResponse;
 import com.parking.enums.UserRole;
 import com.parking.service.AdminService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +25,12 @@ import java.util.UUID;
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Administrator Management", description = "Endpoints for managing users and viewing system configurations")
+@Tag(name = "Admin", description = "Administrative user and system management")
 public class AdminController {
 
     private final AdminService adminService;
 
+    @Operation(summary = "Search users with optional filters")
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> searchUsers(
             @RequestParam(required = false) UserRole role,
@@ -40,6 +42,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully", response));
     }
 
+    @Operation(summary = "Update a user's role")
     @PatchMapping("/users/{id}/role")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
             @PathVariable UUID id,
@@ -50,6 +53,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User role updated successfully", response));
     }
 
+    @Operation(summary = "Update a user's active status")
     @PatchMapping("/users/{id}/status")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(
             @PathVariable UUID id,
@@ -60,6 +64,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User active status updated successfully", response));
     }
 
+    @Operation(summary = "Get system configuration")
     @GetMapping("/config")
     public ResponseEntity<ApiResponse<AdminConfigResponse>> getSystemConfig() {
         AdminConfigResponse response = adminService.getSystemConfig();

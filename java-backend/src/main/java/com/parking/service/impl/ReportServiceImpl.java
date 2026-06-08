@@ -233,6 +233,7 @@ public class ReportServiceImpl implements ReportService {
                 .ticketCode(session.getTicketCode())
                 .checkInTime(session.getCheckInTime())
                 .checkOutTime(session.getCheckOutTime())
+                .parkedAt(session.getParkedAt())
                 .status(session.getStatus())
                 .gateIn(session.getGateIn())
                 .gateOut(session.getGateOut())

@@ -5,31 +5,42 @@ import com.parking.dto.auth.LoginRequest;
 import com.parking.dto.auth.RefreshTokenRequest;
 import com.parking.dto.auth.RegisterRequest;
 import com.parking.dto.user.UserResponse;
+import com.parking.entity.RefreshToken;
 import com.parking.entity.User;
 import com.parking.enums.UserRole;
 import com.parking.exception.BadRequestException;
 import com.parking.exception.DuplicateResourceException;
 import com.parking.exception.ResourceNotFoundException;
+import com.parking.repository.RefreshTokenRepository;
 import com.parking.repository.UserRepository;
 import com.parking.security.JwtTokenProvider;
 import com.parking.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
 
+    @Value("${app.jwt.refresh-expiration-ms}")
+    private long refreshExpirationMs;
+
     @Override
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already registered: " + request.getEmail());
@@ -49,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -58,18 +70,31 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
+        // Revoke all existing refresh tokens on new login
+        refreshTokenRepository.revokeAllByUserId(user.getId());
+
         return buildAuthResponse(user);
     }
 
     @Override
+    @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        String refreshToken = request.getRefreshToken();
+        String token = request.getRefreshToken();
 
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        if (!jwtTokenProvider.validateToken(token)) {
             throw new BadRequestException("Invalid or expired refresh token");
         }
 
-        String email = jwtTokenProvider.getEmailFromToken(refreshToken);
+        // Validate token exists in DB and is not revoked
+        RefreshToken storedToken = refreshTokenRepository.findByTokenAndRevokedFalse(token)
+                .orElseThrow(() -> new BadRequestException("Refresh token has been revoked or does not exist"));
+
+        if (storedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            refreshTokenRepository.revokeByToken(token);
+            throw new BadRequestException("Refresh token has expired");
+        }
+
+        String email = jwtTokenProvider.getEmailFromToken(token);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
@@ -77,12 +102,30 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("User account is deactivated");
         }
 
+        // Rotate: revoke old token, issue new pair
+        refreshTokenRepository.revokeByToken(token);
+
         return buildAuthResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenRepository.revokeByToken(refreshToken);
     }
 
     private AuthResponse buildAuthResponse(User user) {
         String accessToken = jwtTokenProvider.generateToken(user);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user);
+        String refreshJwt = jwtTokenProvider.generateRefreshToken(user);
+
+        // Persist the refresh token in DB
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .user(user)
+                .token(refreshJwt)
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshExpirationMs / 1000))
+                .revoked(false)
+                .build();
+        refreshTokenRepository.save(refreshTokenEntity);
 
         UserResponse userResponse = UserResponse.builder()
                 .id(user.getId())
@@ -96,7 +139,7 @@ public class AuthServiceImpl implements AuthService {
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .refreshToken(refreshJwt)
                 .tokenType("Bearer")
                 .user(userResponse)
                 .build();

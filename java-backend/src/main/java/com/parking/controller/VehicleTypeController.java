@@ -4,6 +4,7 @@ import com.parking.dto.ApiResponse;
 import com.parking.dto.vehicletype.VehicleTypeRequest;
 import com.parking.dto.vehicletype.VehicleTypeResponse;
 import com.parking.service.VehicleTypeService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,23 +19,26 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/vehicle-types")
 @RequiredArgsConstructor
-@Tag(name = "Vehicle Type Management", description = "Endpoints for managing supported vehicle types")
+@Tag(name = "Vehicle Types", description = "Vehicle type catalog management")
 public class VehicleTypeController {
 
     private final VehicleTypeService vehicleTypeService;
 
+    @Operation(summary = "Get all vehicle types")
     @GetMapping
     public ResponseEntity<ApiResponse<List<VehicleTypeResponse>>> getAllVehicleTypes() {
         List<VehicleTypeResponse> response = vehicleTypeService.getAllVehicleTypes();
         return ResponseEntity.ok(ApiResponse.success("Vehicle types retrieved successfully", response));
     }
 
+    @Operation(summary = "Get a vehicle type by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<VehicleTypeResponse>> getVehicleTypeById(@PathVariable UUID id) {
         VehicleTypeResponse response = vehicleTypeService.getVehicleTypeById(id);
         return ResponseEntity.ok(ApiResponse.success("Vehicle type retrieved successfully", response));
     }
 
+    @Operation(summary = "Create a new vehicle type")
     @PostMapping
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<VehicleTypeResponse>> createVehicleType(
@@ -44,6 +48,7 @@ public class VehicleTypeController {
                 .body(ApiResponse.success("Vehicle type created successfully", response));
     }
 
+    @Operation(summary = "Update a vehicle type")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<VehicleTypeResponse>> updateVehicleType(
@@ -53,6 +58,7 @@ public class VehicleTypeController {
         return ResponseEntity.ok(ApiResponse.success("Vehicle type updated successfully", response));
     }
 
+    @Operation(summary = "Delete a vehicle type")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Void>> deleteVehicleType(@PathVariable UUID id) {

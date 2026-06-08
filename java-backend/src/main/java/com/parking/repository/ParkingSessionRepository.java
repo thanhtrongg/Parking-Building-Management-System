@@ -17,7 +17,7 @@ import java.util.UUID;
 @Repository
 public interface ParkingSessionRepository extends JpaRepository<ParkingSession, UUID> {
 
-    List<ParkingSession> findByDriverId(UUID driverId);
+    Page<ParkingSession> findByDriverId(UUID driverId, Pageable pageable);
 
     List<ParkingSession> findByStatus(SessionStatus status);
 

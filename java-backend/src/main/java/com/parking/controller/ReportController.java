@@ -8,6 +8,7 @@ import com.parking.dto.session.SessionResponse;
 import com.parking.enums.SessionStatus;
 import com.parking.exception.BadRequestException;
 import com.parking.service.ReportService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,11 +26,12 @@ import java.util.UUID;
 @RequestMapping("/reports")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('MANAGER')")
-@Tag(name = "Report & Dashboard Management", description = "Endpoints for retrieving system reports and dashboard metrics")
+@Tag(name = "Reports", description = "Revenue, occupancy, and analytics reports")
 public class ReportController {
 
     private final ReportService reportService;
 
+    @Operation(summary = "Get revenue report")
     @GetMapping("/revenue")
     public ResponseEntity<ApiResponse<RevenueReportResponse>> getRevenueReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -51,6 +53,7 @@ public class ReportController {
         return ResponseEntity.ok(ApiResponse.success("Revenue report retrieved successfully", response));
     }
 
+    @Operation(summary = "Get occupancy report")
     @GetMapping("/occupancy")
     public ResponseEntity<ApiResponse<OccupancyReportResponse>> getOccupancyReport(
             @RequestParam(required = false) UUID buildingId) {
@@ -59,6 +62,7 @@ public class ReportController {
         return ResponseEntity.ok(ApiResponse.success("Occupancy report retrieved successfully", response));
     }
 
+    @Operation(summary = "Get peak hours report")
     @GetMapping("/peak-hours")
     public ResponseEntity<ApiResponse<PeakHoursReportResponse>> getPeakHoursReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -80,6 +84,7 @@ public class ReportController {
         return ResponseEntity.ok(ApiResponse.success("Peak hours report retrieved successfully", response));
     }
 
+    @Operation(summary = "Search parking sessions with filters")
     @GetMapping("/sessions")
     public ResponseEntity<ApiResponse<Page<SessionResponse>>> searchSessions(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,

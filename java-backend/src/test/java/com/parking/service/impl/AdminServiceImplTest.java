@@ -11,6 +11,7 @@ import com.parking.repository.ParkingBuildingRepository;
 import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.UserRepository;
+import com.parking.service.AuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,9 @@ public class AdminServiceImplTest {
 
     @Mock
     private Environment environment;
+
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private AdminServiceImpl adminService;
