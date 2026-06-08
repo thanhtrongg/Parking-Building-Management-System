@@ -70,6 +70,8 @@ public class PricingServiceImpl implements PricingService {
                 .dailyRate(request.getDailyRate())
                 .lostTicketFee(request.getLostTicketFee())
                 .overtimeFeeMultiplier(multiplier)
+                .basePrice(request.getBasePrice() != null ? request.getBasePrice() : BigDecimal.ZERO)
+                .nightRate(request.getNightRate())
                 .effectiveFrom(request.getEffectiveFrom())
                 .effectiveTo(request.getEffectiveTo())
                 .build();
@@ -95,6 +97,8 @@ public class PricingServiceImpl implements PricingService {
         pricing.setDailyRate(request.getDailyRate());
         pricing.setLostTicketFee(request.getLostTicketFee());
         pricing.setOvertimeFeeMultiplier(request.getOvertimeFeeMultiplier() != null ? request.getOvertimeFeeMultiplier() : new BigDecimal("1.5"));
+        pricing.setBasePrice(request.getBasePrice() != null ? request.getBasePrice() : BigDecimal.ZERO);
+        pricing.setNightRate(request.getNightRate());
         pricing.setEffectiveFrom(request.getEffectiveFrom());
         pricing.setEffectiveTo(request.getEffectiveTo());
 
@@ -117,6 +121,8 @@ public class PricingServiceImpl implements PricingService {
                 .dailyRate(pricing.getDailyRate())
                 .lostTicketFee(pricing.getLostTicketFee())
                 .overtimeFeeMultiplier(pricing.getOvertimeFeeMultiplier())
+                .basePrice(pricing.getBasePrice())
+                .nightRate(pricing.getNightRate())
                 .buildingId(pricing.getBuilding().getId())
                 .buildingName(pricing.getBuilding().getName())
                 .vehicleTypeId(pricing.getVehicleType().getId())

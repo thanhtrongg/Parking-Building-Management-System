@@ -20,6 +20,8 @@ public class PricingResponse {
     private BigDecimal dailyRate;
     private BigDecimal lostTicketFee;
     private BigDecimal overtimeFeeMultiplier;
+    private BigDecimal basePrice;
+    private BigDecimal nightRate;
     private UUID buildingId;
     private String buildingName;
     private UUID vehicleTypeId;

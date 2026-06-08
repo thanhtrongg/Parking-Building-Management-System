@@ -16,6 +16,8 @@ public class PricingRequest {
     private BigDecimal dailyRate;
     private BigDecimal lostTicketFee;
     private BigDecimal overtimeFeeMultiplier;
+    private BigDecimal basePrice;
+    private BigDecimal nightRate;
 
     @NotNull(message = "Building ID is required")
     private UUID buildingId;

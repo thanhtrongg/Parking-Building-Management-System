@@ -33,6 +33,13 @@ public class Pricing {
     @Column(name = "overtime_fee_multiplier")
     private BigDecimal overtimeFeeMultiplier = new BigDecimal("1.5");
 
+    @Builder.Default
+    @Column(name = "base_price")
+    private BigDecimal basePrice = BigDecimal.ZERO;
+
+    @Column(name = "night_rate")
+    private BigDecimal nightRate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "building_id")
     private ParkingBuilding building;

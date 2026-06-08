@@ -167,35 +167,59 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
         return Math.max(1.0, Math.ceil(minutes / 60.0));
     }
 
-    private BigDecimal calculateFee(ParkingSession session, LocalDateTime checkoutTime) {
+    BigDecimal calculateFee(ParkingSession session, LocalDateTime checkoutTime) {
         double durationHours = calculateDurationHours(session.getCheckInTime(), checkoutTime);
         UUID buildingId = session.getSlot().getFloor().getBuilding().getId();
         VehicleTypeEnum vehicleTypeEnum = session.getVehicleType();
 
         // Fallback defaults
+        BigDecimal basePrice = BigDecimal.ZERO;
         BigDecimal hourlyRate = new BigDecimal("10000"); // 10k VND
+        BigDecimal nightRate = null;
         BigDecimal dailyRate = new BigDecimal("100000"); // 100k VND
 
         VehicleType vehicleType = vehicleTypeRepository.findByName(vehicleTypeEnum.name()).orElse(null);
         if (vehicleType != null) {
             Pricing pricing = pricingRepository.findByBuildingIdAndVehicleTypeId(buildingId, vehicleType.getId()).orElse(null);
             if (pricing != null) {
+                if (pricing.getBasePrice() != null) {
+                    basePrice = pricing.getBasePrice();
+                }
                 hourlyRate = pricing.getHourlyRate();
+                nightRate = pricing.getNightRate();
                 dailyRate = pricing.getDailyRate();
             }
         }
 
+        BigDecimal calculatedHourlyFee = BigDecimal.ZERO;
         if (dailyRate != null && durationHours >= 24) {
             long days = (long) (durationHours / 24);
-            long remHours = (long) (durationHours % 24);
-            BigDecimal remAmount = hourlyRate.multiply(BigDecimal.valueOf(remHours));
+            BigDecimal remAmount = calculateHourlyTotal(session.getCheckInTime().plusDays(days), checkoutTime, hourlyRate, nightRate);
             if (remAmount.compareTo(dailyRate) > 0) {
                 remAmount = dailyRate;
             }
-            return dailyRate.multiply(BigDecimal.valueOf(days)).add(remAmount);
+            calculatedHourlyFee = dailyRate.multiply(BigDecimal.valueOf(days)).add(remAmount);
+        } else {
+            calculatedHourlyFee = calculateHourlyTotal(session.getCheckInTime(), checkoutTime, hourlyRate, nightRate);
+            if (dailyRate != null && calculatedHourlyFee.compareTo(dailyRate) > 0) {
+                calculatedHourlyFee = dailyRate;
+            }
         }
 
-        return hourlyRate.multiply(BigDecimal.valueOf(durationHours));
+        return basePrice.add(calculatedHourlyFee);
+    }
+
+    private BigDecimal calculateHourlyTotal(LocalDateTime start, LocalDateTime end, BigDecimal dayRate, BigDecimal nightRate) {
+        BigDecimal total = BigDecimal.ZERO;
+        LocalDateTime current = start;
+        while (current.isBefore(end)) {
+            int hour = current.getHour();
+            boolean isNight = (hour >= 22 || hour < 6); // 10 PM to 6 AM
+            BigDecimal rate = (isNight && nightRate != null) ? nightRate : dayRate;
+            total = total.add(rate);
+            current = current.plusHours(1);
+        }
+        return total;
     }
 
     private BigDecimal getLostTicketFee(ParkingSession session) {
