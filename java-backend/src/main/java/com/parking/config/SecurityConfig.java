@@ -36,9 +36,9 @@ public class SecurityConfig {
                         exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/api-docs/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api-docs/**", "/api-docs").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/v3/api-docs").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
