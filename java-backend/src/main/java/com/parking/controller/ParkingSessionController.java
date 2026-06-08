@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,7 +65,7 @@ public class ParkingSessionController {
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<ApiResponse<Page<SessionResponse>>> getMySessions(
             Principal principal,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "checkInTime", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<SessionResponse> response = sessionService.getMySessions(principal.getName(), pageable);
         return ResponseEntity.ok(ApiResponse.success("Your sessions retrieved successfully", response));
     }

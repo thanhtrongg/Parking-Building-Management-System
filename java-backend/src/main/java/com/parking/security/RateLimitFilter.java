@@ -27,13 +27,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     public void cleanupExpiredRequests() {
         long now = System.currentTimeMillis();
         long windowStart = now - (windowSeconds * 1000L);
-        requestCounts.forEach((ip, timestamps) -> {
-            while (!timestamps.isEmpty() && timestamps.peekFirst() < windowStart) {
-                timestamps.pollFirst();
-            }
-            if (timestamps.isEmpty()) {
-                requestCounts.remove(ip);
-            }
+        requestCounts.keySet().forEach(ip -> {
+            requestCounts.computeIfPresent(ip, (k, deque) -> {
+                while (!deque.isEmpty() && deque.peekFirst() < windowStart) {
+                    deque.pollFirst();
+                }
+                return deque.isEmpty() ? null : deque;
+            });
         });
     }
 
@@ -51,14 +51,26 @@ public class RateLimitFilter extends OncePerRequestFilter {
         long now = System.currentTimeMillis();
         long windowStart = now - (windowSeconds * 1000L);
 
-        Deque<Long> timestamps = requestCounts.computeIfAbsent(clientIp, k -> new ConcurrentLinkedDeque<>());
+        final long finalWindowStart = windowStart;
+        final long finalNow = now;
+        final boolean[] allowed = {true};
 
-        // Remove timestamps outside the sliding window
-        while (!timestamps.isEmpty() && timestamps.peekFirst() < windowStart) {
-            timestamps.pollFirst();
-        }
+        requestCounts.compute(clientIp, (ip, deque) -> {
+            if (deque == null) {
+                deque = new ConcurrentLinkedDeque<>();
+            }
+            while (!deque.isEmpty() && deque.peekFirst() < finalWindowStart) {
+                deque.pollFirst();
+            }
+            if (deque.size() >= maxRequests) {
+                allowed[0] = false;
+            } else {
+                deque.addLast(finalNow);
+            }
+            return deque;
+        });
 
-        if (timestamps.size() >= maxRequests) {
+        if (!allowed[0]) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
             response.setHeader("Retry-After", String.valueOf(windowSeconds));
@@ -68,7 +80,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        timestamps.addLast(now);
         filterChain.doFilter(request, response);
     }
 
@@ -80,6 +91,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isEmpty()) {
+            return xff.split(",")[0].trim();
+        }
         return request.getRemoteAddr();
     }
 }

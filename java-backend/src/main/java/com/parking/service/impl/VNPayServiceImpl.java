@@ -54,9 +54,15 @@ public class VNPayServiceImpl implements VNPayService {
     private final ParkingSlotRepository slotRepository;
 
     @Override
-    public VNPayResponse createPayment(UUID sessionId, String ipAddress) {
+    public VNPayResponse createPayment(UUID sessionId, String ipAddress, String currentUserEmail, String role) {
         ParkingSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Parking session not found with id: " + sessionId));
+
+        if ("ROLE_DRIVER".equals(role)) {
+            if (session.getDriver() == null || !session.getDriver().getEmail().equalsIgnoreCase(currentUserEmail)) {
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to pay for this session.");
+            }
+        }
 
         if (session.getStatus() != SessionStatus.ACTIVE && session.getStatus() != SessionStatus.LOST_TICKET) {
             throw new BadRequestException("Payment can only be generated for ACTIVE or LOST_TICKET sessions.");

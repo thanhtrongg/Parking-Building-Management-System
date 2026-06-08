@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,7 +46,7 @@ public class FeedbackController {
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<ApiResponse<Page<FeedbackResponse>>> getMyFeedback(
             Principal principal,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<FeedbackResponse> response = feedbackService.getMyFeedback(principal.getName(), pageable);
         return ResponseEntity.ok(ApiResponse.success("Your feedback retrieved successfully", response));
     }

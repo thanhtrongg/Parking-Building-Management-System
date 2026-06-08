@@ -339,7 +339,7 @@ public class ControllerE2ETest {
                 .paymentUrl("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?foo=bar")
                 .build();
 
-        when(vnpayService.createPayment(eq(sessionId), any())).thenReturn(response);
+        when(vnpayService.createPayment(eq(sessionId), any(), any(), any())).thenReturn(response);
 
         mockMvc.perform(get("/payments/vnpay/create?sessionId=" + sessionId))
                 .andExpect(status().isOk())
@@ -453,5 +453,24 @@ public class ControllerE2ETest {
         mockMvc.perform(get("/sessions/my")
                         .header("Authorization", "Bearer " + refreshToken))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /auth/refresh - fail with ACCESS token type")
+    void testRefreshToken_WithAccessToken_Fails() throws Exception {
+        org.springframework.security.core.userdetails.User userDetails =
+                new org.springframework.security.core.userdetails.User(
+                        "driver@parking.com",
+                        "password",
+                        List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_DRIVER"))
+                );
+        String accessToken = jwtTokenProvider.generateToken(userDetails);
+        com.parking.dto.auth.RefreshTokenRequest request = new com.parking.dto.auth.RefreshTokenRequest();
+        request.setRefreshToken(accessToken);
+
+        mockMvc.perform(post("/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }

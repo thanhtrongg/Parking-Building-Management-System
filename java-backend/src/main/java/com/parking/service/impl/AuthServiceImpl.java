@@ -85,6 +85,11 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Invalid or expired refresh token");
         }
 
+        String tokenType = jwtTokenProvider.getTokenTypeFromToken(token);
+        if (!"REFRESH".equals(tokenType)) {
+            throw new BadRequestException("Invalid token type. Refresh token required.");
+        }
+
         // Validate token exists in DB and is not revoked
         RefreshToken storedToken = refreshTokenRepository.findByTokenAndRevokedFalse(token)
                 .orElseThrow(() -> new BadRequestException("Refresh token has been revoked or does not exist"));

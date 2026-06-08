@@ -16,6 +16,7 @@ import com.parking.repository.ReservationRepository;
 import com.parking.repository.UserRepository;
 import com.parking.service.ReservationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,7 +54,7 @@ public class ReservationServiceImpl implements ReservationService {
             throw new BadRequestException("Reservations can only be made up to 7 days in advance.");
         }
 
-        if (java.time.Duration.between(request.getReservedFrom(), request.getReservedTo()).toHours() > 24) {
+        if (java.time.Duration.between(request.getReservedFrom(), request.getReservedTo()).toMinutes() > 1440) {
             throw new BadRequestException("Reservations cannot exceed a duration of 24 hours.");
         }
 
@@ -125,7 +126,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         // Only the driver who reserved or a manager can cancel
         if (!reservation.getDriver().getId().equals(user.getId()) && user.getRole() != UserRole.MANAGER) {
-            throw new BadRequestException("You do not have permission to cancel this reservation.");
+            throw new AccessDeniedException("You do not have permission to cancel this reservation.");
         }
 
         if (reservation.getStatus() == ReservationStatus.CANCELLED || reservation.getStatus() == ReservationStatus.USED) {

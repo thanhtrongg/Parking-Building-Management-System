@@ -362,7 +362,7 @@ public class ParkingSessionServiceImplTest {
         Page<ParkingSession> page = new PageImpl<>(List.of(mySession), pageable, 1);
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(sessionRepository.findByDriverId(driverId, pageable)).thenReturn(page);
+        when(sessionRepository.findByDriverIdWithFetch(driverId, pageable)).thenReturn(page);
 
         Page<SessionResponse> response = sessionService.getMySessions(email, pageable);
 
@@ -421,5 +421,21 @@ public class ParkingSessionServiceImplTest {
 
         assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
                 sessionService.assignSlot(sessionId, slotId, email));
+    }
+
+    @Test
+    @DisplayName("Check in - vehicle already has active session - throws BadRequestException")
+    void testCheckIn_DuplicateActiveSession_ThrowsBadRequestException() {
+        CheckInRequest request = new CheckInRequest();
+        request.setLicensePlate("30A-99999");
+        request.setVehicleType(VehicleTypeEnum.CAR);
+        request.setGateIn("Gate A");
+        String email = "staff@parking.com";
+
+        when(sessionRepository.existsByLicensePlateAndStatusIn(
+                eq("30A-99999"), any())).thenReturn(true);
+
+        assertThrows(BadRequestException.class, () ->
+                sessionService.checkIn(request, email));
     }
 }

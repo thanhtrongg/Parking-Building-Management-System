@@ -18,6 +18,7 @@ import com.parking.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.security.access.AccessDeniedException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -197,7 +198,7 @@ public class ReservationServiceImplTest {
         when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
         when(userRepository.findByEmail("other@parking.com")).thenReturn(Optional.of(otherDriver));
 
-        assertThrows(BadRequestException.class, () -> reservationService.cancelReservation(reservationId, "other@parking.com"));
+        assertThrows(AccessDeniedException.class, () -> reservationService.cancelReservation(reservationId, "other@parking.com"));
     }
 
     @Test
@@ -234,6 +235,22 @@ public class ReservationServiceImplTest {
         // Start 8 days in future, end 9 hours later
         request.setReservedFrom(LocalDateTime.now().plusDays(8));
         request.setReservedTo(LocalDateTime.now().plusDays(8).plusHours(2));
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
+        when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));
+
+        assertThrows(BadRequestException.class, () ->
+                reservationService.createReservation(request, email));
+    }
+
+    @Test
+    void testCreateReservation_MaxDurationBoundaryLimitExceeded_ThrowsBadRequestException() {
+        ReservationRequest request = new ReservationRequest();
+        request.setBuildingId(building.getId());
+        request.setVehicleType(VehicleTypeEnum.CAR);
+        // Start tomorrow, end 24 hours + 5 minutes later
+        request.setReservedFrom(LocalDateTime.now().plusDays(1));
+        request.setReservedTo(LocalDateTime.now().plusDays(1).plusHours(24).plusMinutes(5));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
         when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));

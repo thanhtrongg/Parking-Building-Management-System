@@ -14,7 +14,7 @@ logging:
 
 app:
   jwt:
-    secret: defaultDevSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm
+    secret: ${JWT_SECRET:defaultDevSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm}
   vnpay:
-    tmn-code: 2QRY7YW8
-    hash-secret: GETJDYUXQLNYMXRZZDTVWJKEYXOTXTMI
+    tmn-code: ${VNPAY_TMN_CODE:2QRY7YW8}
+    hash-secret: ${VNPAY_HASH_SECRET:GETJDYUXQLNYMXRZZDTVWJKEYXOTXTMI}

@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,9 +53,16 @@ public class PaymentController {
     @PreAuthorize("hasAnyRole('DRIVER', 'STAFF', 'MANAGER')")
     public ResponseEntity<ApiResponse<VNPayResponse>> createVNPayPayment(
             @RequestParam UUID sessionId,
-            HttpServletRequest httpRequest) {
-        String ipAddress = httpRequest.getRemoteAddr();
-        VNPayResponse response = vnpayService.createPayment(sessionId, ipAddress);
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+        String xff = httpRequest.getHeader("X-Forwarded-For");
+        String ipAddress = (xff != null && !xff.isEmpty()) ? xff.split(",")[0].trim() : httpRequest.getRemoteAddr();
+        String currentUserEmail = authentication.getName();
+        String role = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("");
+        VNPayResponse response = vnpayService.createPayment(sessionId, ipAddress, currentUserEmail, role);
         return ResponseEntity.ok(ApiResponse.success("VNPay payment URL generated successfully", response));
     }
 

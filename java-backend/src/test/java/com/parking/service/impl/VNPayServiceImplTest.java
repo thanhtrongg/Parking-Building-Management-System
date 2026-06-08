@@ -23,6 +23,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.parking.entity.User;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -81,7 +83,7 @@ public class VNPayServiceImplTest {
         when(sessionService.calculateSessionFee(eq(sessionId), any(LocalDateTime.class)))
                 .thenReturn(new BigDecimal("50000"));
 
-        VNPayResponse response = vnpayService.createPayment(sessionId, "127.0.0.1");
+        VNPayResponse response = vnpayService.createPayment(sessionId, "127.0.0.1", "staff@parking.com", "ROLE_STAFF");
 
         assertNotNull(response);
         assertNotNull(response.getPaymentUrl());
@@ -97,7 +99,7 @@ public class VNPayServiceImplTest {
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () ->
-                vnpayService.createPayment(sessionId, "127.0.0.1"));
+                vnpayService.createPayment(sessionId, "127.0.0.1", "staff@parking.com", "ROLE_STAFF"));
     }
 
     @Test
@@ -107,7 +109,33 @@ public class VNPayServiceImplTest {
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
 
         assertThrows(BadRequestException.class, () ->
-                vnpayService.createPayment(sessionId, "127.0.0.1"));
+                vnpayService.createPayment(sessionId, "127.0.0.1", "staff@parking.com", "ROLE_STAFF"));
+    }
+
+    @Test
+    @DisplayName("Create Payment - Driver Success")
+    void testCreatePayment_DriverSuccess() {
+        User driver = User.builder().email("driver@parking.com").build();
+        session.setDriver(driver);
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(sessionService.calculateSessionFee(eq(sessionId), any(LocalDateTime.class)))
+                .thenReturn(new BigDecimal("50000"));
+
+        VNPayResponse response = vnpayService.createPayment(sessionId, "127.0.0.1", "driver@parking.com", "ROLE_DRIVER");
+
+        assertNotNull(response);
+        assertNotNull(response.getPaymentUrl());
+    }
+
+    @Test
+    @DisplayName("Create Payment - Driver IDOR Access Denied")
+    void testCreatePayment_DriverIDOR() {
+        User driver = User.builder().email("owner@parking.com").build();
+        session.setDriver(driver);
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThrows(AccessDeniedException.class, () ->
+                vnpayService.createPayment(sessionId, "127.0.0.1", "hacker@parking.com", "ROLE_DRIVER"));
     }
 
     @Test

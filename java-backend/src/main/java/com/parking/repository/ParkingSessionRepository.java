@@ -19,6 +19,17 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
 
     Page<ParkingSession> findByDriverId(UUID driverId, Pageable pageable);
 
+    boolean existsByLicensePlateAndStatusIn(String licensePlate, List<SessionStatus> statuses);
+
+    @Query(value = "SELECT s FROM ParkingSession s " +
+           "LEFT JOIN FETCH s.slot sl " +
+           "LEFT JOIN FETCH s.driver d " +
+           "LEFT JOIN FETCH s.staffIn si " +
+           "LEFT JOIN FETCH s.staffOut so " +
+           "WHERE d.id = :driverId",
+           countQuery = "SELECT COUNT(s) FROM ParkingSession s WHERE s.driver.id = :driverId")
+    Page<ParkingSession> findByDriverIdWithFetch(@Param("driverId") UUID driverId, Pageable pageable);
+
     List<ParkingSession> findByStatus(SessionStatus status);
 
     long countByStatus(SessionStatus status);

@@ -64,7 +64,7 @@ public class FeedbackServiceImpl implements FeedbackService {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
 
-        return feedbackRepository.findByDriverId(driver.getId(), pageable)
+        return feedbackRepository.findByDriverIdWithFetch(driver.getId(), pageable)
                 .map(this::mapToResponse);
     }
 

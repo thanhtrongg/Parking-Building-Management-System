@@ -39,6 +39,13 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
     @Override
     public SessionResponse checkIn(CheckInRequest request, String currentUserEmail) {
+        boolean activeExists = sessionRepository.existsByLicensePlateAndStatusIn(
+                request.getLicensePlate(), List.of(SessionStatus.ACTIVE, SessionStatus.LOST_TICKET)
+        );
+        if (activeExists) {
+            throw new BadRequestException("Vehicle already has an active session.");
+        }
+
         ParkingSlot slot = null;
         if (request.getSlotId() != null) {
             slot = slotRepository.findById(request.getSlotId())
@@ -140,7 +147,7 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     public Page<SessionResponse> getMySessions(String currentUserEmail, Pageable pageable) {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
-        return sessionRepository.findByDriverId(driver.getId(), pageable)
+        return sessionRepository.findByDriverIdWithFetch(driver.getId(), pageable)
                 .map(this::mapToResponse);
     }
 

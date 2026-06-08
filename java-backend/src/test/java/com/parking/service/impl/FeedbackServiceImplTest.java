@@ -93,7 +93,7 @@ public class FeedbackServiceImplTest {
         Page<Feedback> page = new PageImpl<>(List.of(feedback), pageable, 1);
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(feedbackRepository.findByDriverId(driverId, pageable)).thenReturn(page);
+        when(feedbackRepository.findByDriverIdWithFetch(driverId, pageable)).thenReturn(page);
 
         Page<FeedbackResponse> response = feedbackService.getMyFeedback(email, pageable);
 
