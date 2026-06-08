@@ -8,7 +8,10 @@ const statusStyles = {
   CHECKED_IN: "bg-blue-50 text-blue-700 ring-blue-100",
   CANCELLED: "bg-red-50 text-red-700 ring-red-100",
   COMPLETED: "bg-slate-100 text-slate-700 ring-slate-200",
+  FULFILLED: "bg-slate-100 text-slate-700 ring-slate-200",
 };
+
+const cancellableStatuses = ["PENDING", "CONFIRMED"];
 
 function formatDateTime(value) {
   if (!value) return "N/A";
@@ -102,10 +105,33 @@ function LoadingState() {
   );
 }
 
-function BookingCard({ booking }) {
+function Alert({ type, message, onClose }) {
+  if (!message) return null;
+
+  const isError = type === "error";
+
+  return (
+    <div
+      className={`mb-5 flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 text-sm font-bold ${
+        isError
+          ? "border-red-200 bg-red-50 text-red-700"
+          : "border-emerald-200 bg-emerald-50 text-emerald-700"
+      }`}
+    >
+      <span>{message}</span>
+      <button type="button" onClick={onClose}>
+        <span className="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+  );
+}
+
+function BookingCard({ booking, cancelling, onCancel }) {
   const slotName = booking.parkingSlot?.slotName || "Unassigned";
   const zoneName = booking.parkingSlot?.zone?.zoneName || "N/A";
   const vehicleType = booking.vehicleType?.typeName || "N/A";
+  const status = String(booking.status || "").toUpperCase();
+  const canCancel = cancellableStatuses.includes(status);
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -134,6 +160,30 @@ function BookingCard({ booking }) {
         <Info label="Start" value={formatDateTime(booking.startTime)} />
         <Info label="End" value={formatDateTime(booking.endTime)} />
       </div>
+
+      <div className="mt-5 flex justify-end border-t border-slate-100 pt-4">
+        {canCancel ? (
+          <button
+            type="button"
+            onClick={() => onCancel(booking)}
+            disabled={cancelling}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-50 px-4 text-sm font-black text-red-700 ring-1 ring-red-100 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {cancelling ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-700" />
+            ) : (
+              <span className="material-symbols-outlined text-[19px]">
+                event_busy
+              </span>
+            )}
+            {cancelling ? "Cancelling..." : "Cancel reservation"}
+          </button>
+        ) : (
+          <span className="text-xs font-bold text-slate-400">
+            Cancellation unavailable
+          </span>
+        )}
+      </div>
     </article>
   );
 }
@@ -153,6 +203,8 @@ export default function BookingHistoryPage() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [alert, setAlert] = useState({ type: "", message: "" });
+  const [cancellingId, setCancellingId] = useState("");
 
   useEffect(() => {
     let ignore = false;
@@ -186,6 +238,55 @@ export default function BookingHistoryPage() {
     };
   }, []);
 
+  const handleCancelReservation = async (booking) => {
+    const slotName = booking.parkingSlot?.slotName || "this slot";
+    const confirmed = window.confirm(
+      `Cancel reservation for ${slotName}?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setCancellingId(booking.id);
+      setAlert({ type: "", message: "" });
+
+      const result = await apiRequest(
+        `/api/user/reservations/${booking.id}/cancel`,
+        {
+          method: "PATCH",
+        },
+      );
+
+      const updatedReservation = result.data?.reservation || {
+        ...booking,
+        status: result.data?.status || "CANCELLED",
+        parkingSlot: {
+          ...booking.parkingSlot,
+          slotName: result.data?.slotName || booking.parkingSlot?.slotName,
+        },
+      };
+
+      setBookings((currentBookings) =>
+        currentBookings.map((currentBooking) =>
+          currentBooking.id === booking.id
+            ? updatedReservation
+            : currentBooking,
+        ),
+      );
+      setAlert({
+        type: "success",
+        message: "Reservation cancelled successfully.",
+      });
+    } catch (cancelError) {
+      setAlert({
+        type: "error",
+        message: cancelError.message || "Cannot cancel reservation",
+      });
+    } finally {
+      setCancellingId("");
+    }
+  };
+
   const sortedBookings = useMemo(() => {
     return [...bookings].sort((a, b) => {
       return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
@@ -195,6 +296,11 @@ export default function BookingHistoryPage() {
   return (
     <UserLayout>
       <PageHeader total={bookings.length} />
+      <Alert
+        type={alert.type}
+        message={alert.message}
+        onClose={() => setAlert({ type: "", message: "" })}
+      />
 
       {loading ? (
         <LoadingState />
@@ -207,7 +313,12 @@ export default function BookingHistoryPage() {
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {sortedBookings.map((booking) => (
-            <BookingCard key={booking.id} booking={booking} />
+            <BookingCard
+              key={booking.id}
+              booking={booking}
+              cancelling={cancellingId === booking.id}
+              onCancel={handleCancelReservation}
+            />
           ))}
         </div>
       )}

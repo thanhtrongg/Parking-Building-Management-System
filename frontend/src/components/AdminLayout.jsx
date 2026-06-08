@@ -51,6 +51,12 @@ const navItems = [
     roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
+    icon: "forum",
+    label: "Feedbacks",
+    path: "/feedbacks",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
+  },
+  {
     icon: "group",
     label: "Users",
     path: "/admin-users",

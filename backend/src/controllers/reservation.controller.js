@@ -24,6 +24,10 @@ const STAFF_ALLOWED_STATUSES = [
   "COMPLETED",
 ];
 
+const USER_CANCELLABLE_STATUSES = ["PENDING", "CONFIRMED"];
+
+const ACTIVE_PARKING_SESSION_STATUSES = ["ACTIVE"];
+
 const isValidUUID = (id) => {
   return typeof id === "string" && UUID_REGEX.test(id);
 };
@@ -637,6 +641,113 @@ export const deleteReservation = async (req, res) => {
     });
   } catch (error) {
     console.error("Delete reservation error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export const cancelMyReservation = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reservation id",
+      });
+    }
+
+    const reservation = await prisma.reservations.findUnique({
+      where: { id },
+      include: reservationInclude,
+    });
+
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
+    }
+
+    if (reservation.user_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only cancel your own reservation",
+      });
+    }
+
+    if (!USER_CANCELLABLE_STATUSES.includes(reservation.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending or confirmed reservations can be cancelled",
+      });
+    }
+
+    const updatedReservation = await prisma.$transaction(async (tx) => {
+      const cancelledReservation = await tx.reservations.update({
+        where: { id },
+        data: {
+          status: "CANCELLED",
+        },
+        include: reservationInclude,
+      });
+
+      if (reservation.parking_slot_id) {
+        const activeReservationCount = await tx.reservations.count({
+          where: {
+            parking_slot_id: reservation.parking_slot_id,
+            status: {
+              in: ACTIVE_RESERVATION_STATUSES,
+            },
+            NOT: {
+              id,
+            },
+          },
+        });
+
+        const activeSessionCount = await tx.parking_sessions.count({
+          where: {
+            status: {
+              in: ACTIVE_PARKING_SESSION_STATUSES,
+            },
+            OR: [
+              { parking_slot_id: reservation.parking_slot_id },
+              { assigned_slot_id: reservation.parking_slot_id },
+            ],
+          },
+        });
+
+        if (activeReservationCount === 0 && activeSessionCount === 0) {
+          await tx.parking_slots.update({
+            where: {
+              id: reservation.parking_slot_id,
+            },
+            data: {
+              status: "AVAILABLE",
+            },
+          });
+        }
+      }
+
+      return cancelledReservation;
+    });
+
+    return res.json({
+      success: true,
+      message: "Reservation cancelled successfully",
+      data: {
+        id: updatedReservation.id,
+        status: updatedReservation.status,
+        slotName: updatedReservation.parking_slots?.slot_name || null,
+        reservation: mapReservationResponse(updatedReservation),
+      },
+    });
+  } catch (error) {
+    console.error("Cancel my reservation error:", error);
 
     return res.status(500).json({
       success: false,

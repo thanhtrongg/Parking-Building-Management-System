@@ -7,11 +7,14 @@ import authRoutes from "./routes/auth.routes.js";
 import parkingSlotRoutes from "./routes/parkingSlot.routes.js";
 import parkingSessionRoutes from "./routes/parkingSession.routes.js";
 import reservationRoutes from "./routes/reservation.routes.js";
+import userReservationRoutes from "./routes/userReservation.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import vehicleTypeRoutes from "./routes/vehicleType.routes.js";
 import zoneRoutes from "./routes/zone.routes.js";
 import pricingPolicyRoutes from "./routes/pricingPolicy.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import feedbackRoutes from "./routes/feedback.routes.js";
+import userFeedbackRoutes from "./routes/userFeedback.routes.js";
 
 dotenv.config();
 
@@ -51,11 +54,14 @@ app.use("/api/auth", authRoutes);
 app.use("/api/parking-slots", parkingSlotRoutes);
 app.use("/api/parking-sessions", parkingSessionRoutes);
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/user/reservations", userReservationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/vehicle-types", vehicleTypeRoutes);
 app.use("/api/zones", zoneRoutes);
 app.use("/api/pricing-policies", pricingPolicyRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/feedbacks", feedbackRoutes);
+app.use("/api/user/feedbacks", userFeedbackRoutes);
 
 const PORT = process.env.PORT || 5000;
 

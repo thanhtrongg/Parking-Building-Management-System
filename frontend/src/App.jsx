@@ -17,6 +17,7 @@ import ParkingSlotsPage from "./pages/system/ParkingSlotsPage";
 import PaymentsPage from "./pages/system/PaymentsPage";
 import PricingPoliciesPage from "./pages/system/PricingPoliciesPage";
 import ReservationsPage from "./pages/system/ReservationsPage";
+import FeedbacksPage from "./pages/system/FeedbacksPage";
 import AdminUsersPage from "./pages/system/UsersPage";
 import AdminVehiclesPage from "./pages/system/VehiclesPage";
 import ZonesPage from "./pages/system/ZonesPage";
@@ -232,6 +233,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={systemRoles}>
               <PricingPoliciesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/feedbacks"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <FeedbacksPage />
             </ProtectedRoute>
           }
         />
