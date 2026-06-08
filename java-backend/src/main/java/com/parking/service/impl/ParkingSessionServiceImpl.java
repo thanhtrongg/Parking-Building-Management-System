@@ -35,17 +35,24 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
     @Override
     public SessionResponse checkIn(CheckInRequest request, String currentUserEmail) {
-        ParkingSlot slot = slotRepository.findById(request.getSlotId())
-                .orElseThrow(() -> new ResourceNotFoundException("Parking slot not found with id: " + request.getSlotId()));
+        ParkingSlot slot = null;
+        if (request.getSlotId() != null) {
+            slot = slotRepository.findById(request.getSlotId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Parking slot not found with id: " + request.getSlotId()));
 
-        if (slot.getStatus() != SlotStatus.AVAILABLE) {
-            throw new BadRequestException("Parking slot is not available. Current status: " + slot.getStatus());
-        }
+            if (slot.getStatus() != SlotStatus.AVAILABLE) {
+                throw new BadRequestException("Parking slot is not available. Current status: " + slot.getStatus());
+            }
 
-        // Validate vehicle type compatibility
-        if (slot.getVehicleType() != request.getVehicleType()) {
-            throw new BadRequestException("Vehicle type " + request.getVehicleType() + 
-                    " is not allowed in slot designed for " + slot.getVehicleType());
+            // Validate vehicle type compatibility
+            if (slot.getVehicleType() != request.getVehicleType()) {
+                throw new BadRequestException("Vehicle type " + request.getVehicleType() + 
+                        " is not allowed in slot designed for " + slot.getVehicleType());
+            }
+
+            // Mark slot as occupied
+            slot.setStatus(SlotStatus.OCCUPIED);
+            slotRepository.save(slot);
         }
 
         User staffIn = userRepository.findByEmail(currentUserEmail)
@@ -56,10 +63,6 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
             driver = userRepository.findById(request.getDriverId())
                     .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + request.getDriverId()));
         }
-
-        // Mark slot as occupied
-        slot.setStatus(SlotStatus.OCCUPIED);
-        slotRepository.save(slot);
 
         // Generate clean ticket code
         String ticketCode = "TKT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -87,6 +90,10 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
         if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new BadRequestException("Parking session is not active. Current status: " + session.getStatus());
+        }
+
+        if (session.getSlot() == null) {
+            throw new BadRequestException("Parking slot must be assigned to the session before checkout.");
         }
 
         User staffOut = userRepository.findByEmail(currentUserEmail)
@@ -137,6 +144,10 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
         if (session.getStatus() != SessionStatus.ACTIVE) {
             throw new BadRequestException("Parking session is not active. Current status: " + session.getStatus());
+        }
+
+        if (session.getSlot() == null) {
+            throw new BadRequestException("Parking slot must be assigned to the session before checkout.");
         }
 
         User staffOut = userRepository.findByEmail(currentUserEmail)
@@ -264,6 +275,53 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     public BigDecimal calculateSessionFee(UUID sessionId, LocalDateTime checkoutTime) {
         ParkingSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Parking session not found with id: " + sessionId));
+        if (session.getSlot() == null) {
+            throw new BadRequestException("Parking slot must be assigned to the session before checkout.");
+        }
         return calculateFee(session, checkoutTime);
+    }
+
+    @Override
+    public SessionResponse assignSlot(UUID sessionId, UUID slotId) {
+        ParkingSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parking session not found with id: " + sessionId));
+
+        if (session.getStatus() != SessionStatus.ACTIVE) {
+            throw new BadRequestException("Cannot assign slot to an inactive parking session.");
+        }
+
+        ParkingSlot newSlot = slotRepository.findById(slotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parking slot not found with id: " + slotId));
+
+        // If it's already the assigned slot, just return
+        if (session.getSlot() != null && session.getSlot().getId().equals(slotId)) {
+            return mapToResponse(session);
+        }
+
+        // Validate compatibility
+        if (newSlot.getVehicleType() != session.getVehicleType()) {
+            throw new BadRequestException("Vehicle type " + session.getVehicleType() + 
+                    " is not allowed in slot designed for " + newSlot.getVehicleType());
+        }
+
+        // Validate availability
+        if (newSlot.getStatus() != SlotStatus.AVAILABLE) {
+            throw new BadRequestException("Parking slot is not available. Current status: " + newSlot.getStatus());
+        }
+
+        // Free the old slot if any
+        if (session.getSlot() != null) {
+            ParkingSlot oldSlot = session.getSlot();
+            oldSlot.setStatus(SlotStatus.AVAILABLE);
+            slotRepository.save(oldSlot);
+        }
+
+        // Occupy the new slot
+        newSlot.setStatus(SlotStatus.OCCUPIED);
+        slotRepository.save(newSlot);
+
+        session.setSlot(newSlot);
+        ParkingSession saved = sessionRepository.save(session);
+        return mapToResponse(saved);
     }
 }

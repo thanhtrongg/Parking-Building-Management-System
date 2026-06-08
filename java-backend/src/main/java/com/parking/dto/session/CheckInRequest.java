@@ -16,7 +16,6 @@ public class CheckInRequest {
     @NotNull(message = "Vehicle type is required")
     private VehicleTypeEnum vehicleType;
 
-    @NotNull(message = "Parking slot ID is required")
     private UUID slotId;
 
     private String gateIn;

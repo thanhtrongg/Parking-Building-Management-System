@@ -67,4 +67,13 @@ public class ParkingSessionController {
         CheckOutResponse response = sessionService.lostTicket(id, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Lost ticket processed. Pending payment.", response));
     }
+
+    @PatchMapping("/{id}/slot")
+    @PreAuthorize("hasAnyRole('DRIVER', 'STAFF', 'MANAGER')")
+    public ResponseEntity<ApiResponse<SessionResponse>> assignSlot(
+            @PathVariable UUID id,
+            @RequestParam UUID slotId) {
+        SessionResponse response = sessionService.assignSlot(id, slotId);
+        return ResponseEntity.ok(ApiResponse.success("Slot assigned to parking session successfully", response));
+    }
 }

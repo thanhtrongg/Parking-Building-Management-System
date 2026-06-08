@@ -21,6 +21,7 @@ import com.parking.service.ReportService;
 import com.parking.service.SlotService;
 import com.parking.service.PaymentService;
 import com.parking.service.VNPayService;
+import com.parking.service.ParkingSessionService;
 import com.parking.dto.payment.VNPayResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,6 +72,9 @@ public class ControllerE2ETest {
 
     @MockitoBean
     private PaymentService paymentService;
+
+    @MockitoBean
+    private ParkingSessionService parkingSessionService;
 
     // --- SLOT CONTROLLER TESTS ---
 
@@ -353,5 +357,38 @@ public class ControllerE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.RspCode").value("00"))
                 .andExpect(jsonPath("$.Message").value("Confirm success"));
+    }
+
+    // --- PARKING SESSION CONTROLLER TESTS ---
+
+    @Test
+    @DisplayName("PATCH /sessions/{id}/slot - success for driver")
+    @WithMockUser(roles = "DRIVER")
+    void testAssignSlot_Success() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        UUID slotId = UUID.randomUUID();
+        SessionResponse response = SessionResponse.builder()
+                .id(sessionId)
+                .slotId(slotId)
+                .slotCode("A-10")
+                .build();
+
+        when(parkingSessionService.assignSlot(eq(sessionId), eq(slotId))).thenReturn(response);
+
+        mockMvc.perform(patch("/sessions/" + sessionId + "/slot?slotId=" + slotId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.slotId").value(slotId.toString()))
+                .andExpect(jsonPath("$.data.slotCode").value("A-10"));
+    }
+
+    @Test
+    @DisplayName("PATCH /sessions/{id}/slot - unauthorized for anonymous")
+    void testAssignSlot_Unauthorized() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        UUID slotId = UUID.randomUUID();
+
+        mockMvc.perform(patch("/sessions/" + sessionId + "/slot?slotId=" + slotId))
+                .andExpect(status().isUnauthorized());
     }
 }
