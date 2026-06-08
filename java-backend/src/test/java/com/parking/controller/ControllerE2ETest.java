@@ -19,6 +19,9 @@ import com.parking.enums.VehicleTypeEnum;
 import com.parking.service.AdminService;
 import com.parking.service.ReportService;
 import com.parking.service.SlotService;
+import com.parking.service.PaymentService;
+import com.parking.service.VNPayService;
+import com.parking.dto.payment.VNPayResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -61,6 +65,12 @@ public class ControllerE2ETest {
 
     @MockitoBean
     private AdminService adminService;
+
+    @MockitoBean
+    private VNPayService vnpayService;
+
+    @MockitoBean
+    private PaymentService paymentService;
 
     // --- SLOT CONTROLLER TESTS ---
 
@@ -304,5 +314,44 @@ public class ControllerE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalUsers").value(10));
+    }
+
+    // --- VNPAY / PAYMENT CONTROLLER TESTS ---
+
+    @Test
+    @DisplayName("GET /payments/vnpay/create - success for driver")
+    @WithMockUser(roles = "DRIVER")
+    void testCreateVNPayPayment_Success() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        VNPayResponse response = VNPayResponse.builder()
+                .paymentUrl("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?foo=bar")
+                .build();
+
+        when(vnpayService.createPayment(eq(sessionId), any())).thenReturn(response);
+
+        mockMvc.perform(get("/payments/vnpay/create?sessionId=" + sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.paymentUrl").value("https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?foo=bar"));
+    }
+
+    @Test
+    @DisplayName("GET /payments/vnpay/create - unauthorized for anonymous")
+    void testCreateVNPayPayment_Unauthorized() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        mockMvc.perform(get("/payments/vnpay/create?sessionId=" + sessionId))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("GET /payments/vnpay/ipn - success without authentication")
+    void testProcessVNPayIpn_Success() throws Exception {
+        Map<String, String> result = Map.of("RspCode", "00", "Message", "Confirm success");
+        when(vnpayService.processIpn(any())).thenReturn(result);
+
+        mockMvc.perform(get("/payments/vnpay/ipn?vnp_Amount=10000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.RspCode").value("00"))
+                .andExpect(jsonPath("$.Message").value("Confirm success"));
     }
 }

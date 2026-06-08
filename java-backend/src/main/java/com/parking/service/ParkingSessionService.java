@@ -18,4 +18,6 @@ public interface ParkingSessionService {
     List<SessionResponse> getMySessions(String currentUserEmail);
 
     CheckOutResponse lostTicket(UUID sessionId, String currentUserEmail);
+
+    java.math.BigDecimal calculateSessionFee(UUID sessionId, java.time.LocalDateTime checkoutTime);
 }

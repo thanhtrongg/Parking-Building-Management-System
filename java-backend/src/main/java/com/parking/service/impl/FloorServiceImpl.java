@@ -9,7 +9,6 @@ import com.parking.enums.SlotStatus;
 import com.parking.exception.ResourceNotFoundException;
 import com.parking.repository.FloorRepository;
 import com.parking.repository.ParkingBuildingRepository;
-import com.parking.repository.ParkingSlotRepository;
 import com.parking.service.FloorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,6 @@ public class FloorServiceImpl implements FloorService {
 
     private final FloorRepository floorRepository;
     private final ParkingBuildingRepository buildingRepository;
-    private final ParkingSlotRepository slotRepository;
 
     @Override
     @Transactional(readOnly = true)

@@ -258,4 +258,12 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
                 .staffOutName(session.getStaffOut() != null ? session.getStaffOut().getFullName() : null)
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateSessionFee(UUID sessionId, LocalDateTime checkoutTime) {
+        ParkingSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parking session not found with id: " + sessionId));
+        return calculateFee(session, checkoutTime);
+    }
 }
