@@ -73,6 +73,10 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
+        if (!user.isActive()) {
+            throw new BadRequestException("User account is deactivated");
+        }
+
         return buildAuthResponse(user);
     }
 
