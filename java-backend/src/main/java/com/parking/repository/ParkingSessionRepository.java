@@ -27,7 +27,7 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
 
     List<ParkingSession> findBySlotIdAndStatus(UUID slotId, SessionStatus status);
 
-    @Query("SELECT s FROM ParkingSession s JOIN FETCH s.slot sl JOIN FETCH sl.floor f JOIN FETCH f.building b " +
+    @Query("SELECT s FROM ParkingSession s LEFT JOIN FETCH s.slot sl LEFT JOIN FETCH sl.floor f LEFT JOIN FETCH f.building b " +
            "WHERE s.checkInTime >= :startDate AND s.checkInTime <= :endDate " +
            "AND (:buildingId IS NULL OR b.id = :buildingId)")
     List<ParkingSession> findSessionsWithinPeriod(
@@ -37,9 +37,13 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
     );
 
     @Query(value = "SELECT s FROM ParkingSession s " +
+           "LEFT JOIN FETCH s.slot sl " +
+           "LEFT JOIN FETCH s.driver d " +
+           "LEFT JOIN FETCH s.staffIn si " +
+           "LEFT JOIN FETCH s.staffOut so " +
            "WHERE (:startDate IS NULL OR s.checkInTime >= :startDate) " +
            "AND (:endDate IS NULL OR s.checkInTime <= :endDate) " +
-           "AND (:buildingId IS NULL OR s.slot.floor.building.id = :buildingId) " +
+           "AND (:buildingId IS NULL OR sl.floor.building.id = :buildingId) " +
            "AND (:status IS NULL OR s.status = :status) " +
            "AND (:licensePlate IS NULL OR LOWER(s.licensePlate) LIKE LOWER(CONCAT('%', :licensePlate, '%')))",
            countQuery = "SELECT COUNT(s) FROM ParkingSession s " +

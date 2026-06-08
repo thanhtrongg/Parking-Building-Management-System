@@ -6,6 +6,7 @@ import com.parking.dto.report.PeakHoursReportResponse;
 import com.parking.dto.report.RevenueReportResponse;
 import com.parking.dto.session.SessionResponse;
 import com.parking.enums.SessionStatus;
+import com.parking.exception.BadRequestException;
 import com.parking.service.ReportService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,10 @@ public class ReportController {
             endDate = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         }
 
+        if (startDate.isAfter(endDate)) {
+            throw new BadRequestException("Start date must be before or equal to end date");
+        }
+
         RevenueReportResponse response = reportService.getRevenueReport(startDate, endDate, buildingId);
         return ResponseEntity.ok(ApiResponse.success("Revenue report retrieved successfully", response));
     }
@@ -68,6 +73,10 @@ public class ReportController {
             endDate = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999999999);
         }
 
+        if (startDate.isAfter(endDate)) {
+            throw new BadRequestException("Start date must be before or equal to end date");
+        }
+
         PeakHoursReportResponse response = reportService.getPeakHoursReport(startDate, endDate, buildingId);
         return ResponseEntity.ok(ApiResponse.success("Peak hours report retrieved successfully", response));
     }
@@ -80,6 +89,10 @@ public class ReportController {
             @RequestParam(required = false) SessionStatus status,
             @RequestParam(required = false) String licensePlate,
             @PageableDefault(size = 10) Pageable pageable) {
+
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new BadRequestException("Start date must be before or equal to end date");
+        }
 
         Page<SessionResponse> response = reportService.searchSessions(startDate, endDate, buildingId, status, licensePlate, pageable);
         return ResponseEntity.ok(ApiResponse.success("Parking sessions retrieved successfully", response));

@@ -5,6 +5,7 @@ import com.parking.enums.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.parking.enums.VehicleTypeEnum;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
@@ -25,6 +26,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
            "AND r.reservedFrom < :endTime AND r.reservedTo > :startTime")
     List<Reservation> findOverlappingReservations(
         @Param("slotIds") List<UUID> slotIds,
+        @Param("startTime") LocalDateTime startTime,
+        @Param("endTime") LocalDateTime endTime
+    );
+
+    @Query("SELECT r FROM Reservation r JOIN FETCH r.slot s JOIN FETCH s.floor f " +
+           "WHERE f.building.id = :buildingId AND f.vehicleType = :vehicleType " +
+           "AND r.status IN ('PENDING', 'CONFIRMED') " +
+           "AND r.reservedFrom < :endTime AND r.reservedTo > :startTime")
+    List<Reservation> findOverlappingReservationsByBuildingAndVehicleType(
+        @Param("buildingId") UUID buildingId,
+        @Param("vehicleType") VehicleTypeEnum vehicleType,
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );

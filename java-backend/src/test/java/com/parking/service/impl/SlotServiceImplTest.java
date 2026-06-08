@@ -138,18 +138,16 @@ public class SlotServiceImplTest {
         ParkingSlot slotF1 = ParkingSlot.builder().id(UUID.randomUUID()).slotCode("1F-01").status(SlotStatus.AVAILABLE).floor(floor1).build();
         ParkingSlot slotF2 = ParkingSlot.builder().id(UUID.randomUUID()).slotCode("2F-01").status(SlotStatus.AVAILABLE).floor(floor2).build();
 
-        when(floorRepository.findByBuildingIdAndVehicleType(buildingId, VehicleTypeEnum.CAR))
-                .thenReturn(List.of(floor1, floor2));
-
-        when(slotRepository.findByFloorIdAndStatus(floor1.getId(), SlotStatus.AVAILABLE)).thenReturn(List.of(slotF1));
-        when(slotRepository.findByFloorIdAndStatus(floor2.getId(), SlotStatus.AVAILABLE)).thenReturn(List.of(slotF2));
-        when(reservationRepository.findOverlappingReservations(any(), any(), any())).thenReturn(Collections.emptyList());
+        when(slotRepository.findAvailableSlotsByBuildingAndVehicleType(buildingId, VehicleTypeEnum.CAR))
+                .thenReturn(List.of(slotF1, slotF2));
+        when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(eq(buildingId), eq(VehicleTypeEnum.CAR), any(), any()))
+                .thenReturn(Collections.emptyList());
 
         SlotRecommendRequest request = new SlotRecommendRequest(buildingId, VehicleTypeEnum.CAR);
         SlotRecommendResponse response = slotService.recommendSlot(request);
 
         assertNotNull(response);
-        // Should recommend Floor 1 slot because floor 1 has a lower floor number (1 < 2) hence higher score.
+        // Should recommend Floor 1 slot because floor 1 has a lower floor number (1 < 2) hence higher score/closer.
         assertEquals("1F-01", response.getSlot().getSlotCode());
         assertTrue(response.getRecommendationReason().contains("Floor 1"));
     }
@@ -162,16 +160,14 @@ public class SlotServiceImplTest {
         ParkingSlot slotA = ParkingSlot.builder().id(UUID.randomUUID()).slotCode("1F-0A").status(SlotStatus.AVAILABLE).floor(floor1).build();
         ParkingSlot slotB = ParkingSlot.builder().id(UUID.randomUUID()).slotCode("1F-0B").status(SlotStatus.AVAILABLE).floor(floor1).build();
 
-        when(floorRepository.findByBuildingIdAndVehicleType(buildingId, VehicleTypeEnum.CAR))
-                .thenReturn(List.of(floor1));
-        when(slotRepository.findByFloorIdAndStatus(floor1.getId(), SlotStatus.AVAILABLE))
+        when(slotRepository.findAvailableSlotsByBuildingAndVehicleType(buildingId, VehicleTypeEnum.CAR))
                 .thenReturn(List.of(slotA, slotB));
 
         // Mock slotA being reserved
         Reservation reservation = Reservation.builder()
                 .slot(slotA)
                 .build();
-        when(reservationRepository.findOverlappingReservations(any(), any(), any()))
+        when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(eq(buildingId), eq(VehicleTypeEnum.CAR), any(), any()))
                 .thenReturn(List.of(reservation));
 
         SlotRecommendRequest request = new SlotRecommendRequest(buildingId, VehicleTypeEnum.CAR);
@@ -183,8 +179,8 @@ public class SlotServiceImplTest {
     }
 
     @Test
-    void testRecommendSlot_NoFloors_ThrowsBadRequestException() {
-        when(floorRepository.findByBuildingIdAndVehicleType(buildingId, VehicleTypeEnum.CAR))
+    void testRecommendSlot_NoSlots_ThrowsBadRequestException() {
+        when(slotRepository.findAvailableSlotsByBuildingAndVehicleType(buildingId, VehicleTypeEnum.CAR))
                 .thenReturn(Collections.emptyList());
 
         SlotRecommendRequest request = new SlotRecommendRequest(buildingId, VehicleTypeEnum.CAR);

@@ -35,7 +35,8 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public Page<UserResponse> searchUsers(UserRole role, Boolean isActive, String search, Pageable pageable) {
-        Page<User> usersPage = userRepository.searchUsers(role, isActive, search, pageable);
+        String searchPattern = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        Page<User> usersPage = userRepository.searchUsers(role, isActive, searchPattern, pageable);
         return usersPage.map(this::mapToResponse);
     }
 

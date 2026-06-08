@@ -98,7 +98,7 @@ public class ReportServiceImplTest {
         assertEquals(0, report.getTotalExtraFeeRevenue().compareTo(new BigDecimal("10000")));
         assertEquals(1, report.getVehicleTypeBreakdown().size());
         assertEquals(1, report.getBuildingBreakdown().size());
-        assertEquals(1, report.getDailyBreakdown().size());
+        assertEquals(6, report.getDailyBreakdown().size());
     }
 
     @Test

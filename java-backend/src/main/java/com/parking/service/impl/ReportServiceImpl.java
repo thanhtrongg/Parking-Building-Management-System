@@ -46,6 +46,13 @@ public class ReportServiceImpl implements ReportService {
         Map<UUID, BigDecimal> buildingRevenueMap = new HashMap<>();
         Map<LocalDate, BigDecimal> dailyRevenueMap = new TreeMap<>(); // sorted by date
 
+        // Pre-populate all dates in range with zero revenue
+        LocalDate startLocalDate = startDate.toLocalDate();
+        LocalDate endLocalDate = endDate.toLocalDate();
+        for (LocalDate date = startLocalDate; !date.isAfter(endLocalDate); date = date.plusDays(1)) {
+            dailyRevenueMap.put(date, BigDecimal.ZERO);
+        }
+
         for (Payment payment : payments) {
             BigDecimal base = payment.getAmount() != null ? payment.getAmount() : BigDecimal.ZERO;
             BigDecimal extra = payment.getExtraFee() != null ? payment.getExtraFee() : BigDecimal.ZERO;

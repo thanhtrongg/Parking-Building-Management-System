@@ -68,27 +68,19 @@ public class SlotServiceImpl implements SlotService {
     @Override
     @Transactional(readOnly = true)
     public SlotRecommendResponse recommendSlot(SlotRecommendRequest request) {
-        // Find floors in building with matching vehicle type
-        List<Floor> floors = floorRepository.findByBuildingIdAndVehicleType(request.getBuildingId(), request.getVehicleType());
-        if (floors.isEmpty()) {
-            throw new BadRequestException("No floors found for the requested vehicle type in this building");
-        }
-
-        // Get all AVAILABLE slots on those floors
-        List<ParkingSlot> availableSlots = floors.stream()
-                .flatMap(f -> slotRepository.findByFloorIdAndStatus(f.getId(), SlotStatus.AVAILABLE).stream())
-                .collect(Collectors.toList());
+        // Fetch all available slots (with floor initialized) in a single query
+        List<ParkingSlot> availableSlots = slotRepository.findAvailableSlotsByBuildingAndVehicleType(
+                request.getBuildingId(), request.getVehicleType());
 
         if (availableSlots.isEmpty()) {
             throw new BadRequestException("No available slots found for this vehicle type in the building");
         }
 
-        // Filter out slots that have overlapping reservations within the next 2 hours
+        // Fetch overlapping reservations in a single query
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime twoHoursFromNow = now.plusHours(2);
-
-        List<UUID> slotIds = availableSlots.stream().map(ParkingSlot::getId).collect(Collectors.toList());
-        List<Reservation> overlappingReservations = reservationRepository.findOverlappingReservations(slotIds, now, twoHoursFromNow);
+        List<Reservation> overlappingReservations = reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
+                request.getBuildingId(), request.getVehicleType(), now, twoHoursFromNow);
 
         Set<UUID> reservedSlotIds = overlappingReservations.stream()
                 .map(r -> r.getSlot().getId())
@@ -103,17 +95,13 @@ public class SlotServiceImpl implements SlotService {
         }
 
         // Score slots:
-        // Proximity score = 1000 - (floorNumber * 100)
-        // Sort by score descending (so highest score comes first), then by slotCode lexicographically.
+        // Sort by proximity to ground floor (absolute value of floor number) ascending, then by slotCode lexicographically.
+        java.util.Comparator<ParkingSlot> slotComparator = java.util.Comparator
+                .comparing((ParkingSlot s) -> Math.abs(s.getFloor().getFloorNumber()))
+                .thenComparing(ParkingSlot::getSlotCode);
+
         ParkingSlot bestSlot = candidates.stream()
-                .min((s1, s2) -> {
-                    int score1 = 1000 - (s1.getFloor().getFloorNumber() * 100);
-                    int score2 = 1000 - (s2.getFloor().getFloorNumber() * 100);
-                    if (score1 != score2) {
-                        return Integer.compare(score2, score1); // descending order of score
-                    }
-                    return s1.getSlotCode().compareTo(s2.getSlotCode()); // ascending order of slot code
-                })
+                .min(slotComparator)
                 .orElseThrow(() -> new BadRequestException("Failed to find a recommended slot"));
 
         String reason = String.format("Recommended slot %s on floor %s (floor number %d) because it is the closest floor with availability and has no upcoming reservations.",
