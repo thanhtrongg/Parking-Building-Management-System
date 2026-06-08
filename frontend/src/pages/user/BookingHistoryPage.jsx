@@ -28,6 +28,12 @@ function normalizeBookings(value) {
   return [];
 }
 
+export function getReservationCode(reservationId) {
+  return reservationId
+    ? `RSV-${String(reservationId).slice(0, 8).toUpperCase()}`
+    : "RSV-N/A";
+}
+
 function StatusBadge({ status }) {
   const normalizedStatus = String(status || "PENDING").toUpperCase();
 
@@ -106,6 +112,7 @@ function BookingCard({ booking }) {
   const slotName = booking.parkingSlot?.slotName || "Unassigned";
   const zoneName = booking.parkingSlot?.zone?.zoneName || "N/A";
   const vehicleType = booking.vehicleType?.typeName || "N/A";
+  const reservationCode = getReservationCode(booking.id);
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -113,7 +120,7 @@ function BookingCard({ booking }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-['Geist'] text-lg font-black text-slate-950">
-              {booking.id?.slice(0, 8) || "Booking"}
+              {reservationCode}
             </h2>
             <StatusBadge status={booking.status} />
           </div>
@@ -129,6 +136,7 @@ function BookingCard({ booking }) {
       </div>
 
       <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+        <Info label="Booking ID" value={reservationCode} />
         <Info label="Slot" value={slotName} />
         <Info label="Vehicle" value={vehicleType} />
         <Info label="Start" value={formatDateTime(booking.startTime)} />

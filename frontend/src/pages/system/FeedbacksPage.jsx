@@ -181,7 +181,7 @@ function FeedbackTable({
             <tr>
               {[
                 "Customer",
-                "Ticket",
+                "Booking",
                 "Subject",
                 "Status",
                 "Created",
@@ -218,10 +218,10 @@ function FeedbackTable({
                 </td>
                 <td className="px-5 py-4">
                   <p className="font-['Geist'] text-sm font-bold text-[#191b23]">
-                    {feedback.ticketCode || "No session"}
+                    {feedback.reservationCode || feedback.ticketCode || "No booking"}
                   </p>
                   <p className="mt-0.5 text-xs text-[#6b7280]">
-                    {feedback.parkingSession?.licensePlate || "N/A"}
+                    {feedback.parkingSession?.licensePlate || "RSV booking"}
                   </p>
                 </td>
                 <td className="px-5 py-4">
@@ -311,10 +311,10 @@ function DetailPanel({ feedback }) {
 
         <div className="rounded-xl border border-slate-200 p-4">
           <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-            Parking Session
+            Booking
           </p>
           <p className="mt-1 font-['Geist'] text-sm font-bold text-slate-900">
-            {feedback.ticketCode || "No linked session"}
+            {feedback.reservationCode || feedback.ticketCode || "No linked booking"}
           </p>
           <p className="mt-0.5 text-xs text-slate-500">
             License plate: {feedback.parkingSession?.licensePlate || "N/A"}
@@ -363,6 +363,7 @@ export default function FeedbacksPage() {
         !normalizedKeyword ||
         [
           feedback.customerName,
+          feedback.reservationCode,
           feedback.ticketCode,
           feedback.subject,
           feedback.message,

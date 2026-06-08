@@ -10,8 +10,57 @@ const VALID_FEEDBACK_STATUSES = [
   "CLOSED",
 ];
 
+const RESERVATION_MARKER_PREFIX = "[Reservation:";
+
 const isValidUUID = (id) => {
   return typeof id === "string" && UUID_REGEX.test(id);
+};
+
+const getReservationCode = (reservationId) => {
+  return reservationId ? `RSV-${reservationId.slice(0, 8).toUpperCase()}` : null;
+};
+
+const normalizeReservationCode = (value) => {
+  const normalizedValue = String(value || "")
+    .trim()
+    .toUpperCase();
+
+  return normalizedValue.startsWith("RSV-")
+    ? normalizedValue
+    : `RSV-${normalizedValue}`;
+};
+
+const parseFeedbackDescription = (description) => {
+  const text = String(description || "");
+
+  if (!text.startsWith(RESERVATION_MARKER_PREFIX)) {
+    return {
+      reservationCode: null,
+      message: text,
+    };
+  }
+
+  const markerEndIndex = text.indexOf("]");
+
+  if (markerEndIndex === -1) {
+    return {
+      reservationCode: null,
+      message: text,
+    };
+  }
+
+  return {
+    reservationCode: text
+      .slice(RESERVATION_MARKER_PREFIX.length, markerEndIndex)
+      .trim(),
+    message: text.slice(markerEndIndex + 1).trimStart(),
+  };
+};
+
+const buildFeedbackDescription = (message, reservationCode) => {
+  if (!reservationCode) return message;
+
+  return `${RESERVATION_MARKER_PREFIX} ${reservationCode}]\n${message}`;
 };
 
 const normalizeStatus = (status) => {
@@ -44,15 +93,18 @@ const feedbackInclude = {
 const mapFeedbackResponse = (feedback) => {
   const user = feedback.users_feedbacks_user_idTousers;
   const parkingSession = feedback.parking_sessions;
+  const parsedDescription = parseFeedbackDescription(feedback.description);
 
   return {
     id: feedback.id,
     userId: feedback.user_id,
     parkingSessionId: feedback.parking_session_id,
+    bookingId: parsedDescription.reservationCode,
+    reservationCode: parsedDescription.reservationCode,
     customerName: user?.full_name || null,
     ticketCode: parkingSession?.ticket_code || null,
     subject: feedback.issue_type,
-    message: feedback.description,
+    message: parsedDescription.message,
     status: feedback.status,
     createdAt: feedback.created_at,
     user: user
@@ -134,6 +186,91 @@ const validateParkingSessionForUser = async (parkingSessionId, userId) => {
   return null;
 };
 
+const findReservationByCodeForUser = async (bookingCode, userId) => {
+  const normalizedCode = normalizeReservationCode(bookingCode);
+
+  const reservations = await prisma.reservations.findMany({
+    where: {
+      user_id: userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const reservation = reservations.find((item) => {
+    return getReservationCode(item.id) === normalizedCode;
+  });
+
+  return reservation
+    ? {
+        reservation,
+        reservationCode: normalizedCode,
+      }
+    : null;
+};
+
+const validateReservationForUser = async ({
+  bookingId,
+  reservationId,
+  reservationCode,
+  userId,
+}) => {
+  const rawReservationValue = bookingId || reservationId || reservationCode;
+  if (!rawReservationValue) {
+    return {
+      statusCode: 400,
+      message: "Booking ID is required",
+    };
+  }
+
+  if (isValidUUID(rawReservationValue)) {
+    const reservation = await prisma.reservations.findUnique({
+      where: {
+        id: rawReservationValue,
+      },
+      select: {
+        id: true,
+        user_id: true,
+      },
+    });
+
+    if (!reservation) {
+      return {
+        statusCode: 404,
+        message: "Reservation not found",
+      };
+    }
+
+    if (reservation.user_id !== userId) {
+      return {
+        statusCode: 403,
+        message: "Cannot link feedback to another user's booking",
+      };
+    }
+
+    return {
+      reservationCode: getReservationCode(reservation.id),
+    };
+  }
+
+  const matchedReservation = await findReservationByCodeForUser(
+    rawReservationValue,
+    userId,
+  );
+
+  if (!matchedReservation) {
+    return {
+      statusCode: 404,
+      message: "Booking not found for current user",
+    };
+  }
+
+  return {
+    reservationCode: matchedReservation.reservationCode,
+  };
+};
+
 export const getFeedbacks = async (req, res) => {
   try {
     const feedbacks = await prisma.feedbacks.findMany({
@@ -200,7 +337,14 @@ export const getFeedbackById = async (req, res) => {
 
 export const createFeedback = async (req, res) => {
   try {
-    const { parkingSessionId, subject, message } = req.body;
+    const {
+      parkingSessionId,
+      bookingId,
+      reservationId,
+      reservationCode,
+      subject,
+      message,
+    } = req.body;
     const userId = req.user.id;
 
     const normalizedSubject = String(subject || "").trim();
@@ -232,12 +376,29 @@ export const createFeedback = async (req, res) => {
       });
     }
 
+    const reservationResult = await validateReservationForUser({
+      bookingId,
+      reservationId,
+      reservationCode,
+      userId,
+    });
+
+    if (reservationResult?.statusCode) {
+      return res.status(reservationResult.statusCode).json({
+        success: false,
+        message: reservationResult.message,
+      });
+    }
+
     const feedback = await prisma.feedbacks.create({
       data: {
         user_id: userId,
         parking_session_id: parkingSessionId || null,
         issue_type: normalizedSubject,
-        description: normalizedMessage,
+        description: buildFeedbackDescription(
+          normalizedMessage,
+          reservationResult?.reservationCode,
+        ),
         status: "OPEN",
       },
       include: feedbackInclude,

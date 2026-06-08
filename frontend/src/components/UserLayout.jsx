@@ -18,6 +18,11 @@ const navItems = [
     path: "/user-booking-history",
   },
   {
+    icon: "forum",
+    label: "Feedback",
+    path: "/user-feedback",
+  },
+  {
     icon: "settings",
     label: "Settings",
     path: "/user-settings",
