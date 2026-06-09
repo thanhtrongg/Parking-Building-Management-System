@@ -267,7 +267,9 @@ export const updateUser = async (req, res) => {
     }
 
     if (fullName !== undefined || fullNameSnake !== undefined) {
-      const normalizedFullName = String(fullName || fullNameSnake || "").trim();
+      const normalizedFullName = String(
+        fullName || fullNameSnake || ""
+      ).trim();
 
       if (!normalizedFullName) {
         return res.status(400).json({
@@ -293,7 +295,9 @@ export const updateUser = async (req, res) => {
     }
 
     if (phone !== undefined) {
-      data.phone = phone ? String(phone).trim() : null;
+      data.phone = phone
+        ? String(phone).trim()
+        : null;
     }
 
     if (role !== undefined) {
@@ -500,6 +504,7 @@ export const changePassword = async (req, res) => {
       });
     }
 
+
     // Check current password
     const isMatch = await bcrypt.compare(
       currentPassword,
@@ -547,6 +552,152 @@ export const changePassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Change password error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+export const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await prisma.users.findUnique({
+      where: {
+        id: userId,
+      },
+      select: userSelect,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Get profile successfully",
+      data: mapUserResponse(user),
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const {
+      fullName,
+      full_name,
+      phone,
+      role,
+      status,
+      email,
+    } = req.body;
+
+    // Không cho update role
+    if (role !== undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Role cannot be updated",
+      });
+    }
+
+    // Không cho update status
+    if (status !== undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Status cannot be updated",
+      });
+    }
+
+    const updateData = {};
+
+    if (
+      fullName !== undefined ||
+      full_name !== undefined
+    ) {
+      const normalizedFullName = String(
+        fullName || full_name || ""
+      ).trim();
+
+      if (!normalizedFullName) {
+        return res.status(400).json({
+          success: false,
+          message: "Full name cannot be empty",
+        });
+      }
+
+      updateData.full_name = normalizedFullName;
+    }
+
+    if (phone !== undefined) {
+      updateData.phone = phone
+        ? String(phone).trim()
+        : null;
+    }
+    if (email !== undefined) {
+      const normalizedEmail = normalizeEmail(email);
+
+      if (!normalizedEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Email cannot be empty",
+        });
+      }
+
+      const duplicateUser = await prisma.users.findFirst({
+        where: {
+          email: normalizedEmail,
+          NOT: {
+            id: userId,
+          },
+        },
+      });
+
+      if (duplicateUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+
+      updateData.email = normalizedEmail;
+    }
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No fields to update",
+      });
+    }
+
+    const updatedUser =
+      await prisma.users.update({
+        where: {
+          id: userId,
+        },
+        data: updateData,
+        select: userSelect,
+      });
+
+    return res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: mapUserResponse(updatedUser),
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
 
     return res.status(500).json({
       success: false,

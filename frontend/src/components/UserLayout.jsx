@@ -147,7 +147,7 @@ function SidebarNav() {
 }
 
 function UserCard({ onLogout }) {
-  const user = useMemo(() => getStoredUser(), []);
+  const user = getStoredUser();
   const { name, email } = getUserDisplay(user);
 
   return (
@@ -191,7 +191,7 @@ function Sidebar({ onLogout }) {
 }
 
 function Header() {
-  const user = useMemo(() => getStoredUser(), []);
+  const user = getStoredUser();
   const { name } = getUserDisplay(user);
 
   return (
