@@ -9,13 +9,19 @@ This guide is designed to help frontend developers connect their application (e.
 To run the backend locally, you do **not** need to install Java, Maven, or PostgreSQL. Everything is containerized with Docker Compose.
 
 ### Step 1: Start the services
-Run the following command in the `java-backend/` root directory to build the latest code and start the services:
+Run the following command in the `java-backend/` root directory to start the services:
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
+> [!NOTE]
+> If you have updated or modified the backend source code and need to rebuild the Spring Boot application jar inside the container, run:
+> ```bash
+> docker compose up -d --build
+> ```
+
 > [!IMPORTANT]
-> To reset the database state and force a clean run of the database seeder (repopulating with clean English mock data), make sure to stop and wipe database volumes before restarting:
+> To reset the database state and force a clean run of the database seeder (repopulating with clean English mock data), stop the services and wipe database volumes:
 > ```bash
 > docker compose down -v
 > docker compose up -d --build

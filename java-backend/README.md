@@ -106,10 +106,15 @@ You can configure behavior by creating a local `.env` file or exporting environm
 | `RATE_LIMIT_WINDOW`| Sliding window duration in seconds | `60` |
 
 ### Running the System
-To build and start both the Spring Boot app and Postgres database in the background:
+To start both the Spring Boot app and Postgres database in the background:
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
+> [!NOTE]
+> If you have updated or modified the backend source code and need to rebuild the Spring Boot application jar inside the container, include the `--build` flag:
+> ```bash
+> docker compose up -d --build
+> ```
 To view logs:
 ```bash
 docker compose logs -f app
