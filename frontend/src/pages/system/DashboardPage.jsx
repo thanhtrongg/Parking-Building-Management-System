@@ -414,9 +414,9 @@ function RecentSessions({ sessions }) {
 }
 
 function ActivityPanel({ reservations, payments }) {
-  const pendingReservations = reservations.filter((item) => {
+  const confirmedReservations = reservations.filter((item) => {
     const status = String(item.status || "").toLowerCase();
-    return status.includes("pending") || status.includes("reserved");
+    return status.includes("confirmed") || status.includes("reserved");
   }).length;
 
   const successfulPayments = payments.filter((item) => {
@@ -427,9 +427,9 @@ function ActivityPanel({ reservations, payments }) {
   const items = [
     {
       icon: "event_available",
-      title: "Pending reservations",
-      value: pendingReservations,
-      description: "Reservations waiting for confirmation or arrival.",
+      title: "Confirmed reservations",
+      value: confirmedReservations,
+      description: "Reservations waiting for customer arrival.",
       className: "bg-amber-50 text-amber-600",
     },
     {
@@ -621,7 +621,7 @@ export default function DashboardPage() {
 
     const reservedToday = reservations.filter((reservation) => {
       const status = String(reservation.status || "").toLowerCase();
-      return status.includes("pending") || status.includes("reserved");
+      return status.includes("confirmed") || status.includes("reserved");
     }).length;
 
     const occupancyRate =
@@ -709,7 +709,7 @@ export default function DashboardPage() {
           <QuickAction
             icon="event_available"
             title="Reservations"
-            description={`${summary.reservedToday} reservations need attention.`}
+            description={`${summary.reservedToday} confirmed reservations.`}
             onClick={() => navigate("/reservations")}
           />
 

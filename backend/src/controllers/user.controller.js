@@ -648,12 +648,28 @@ export const updateProfile = async (req, res) => {
         : null;
     }
     if (email !== undefined) {
-      const normalizedEmail = String(email).trim().toLowerCase();
+      const normalizedEmail = normalizeEmail(email);
 
       if (!normalizedEmail) {
         return res.status(400).json({
           success: false,
           message: "Email cannot be empty",
+        });
+      }
+
+      const duplicateUser = await prisma.users.findFirst({
+        where: {
+          email: normalizedEmail,
+          NOT: {
+            id: userId,
+          },
+        },
+      });
+
+      if (duplicateUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
         });
       }
 

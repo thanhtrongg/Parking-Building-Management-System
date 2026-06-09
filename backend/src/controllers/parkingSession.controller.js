@@ -9,6 +9,11 @@ const generateTicketCode = () => {
 };
 
 const PAYMENT_METHODS = ["CASH", "CARD", "SEPAY"];
+const ACTIVE_RESERVATION_STATUSES = ["CONFIRMED", "CHECKED_IN"];
+
+const isBlockedSlot = (slot) => {
+    return !slot || ["OCCUPIED", "MAINTENANCE"].includes(slot.status);
+};
 
 export const getParkingSessions = async (req, res) => {
     try {
@@ -31,8 +36,13 @@ export const getParkingSessions = async (req, res) => {
 
                 vt.type_name AS "vehicleTypeName",
 
-                slot.slot_name AS "slotName",
-                z.zone_name AS "zoneName",
+                COALESCE(assigned_slot.slot_name, slot.slot_name) AS "slotName",
+                COALESCE(assigned_zone.zone_name, z.zone_name) AS "zoneName",
+                slot.slot_name AS "reservedSlotName",
+                z.zone_name AS "reservedZoneName",
+                assigned_slot.id AS "assignedSlotId",
+                assigned_slot.slot_name AS "assignedSlotName",
+                assigned_zone.zone_name AS "assignedZoneName",
 
                 p.id AS "paymentId",
                 p.amount AS "paidAmount",
@@ -44,6 +54,8 @@ export const getParkingSessions = async (req, res) => {
             LEFT JOIN vehicle_types vt ON ps.vehicle_type_id = vt.id
             LEFT JOIN parking_slots slot ON ps.parking_slot_id = slot.id
             LEFT JOIN zones z ON slot.zone_id = z.id
+            LEFT JOIN parking_slots assigned_slot ON ps.assigned_slot_id = assigned_slot.id
+            LEFT JOIN zones assigned_zone ON assigned_slot.zone_id = assigned_zone.id
             LEFT JOIN LATERAL (
                 SELECT id, amount, payment_method, payment_time, status
                 FROM payments
@@ -110,6 +122,20 @@ export const getParkingSessions = async (req, res) => {
                         },
                     }
                     : null,
+                reservedSlot: session.parkingSlotId
+                    ? {
+                        id: session.parkingSlotId,
+                        slotName: session.reservedSlotName,
+                        zoneName: session.reservedZoneName,
+                    }
+                    : null,
+                assignedSlot: session.assignedSlotId
+                    ? {
+                        id: session.assignedSlotId,
+                        slotName: session.assignedSlotName,
+                        zoneName: session.assignedZoneName,
+                    }
+                    : null,
             };
         }));
 
@@ -129,21 +155,192 @@ export const getParkingSessions = async (req, res) => {
     }
 };
 
+export const getMyParkingSessions = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const status = req.query.status
+            ? String(req.query.status).trim().toUpperCase()
+            : "";
+        const allowedStatuses = ["ACTIVE", "COMPLETED"];
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Authenticated user not found",
+            });
+        }
+
+        if (status && !allowedStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Status filter must be ACTIVE or COMPLETED",
+            });
+        }
+
+        const sessions = await prisma.parking_sessions.findMany({
+            where: {
+                user_id: userId,
+                ...(status ? { status } : {}),
+            },
+            include: {
+                vehicle_types: {
+                    select: {
+                        type_name: true,
+                    },
+                },
+                parking_slots_parking_sessions_parking_slot_idToparking_slots: {
+                    select: {
+                        id: true,
+                        slot_name: true,
+                        zones: {
+                            select: {
+                                zone_name: true,
+                            },
+                        },
+                    },
+                },
+                parking_slots_parking_sessions_assigned_slot_idToparking_slots: {
+                    select: {
+                        id: true,
+                        slot_name: true,
+                        zones: {
+                            select: {
+                                zone_name: true,
+                            },
+                        },
+                    },
+                },
+                payments: {
+                    orderBy: {
+                        payment_time: "desc",
+                    },
+                    take: 1,
+                    select: {
+                        status: true,
+                        amount: true,
+                        payment_method: true,
+                        payment_time: true,
+                    },
+                },
+            },
+            orderBy: {
+                entry_time: "desc",
+            },
+        });
+
+        const mappedSessions = await Promise.all(sessions.map(async (session) => {
+            const parkingSlot =
+                session.parking_slots_parking_sessions_parking_slot_idToparking_slots;
+            const assignedSlot =
+                session.parking_slots_parking_sessions_assigned_slot_idToparking_slots;
+            const actualSlot = assignedSlot || parkingSlot;
+            const latestPayment = session.payments[0];
+            const endTime = session.exit_time ? new Date(session.exit_time) : new Date();
+            const pricingPolicy = await getPricingPolicyForSession(
+                session.vehicle_type_id,
+                session.entry_time
+            );
+            const fee = calculateParkingFee(
+                session.entry_time,
+                endTime,
+                pricingPolicy
+            );
+
+            return {
+                id: session.id,
+                ticketCode: session.ticket_code,
+                vehicleTypeName: session.vehicle_types?.type_name || null,
+                licensePlate: session.license_plate,
+                slotName: actualSlot?.slot_name || null,
+                zoneName: actualSlot?.zones?.zone_name || null,
+                reservedSlotName: parkingSlot?.slot_name || null,
+                reservedZoneName: parkingSlot?.zones?.zone_name || null,
+                assignedSlotName: assignedSlot?.slot_name || null,
+                assignedZoneName: assignedSlot?.zones?.zone_name || null,
+                entryTime: session.entry_time,
+                exitTime: session.exit_time,
+                status: session.status,
+                paymentStatus: latestPayment?.status || "PENDING",
+                paymentMethod: latestPayment?.payment_method || null,
+                paidAt: latestPayment?.payment_time || null,
+                paidAmount: latestPayment?.amount ? Number(latestPayment.amount) : 0,
+                totalFee: fee.totalAmount,
+                parkingHours: fee.parkingHours,
+                billableHourlyHours: fee.billableHourlyHours,
+                billableNightHours: fee.billableNightHours,
+            };
+        }));
+
+        return res.json({
+            success: true,
+            message: "Get my parking sessions successfully",
+            data: mappedSessions,
+        });
+    } catch (error) {
+        console.error("Get my parking sessions error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
+
 export const checkInVehicle = async (req, res) => {
     try {
         const {
             userId,
             vehicleTypeId,
             parkingSlotId,
+            assignedSlotId,
+            reservationId,
             licensePlate,
             checkinStaffId,
         } = req.body;
+        const finalCheckinStaffId = checkinStaffId || req.user?.id || null;
+
+        const reservation = reservationId
+            ? await prisma.reservations.findUnique({
+                where: { id: reservationId },
+                include: {
+                    parking_slots: {
+                        include: {
+                            zones: true,
+                        },
+                    },
+                },
+            })
+            : null;
+
+        if (reservationId && !reservation) {
+            return res.status(404).json({
+                success: false,
+                message: "Reservation not found",
+            });
+        }
 
         if (
-            !vehicleTypeId ||
-            !parkingSlotId ||
+            reservation &&
+            !ACTIVE_RESERVATION_STATUSES.includes(reservation.status)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Only active reservations can be checked in",
+            });
+        }
+
+        const finalUserId = reservation?.user_id || userId || null;
+        const finalVehicleTypeId = reservation?.vehicle_type_id || vehicleTypeId;
+        const reservedSlotId = reservation?.parking_slot_id || parkingSlotId;
+        const actualSlotId = assignedSlotId || parkingSlotId || reservedSlotId;
+
+        if (
+            !finalVehicleTypeId ||
+            !reservedSlotId ||
+            !actualSlotId ||
             !licensePlate ||
-            !checkinStaffId
+            !finalCheckinStaffId
         ) {
             return res.status(400).json({
                 success: false,
@@ -153,7 +350,10 @@ export const checkInVehicle = async (req, res) => {
 
         const slot = await prisma.parking_slots.findUnique({
             where: {
-                id: parkingSlotId,
+                id: actualSlotId,
+            },
+            include: {
+                zones: true,
             },
         });
 
@@ -164,40 +364,92 @@ export const checkInVehicle = async (req, res) => {
             });
         }
 
-        if (
-            slot.status === "OCCUPIED" ||
-            slot.status === "MAINTENANCE"
-        ) {
+        if (slot.zones?.vehicle_type_id && slot.zones.vehicle_type_id !== finalVehicleTypeId) {
             return res.status(400).json({
                 success: false,
-                message: "Parking slot unavailable",
+                message: "Assigned slot does not support this vehicle type",
             });
         }
 
-        const session = await prisma.parking_sessions.create({
-            data: {
-                ticket_code: generateTicketCode(),
-                license_plate: licensePlate,
+        if (isBlockedSlot(slot)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    reservation && actualSlotId === reservedSlotId
+                        ? "Reserved slot is unavailable. Please assign another available slot."
+                        : "Parking slot unavailable",
+            });
+        }
 
-                user_id: userId,
-                vehicle_type_id: vehicleTypeId,
-                parking_slot_id: parkingSlotId,
-
-                checkin_staff_id: checkinStaffId,
-
-                entry_time: new Date(),
-
+        const activeSession = await prisma.parking_sessions.findFirst({
+            where: {
                 status: "ACTIVE",
+                OR: [
+                    { parking_slot_id: actualSlotId },
+                    { assigned_slot_id: actualSlotId },
+                    ...(reservation
+                        ? [
+                            {
+                                user_id: reservation.user_id,
+                                vehicle_type_id: reservation.vehicle_type_id,
+                                parking_slot_id: reservedSlotId,
+                            },
+                        ]
+                        : []),
+                ],
             },
         });
 
-        await prisma.parking_slots.update({
-            where: {
-                id: parkingSlotId,
-            },
-            data: {
-                status: "OCCUPIED",
-            },
+        if (activeSession) {
+            return res.status(409).json({
+                success: false,
+                message: "Parking slot already has an active session",
+            });
+        }
+
+        const session = await prisma.$transaction(async (tx) => {
+            const createdSession = await tx.parking_sessions.create({
+                data: {
+                    ticket_code: generateTicketCode(),
+                    license_plate: licensePlate.trim().toUpperCase(),
+
+                    user_id: finalUserId,
+                    vehicle_type_id: finalVehicleTypeId,
+                    parking_slot_id: reservedSlotId,
+                    ...(actualSlotId !== reservedSlotId && {
+                        assigned_slot_id: actualSlotId,
+                    }),
+
+                    checkin_staff_id: finalCheckinStaffId,
+
+                    entry_time: new Date(),
+
+                    status: "ACTIVE",
+                },
+            });
+
+            await tx.parking_slots.update({
+                where: {
+                    id: actualSlotId,
+                },
+                data: {
+                    status: "OCCUPIED",
+                },
+            });
+
+            if (reservation) {
+                await tx.reservations.update({
+                    where: {
+                        id: reservation.id,
+                    },
+                    data: {
+                        status: "CHECKED_IN",
+                        ...(assignedSlotId && { parking_slot_id: reservedSlotId }),
+                    },
+                });
+            }
+
+            return createdSession;
         });
 
         return res.status(201).json({
@@ -305,13 +557,32 @@ export const checkOutVehicle = async (req, res) => {
                 },
             });
 
-            if (session.parking_slot_id) {
+            const actualSlotId = session.assigned_slot_id || session.parking_slot_id;
+
+            if (actualSlotId) {
                 await tx.parking_slots.update({
                     where: {
-                        id: session.parking_slot_id,
+                        id: actualSlotId,
                     },
                     data: {
                         status: "AVAILABLE",
+                    },
+                });
+            }
+
+            if (session.user_id && session.vehicle_type_id) {
+                await tx.reservations.updateMany({
+                    where: {
+                        user_id: session.user_id,
+                        vehicle_type_id: session.vehicle_type_id,
+                        status: "CHECKED_IN",
+                        OR: [
+                            { parking_slot_id: session.parking_slot_id },
+                            { parking_slot_id: session.assigned_slot_id || session.parking_slot_id },
+                        ],
+                    },
+                    data: {
+                        status: "COMPLETED",
                     },
                 });
             }

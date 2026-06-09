@@ -116,7 +116,7 @@ function BookingPreview({ booking }) {
           </h2>
         </div>
         <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase text-blue-700 ring-1 ring-blue-100">
-          {booking.status || "PENDING"}
+          {booking.status || "CONFIRMED"}
         </span>
       </div>
 

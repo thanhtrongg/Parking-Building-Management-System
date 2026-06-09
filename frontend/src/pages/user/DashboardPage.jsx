@@ -6,6 +6,7 @@ import { apiRequest } from "../../services/api";
 const quickActions = [
   ["add_circle", "New Booking", "/user-bookings"],
   ["receipt_long", "View History", "/user-booking-history"],
+  ["confirmation_number", "Parking Sessions", "/user-parking-sessions"],
   ["manage_accounts", "Update Profile", "/user-settings"],
 ];
 
@@ -45,18 +46,17 @@ function normalizeBookings(value) {
 
 function isUpcoming(booking) {
   const status = String(booking.status || "").toUpperCase();
-  return ["PENDING", "CONFIRMED", "CHECKED_IN"].includes(status);
+  return ["CONFIRMED", "CHECKED_IN"].includes(status);
 }
 
 function StatusBadge({ status }) {
   const styles = {
     CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-    PENDING: "bg-amber-50 text-amber-700 ring-amber-100",
     CHECKED_IN: "bg-blue-50 text-blue-700 ring-blue-100",
     CANCELLED: "bg-red-50 text-red-700 ring-red-100",
     COMPLETED: "bg-slate-100 text-slate-700 ring-slate-200",
   };
-  const normalizedStatus = String(status || "PENDING").toUpperCase();
+  const normalizedStatus = String(status || "CONFIRMED").toUpperCase();
 
   return (
     <span

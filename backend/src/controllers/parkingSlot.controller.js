@@ -54,7 +54,9 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
         status: "AVAILABLE",
         ...(vehicleTypeId && {
           zones: {
-            vehicle_type_id: vehicleTypeId,
+            is: {
+              vehicle_type_id: vehicleTypeId,
+            },
           },
         }),
         ...(parsedStartTime &&
@@ -62,7 +64,7 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
             reservations: {
               none: {
                 status: {
-                  in: ["PENDING", "CONFIRMED", "CHECKED_IN"],
+                  in: ["CONFIRMED", "CHECKED_IN"],
                 },
                 expected_start_time: {
                   lt: parsedEndTime,

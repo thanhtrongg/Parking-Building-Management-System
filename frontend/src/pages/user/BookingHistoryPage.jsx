@@ -3,7 +3,6 @@ import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
 
 const statusStyles = {
-  PENDING: "bg-amber-50 text-amber-700 ring-amber-100",
   CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   CHECKED_IN: "bg-blue-50 text-blue-700 ring-blue-100",
   CANCELLED: "bg-red-50 text-red-700 ring-red-100",
@@ -11,7 +10,7 @@ const statusStyles = {
   FULFILLED: "bg-slate-100 text-slate-700 ring-slate-200",
 };
 
-const cancellableStatuses = ["PENDING", "CONFIRMED"];
+const cancellableStatuses = ["CONFIRMED"];
 
 function formatDateTime(value) {
   if (!value) return "N/A";
@@ -45,12 +44,12 @@ export function getReservationCode(reservationId) {
 }
 
 function StatusBadge({ status }) {
-  const normalizedStatus = String(status || "PENDING").toUpperCase();
+  const normalizedStatus = String(status || "CONFIRMED").toUpperCase();
 
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black uppercase ring-1 ${
-        statusStyles[normalizedStatus] || statusStyles.PENDING
+        statusStyles[normalizedStatus] || statusStyles.CONFIRMED
       }`}
     >
       {normalizedStatus}
@@ -139,80 +138,13 @@ function Alert({ type, message, onClose }) {
   );
 }
 
-function PaymentPanel({ paymentInfo, checkingPayment, onClose, onCheck }) {
-  if (!paymentInfo) return null;
-
-  const { payment, qrUrl, transferContent, bank } = paymentInfo;
-
-  return (
-    <div className="mb-5 rounded-2xl border border-blue-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <img
-          src={qrUrl}
-          alt="SePay payment QR"
-          className="h-52 w-52 rounded-xl border border-slate-200 object-contain"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider text-blue-600">
-                SePay Payment
-              </p>
-              <h2 className="mt-1 font-['Geist'] text-xl font-black text-slate-950">
-                {Number(payment.amount).toLocaleString("vi-VN")} VND
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="grid h-9 w-9 place-items-center rounded-xl bg-slate-50 text-slate-500 ring-1 ring-slate-100 hover:bg-slate-100"
-            >
-              <span className="material-symbols-outlined text-[19px]">
-                close
-              </span>
-            </button>
-          </div>
-
-          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            <Info label="Bank" value={bank.code || "N/A"} />
-            <Info label="Account" value={bank.accountNumber || "N/A"} />
-            <Info label="Name" value={bank.accountName || "N/A"} />
-            <Info label="Content" value={transferContent} />
-          </div>
-
-          <div className="mt-4 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              onClick={onCheck}
-              disabled={checkingPayment}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {checkingPayment ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white" />
-              ) : (
-                <span className="material-symbols-outlined text-[19px]">
-                  sync
-                </span>
-              )}
-              Check payment
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BookingCard({ booking, cancelling, paying, onCancel, onPay }) {
+function BookingCard({ booking, cancelling, onCancel }) {
   const slotName = booking.parkingSlot?.slotName || "Unassigned";
   const zoneName = booking.parkingSlot?.zone?.zoneName || "N/A";
   const vehicleType = booking.vehicleType?.typeName || "N/A";
   const reservationCode = getReservationCode(booking.id);
   const status = String(booking.status || "").toUpperCase();
   const canCancel = cancellableStatuses.includes(status);
-  const paymentStatus = String(booking.payment?.status || "UNPAID").toUpperCase();
-  const canPay =
-    ["PENDING", "CONFIRMED"].includes(status) && paymentStatus !== "SUCCESS";
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -242,34 +174,10 @@ function BookingCard({ booking, cancelling, paying, onCancel, onPay }) {
         <Info label="Start" value={formatDateTime(booking.startTime)} />
         <Info label="End" value={formatDateTime(booking.endTime)} />
         <Info label="Estimated fee" value={formatCurrency(booking.estimatedFee)} />
-        <Info
-          label="Payment"
-          value={
-            booking.payment
-              ? `${booking.payment.status} - ${booking.payment.method}`
-              : "Unpaid"
-          }
-        />
+        <Info label="Payment" value="Pay when checkout" />
       </div>
 
       <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
-        {canPay && (
-          <button
-            type="button"
-            onClick={() => onPay(booking)}
-            disabled={paying}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {paying ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white" />
-            ) : (
-              <span className="material-symbols-outlined text-[19px]">
-                qr_code_2
-              </span>
-            )}
-            {paying ? "Creating QR..." : "Pay with SePay"}
-          </button>
-        )}
         {canCancel ? (
           <button
             type="button"
@@ -313,9 +221,6 @@ export default function BookingHistoryPage() {
   const [error, setError] = useState("");
   const [alert, setAlert] = useState({ type: "", message: "" });
   const [cancellingId, setCancellingId] = useState("");
-  const [payingId, setPayingId] = useState("");
-  const [checkingPayment, setCheckingPayment] = useState(false);
-  const [paymentInfo, setPaymentInfo] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -398,86 +303,6 @@ export default function BookingHistoryPage() {
     }
   };
 
-  const handleCreatePayment = async (booking) => {
-    const amount = Number(booking.estimatedFee || 0);
-
-    if (amount <= 0) {
-      setAlert({
-        type: "error",
-        message: "Cannot create payment because this booking has no price.",
-      });
-      return;
-    }
-
-    try {
-      setPayingId(booking.id);
-      setAlert({ type: "", message: "" });
-
-      const result = await apiRequest(
-        `/api/payments/sepay/reservations/${booking.id}`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            amount,
-          }),
-        },
-      );
-
-      setPaymentInfo(result.data);
-    } catch (paymentError) {
-      setAlert({
-        type: "error",
-        message: paymentError.message || "Cannot create SePay payment",
-      });
-    } finally {
-      setPayingId("");
-    }
-  };
-
-  const handleCheckPayment = async () => {
-    if (!paymentInfo?.payment?.sepayPaymentCode) return;
-
-    try {
-      setCheckingPayment(true);
-      setAlert({ type: "", message: "" });
-
-      const result = await apiRequest(
-        `/api/payments/sepay/${paymentInfo.payment.sepayPaymentCode}/status`,
-      );
-
-      const paymentStatus = String(result.data?.status || "").toUpperCase();
-
-      if (paymentStatus === "SUCCESS") {
-        const reservationId = paymentInfo.payment.reservationId;
-
-        setBookings((currentBookings) =>
-          currentBookings.map((currentBooking) =>
-            currentBooking.id === reservationId
-              ? { ...currentBooking, status: "CONFIRMED" }
-              : currentBooking,
-          ),
-        );
-        setAlert({
-          type: "success",
-          message: "Payment confirmed successfully.",
-        });
-        setPaymentInfo(null);
-      } else {
-        setAlert({
-          type: "error",
-          message: "Payment is still pending. Please try again shortly.",
-        });
-      }
-    } catch (paymentError) {
-      setAlert({
-        type: "error",
-        message: paymentError.message || "Cannot check payment status",
-      });
-    } finally {
-      setCheckingPayment(false);
-    }
-  };
-
   const sortedBookings = useMemo(() => {
     return [...bookings].sort((a, b) => {
       return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
@@ -491,12 +316,6 @@ export default function BookingHistoryPage() {
         type={alert.type}
         message={alert.message}
         onClose={() => setAlert({ type: "", message: "" })}
-      />
-      <PaymentPanel
-        paymentInfo={paymentInfo}
-        checkingPayment={checkingPayment}
-        onClose={() => setPaymentInfo(null)}
-        onCheck={handleCheckPayment}
       />
 
       {loading ? (
@@ -514,9 +333,7 @@ export default function BookingHistoryPage() {
               key={booking.id}
               booking={booking}
               cancelling={cancellingId === booking.id}
-              paying={payingId === booking.id}
               onCancel={handleCancelReservation}
-              onPay={handleCreatePayment}
             />
           ))}
         </div>

@@ -3,14 +3,13 @@ import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 
 const RESERVATION_STATUSES = [
-  "PENDING",
   "CONFIRMED",
   "CHECKED_IN",
   "CANCELLED",
   "COMPLETED",
 ];
 
-const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN"];
+const ACTIVE_STATUSES = ["CONFIRMED", "CHECKED_IN"];
 
 const decodeJwtPayload = (token) => {
   try {
@@ -75,13 +74,6 @@ const getStoredUserRole = () => {
 };
 
 const statusConfig = {
-  PENDING: {
-    label: "Pending",
-    description: "Waiting for confirmation",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
-    dot: "bg-amber-500",
-    icon: "pending_actions",
-  },
   CONFIRMED: {
     label: "Confirmed",
     description: "Slot is reserved",
@@ -117,7 +109,8 @@ const initialForm = {
   vehicleTypeId: "",
   startTime: "",
   endTime: "",
-  status: "PENDING",
+  status: "CONFIRMED",
+  licensePlate: "",
 };
 
 function getStatusMeta(status) {
@@ -461,9 +454,6 @@ function SummaryCard({ title, value, subtitle, icon, className }) {
 
 function StatsGrid({ reservations }) {
   const total = reservations.length;
-  const pending = reservations.filter(
-    (item) => item.status === "PENDING",
-  ).length;
   const confirmed = reservations.filter(
     (item) => item.status === "CONFIRMED",
   ).length;
@@ -478,7 +468,7 @@ function StatsGrid({ reservations }) {
   ).length;
 
   return (
-    <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <SummaryCard
         title="Total"
         value={total}
@@ -489,16 +479,9 @@ function StatsGrid({ reservations }) {
       <SummaryCard
         title="Active"
         value={activeReservations}
-        subtitle="Pending + confirmed + checked-in"
+        subtitle="Confirmed + checked-in"
         icon="local_parking"
         className="bg-blue-50 text-blue-700"
-      />
-      <SummaryCard
-        title="Pending"
-        value={pending}
-        subtitle="Need confirmation"
-        icon="pending_actions"
-        className="bg-amber-50 text-amber-700"
       />
       <SummaryCard
         title="Confirmed"
@@ -948,7 +931,7 @@ function ReservationInsight({ reservations }) {
               Active Reservation Flow
             </h3>
             <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
-              Pending/Confirmed/Checked-in reservations are active records and
+              Confirmed and checked-in reservations are active records and
               must not overlap in the same parking slot.
             </p>
           </div>
@@ -1095,7 +1078,7 @@ function ReservationFormModal({
                   vehicleTypeId: nextSlot?.vehicleTypeId || prev.vehicleTypeId,
                 }));
               }}
-              disabled={isStaffEdit}
+              disabled={false}
               className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
               required
             >
@@ -1176,7 +1159,7 @@ function ReservationFormModal({
           </div>
 
           {mode === "edit" ? (
-            <div className="md:col-span-2">
+            <div>
               <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
                 Status
               </label>
@@ -1195,11 +1178,32 @@ function ReservationFormModal({
               </select>
             </div>
           ) : null}
+
+          {mode === "edit" && form.status === "CHECKED_IN" ? (
+            <div>
+              <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
+                License Plate <span className="text-rose-600">*</span>
+              </label>
+              <input
+                value={form.licensePlate}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    licensePlate: event.target.value,
+                  }))
+                }
+                placeholder="Example: 59A-12345"
+                className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm uppercase outline-none transition focus:border-[#2563eb] focus:bg-white"
+                required
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 font-['Inter'] text-sm text-blue-700">
-          Backend sẽ tự chặn slot OCCUPIED/MAINTENANCE và chặn trùng lịch cùng
-          parkingSlotId với reservation đang PENDING/CONFIRMED/CHECKED_IN.
+          Khi chuyển sang CHECKED_IN, hệ thống sẽ tạo parking session từ thời
+          điểm hiện tại. Nếu slot đã đặt đang bận, chọn slot khác còn trống để
+          xếp xe thực tế.
         </div>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -1416,7 +1420,8 @@ export default function ReservationsPage() {
       vehicleTypeId: reservation.vehicleTypeId || "",
       startTime: toDateTimeLocalValue(reservation.expectedStartTime),
       endTime: toDateTimeLocalValue(reservation.expectedEndTime),
-      status: reservation.status || "PENDING",
+      status: reservation.status || "CONFIRMED",
+      licensePlate: "",
     });
     setModalMode("edit");
   };
@@ -1448,6 +1453,15 @@ export default function ReservationsPage() {
       return "Start time must be before end time";
     }
 
+    if (
+      modalMode === "edit" &&
+      selectedReservation?.status !== "CHECKED_IN" &&
+      form.status === "CHECKED_IN" &&
+      !form.licensePlate.trim()
+    ) {
+      return "License plate is required for check-in";
+    }
+
     return "";
   };
 
@@ -1465,10 +1479,22 @@ export default function ReservationsPage() {
       setError("");
       setNotice("");
 
+      const shouldCreateSession =
+        modalMode === "edit" &&
+        selectedReservation?.status !== "CHECKED_IN" &&
+        form.status === "CHECKED_IN";
+
       const payload =
-        modalMode === "edit" && isStaff
+        shouldCreateSession
+          ? {
+              reservationId: selectedReservation.id,
+              assignedSlotId: form.parkingSlotId,
+              licensePlate: form.licensePlate,
+            }
+          : modalMode === "edit" && isStaff
           ? {
               status: form.status,
+              parkingSlotId: form.parkingSlotId,
             }
           : {
               parkingSlotId: form.parkingSlotId,
@@ -1478,19 +1504,22 @@ export default function ReservationsPage() {
               ...(modalMode === "edit" && { status: form.status }),
             };
 
-      const endpoint =
-        modalMode === "create"
+      const endpoint = shouldCreateSession
+        ? "/api/parking-sessions/check-in"
+        : modalMode === "create"
           ? "/api/reservations"
           : `/api/reservations/${selectedReservation.id}`;
 
-      const method = modalMode === "create" ? "POST" : "PUT";
+      const method = shouldCreateSession || modalMode === "create" ? "POST" : "PUT";
 
       const result = await apiRequest(endpoint, {
         method,
         body: JSON.stringify(payload),
       });
 
-      const savedReservation = normalizeReservation(getApiItem(result));
+      const savedReservation = shouldCreateSession
+        ? { ...selectedReservation, parkingSlotId: form.parkingSlotId, status: "CHECKED_IN" }
+        : normalizeReservation(getApiItem(result));
 
       if (modalMode === "create") {
         setReservations((prev) => [savedReservation, ...prev]);
@@ -1501,7 +1530,11 @@ export default function ReservationsPage() {
             item.id === savedReservation.id ? savedReservation : item,
           ),
         );
-        setNotice("Update reservation successfully");
+        setNotice(
+          shouldCreateSession
+            ? "Check-in successfully and parking session started"
+            : "Update reservation successfully",
+        );
       }
 
       closeModal();

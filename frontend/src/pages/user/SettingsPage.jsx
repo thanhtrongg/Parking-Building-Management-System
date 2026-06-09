@@ -225,7 +225,6 @@ export default function UserSettingsPage() {
         "user",
         JSON.stringify(response.data)
       );
-      window.location.reload();
       setAlert({
         type: "success",
         message: response.message,

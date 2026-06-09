@@ -2,9 +2,9 @@ import prisma from "../config/prisma.js";
 import { getFeeForVehicleType } from "../services/pricing.service.js";
 
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const ACTIVE_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN"];
+const ACTIVE_RESERVATION_STATUSES = ["CONFIRMED", "CHECKED_IN"];
 
 const getRequiredEnv = (name) => {
   const value = process.env[name];
@@ -80,6 +80,112 @@ const mapPayment = (payment) => {
   };
 };
 
+const extractPaymentCode = (payload) => {
+  if (payload.code) return String(payload.code);
+
+  const content = String(
+    payload.content || payload.description || payload.transferContent || "",
+  );
+  const match = content.match(/PBMS[A-Z0-9]{12}/i);
+
+  return match ? match[0].toUpperCase() : "";
+};
+
+const processSepayPaymentPayload = async (payload) => {
+  const sepayTransactionId = payload.id ? String(payload.id) : "";
+  const paymentCode = extractPaymentCode(payload);
+  const transferAmount = toPositiveAmount(payload.transferAmount);
+
+  if (!sepayTransactionId || !paymentCode || !transferAmount) {
+    return {
+      statusCode: 400,
+      body: {
+        success: false,
+        message: "Invalid payload",
+      },
+    };
+  }
+
+  if (payload.transferType && payload.transferType !== "in") {
+    return {
+      statusCode: 200,
+      body: { success: true },
+    };
+  }
+
+  const processedPayment = await prisma.payments.findFirst({
+    where: {
+      sepay_transaction_id: sepayTransactionId,
+    },
+  });
+
+  if (processedPayment) {
+    return {
+      statusCode: 200,
+      body: { success: true },
+    };
+  }
+
+  const payment = await prisma.payments.findUnique({
+    where: {
+      sepay_payment_code: paymentCode,
+    },
+  });
+
+  if (!payment) {
+    return {
+      statusCode: 200,
+      body: { success: true },
+    };
+  }
+
+  if (Number(payment.amount) > transferAmount) {
+    return {
+      statusCode: 400,
+      body: {
+        success: false,
+        message: "Transfer amount does not match payment amount",
+      },
+    };
+  }
+
+  const updatedPayment = await prisma.$transaction(async (tx) => {
+    const nextPayment = await tx.payments.update({
+      where: {
+        id: payment.id,
+      },
+      data: {
+        status: "SUCCESS",
+        payment_time: parseSepayTransactionDate(payload.transactionDate),
+        sepay_transaction_id: sepayTransactionId,
+        sepay_reference_code: payload.referenceCode || null,
+        sepay_payload: payload,
+      },
+    });
+
+    if (payment.reservation_id) {
+      await tx.reservations.update({
+        where: {
+          id: payment.reservation_id,
+        },
+        data: {
+          status: "CONFIRMED",
+        },
+      });
+    }
+
+    return nextPayment;
+  });
+
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      data: mapPayment(updatedPayment),
+    },
+  };
+};
+
 export const getPayments = async (req, res) => {
   try {
     const payments = await prisma.$queryRaw`
@@ -101,25 +207,35 @@ export const getPayments = async (req, res) => {
         ps.exit_time AS "exitTime",
         ps.status AS "sessionStatus",
 
-        u.id AS "userId",
-        u.full_name AS "fullName",
-        u.email,
-        u.phone,
+        r.id AS "reservationIdFromReservation",
+        r.expected_start_time AS "reservationStartTime",
+        r.expected_end_time AS "reservationEndTime",
+        r.status AS "reservationStatus",
 
-        vt.id AS "vehicleTypeId",
-        vt.type_name AS "vehicleTypeName",
+        COALESCE(su.id, ru.id) AS "userId",
+        COALESCE(su.full_name, ru.full_name) AS "fullName",
+        COALESCE(su.email, ru.email) AS "email",
+        COALESCE(su.phone, ru.phone) AS "phone",
 
-        slot.id AS "parkingSlotId",
-        slot.slot_name AS "slotName",
+        COALESCE(svt.id, rvt.id) AS "vehicleTypeId",
+        COALESCE(svt.type_name, rvt.type_name) AS "vehicleTypeName",
 
-        z.id AS "zoneId",
-        z.zone_name AS "zoneName"
+        COALESCE(ss.id, rs.id) AS "parkingSlotId",
+        COALESCE(ss.slot_name, rs.slot_name) AS "slotName",
+
+        COALESCE(sz.id, rz.id) AS "zoneId",
+        COALESCE(sz.zone_name, rz.zone_name) AS "zoneName"
       FROM payments p
       LEFT JOIN parking_sessions ps ON p.parking_session_id = ps.id
-      LEFT JOIN users u ON ps.user_id = u.id
-      LEFT JOIN vehicle_types vt ON ps.vehicle_type_id = vt.id
-      LEFT JOIN parking_slots slot ON ps.parking_slot_id = slot.id
-      LEFT JOIN zones z ON slot.zone_id = z.id
+      LEFT JOIN reservations r ON p.reservation_id = r.id
+      LEFT JOIN users su ON ps.user_id = su.id
+      LEFT JOIN users ru ON r.user_id = ru.id
+      LEFT JOIN vehicle_types svt ON ps.vehicle_type_id = svt.id
+      LEFT JOIN vehicle_types rvt ON r.vehicle_type_id = rvt.id
+      LEFT JOIN parking_slots ss ON ps.parking_slot_id = ss.id
+      LEFT JOIN parking_slots rs ON r.parking_slot_id = rs.id
+      LEFT JOIN zones sz ON ss.zone_id = sz.id
+      LEFT JOIN zones rz ON rs.zone_id = rz.id
       ORDER BY p.payment_time DESC
     `;
 
@@ -315,82 +431,80 @@ export const handleSepayWebhook = async (req, res) => {
       }
     }
 
-    const payload = req.body || {};
-    const sepayTransactionId = payload.id ? String(payload.id) : "";
-    const paymentCode = payload.code || "";
-    const transferAmount = toPositiveAmount(payload.transferAmount);
+    const result = await processSepayPaymentPayload(req.body || {});
 
-    if (!sepayTransactionId || !paymentCode || !transferAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid payload",
-      });
-    }
-
-    if (payload.transferType !== "in") {
-      return res.json({ success: true });
-    }
-
-    const processedPayment = await prisma.payments.findFirst({
-      where: {
-        sepay_transaction_id: sepayTransactionId,
-      },
-    });
-
-    if (processedPayment) {
-      return res.json({ success: true });
-    }
-
-    const payment = await prisma.payments.findUnique({
-      where: {
-        sepay_payment_code: paymentCode,
-      },
-    });
-
-    if (!payment) {
-      return res.json({ success: true });
-    }
-
-    if (Number(payment.amount) > transferAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Transfer amount does not match payment amount",
-      });
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.payments.update({
-        where: {
-          id: payment.id,
-        },
-        data: {
-          status: "SUCCESS",
-          payment_time: parseSepayTransactionDate(payload.transactionDate),
-          sepay_transaction_id: sepayTransactionId,
-          sepay_reference_code: payload.referenceCode || null,
-          sepay_payload: payload,
-        },
-      });
-
-      if (payment.reservation_id) {
-        await tx.reservations.update({
-          where: {
-            id: payment.reservation_id,
-          },
-          data: {
-            status: "CONFIRMED",
-          },
-        });
-      }
-    });
-
-    return res.json({ success: true });
+    return res.status(result.statusCode).json(result.body);
   } catch (error) {
     console.error("SePay webhook error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+    });
+  }
+};
+
+export const simulateSepaySandboxPayment = async (req, res) => {
+  try {
+    const { paymentCode } = req.body;
+
+    if (!paymentCode) {
+      return res.status(400).json({
+        success: false,
+        message: "paymentCode is required",
+      });
+    }
+
+    const payment = await prisma.payments.findUnique({
+      where: {
+        sepay_payment_code: String(paymentCode).toUpperCase(),
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    if (payment.status === "SUCCESS") {
+      return res.json({
+        success: true,
+        message: "Payment already succeeded",
+        data: mapPayment(payment),
+      });
+    }
+
+    const now = new Date();
+    const payload = {
+      id: `SANDBOX-${Date.now()}`,
+      gateway: process.env.SEPAY_BANK_CODE || "SANDBOX",
+      transactionDate: now.toISOString().slice(0, 19).replace("T", " "),
+      accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || "LOCALHOST",
+      code: payment.sepay_payment_code,
+      content: payment.sepay_payment_code,
+      transferType: "in",
+      transferAmount: Number(payment.amount),
+      accumulated: Number(payment.amount),
+      subAccount: null,
+      referenceCode: `LOCAL-${Date.now()}`,
+      description: "Local SePay sandbox simulation",
+    };
+
+    const result = await processSepayPaymentPayload(payload);
+
+    return res.status(result.statusCode).json({
+      ...result.body,
+      message: "Simulated SePay sandbox payment successfully",
+    });
+  } catch (error) {
+    console.error("Simulate SePay sandbox payment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };

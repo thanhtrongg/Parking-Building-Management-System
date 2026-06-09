@@ -20,10 +20,12 @@ BEGIN
   END IF;
 END $$;
 
+DROP INDEX IF EXISTS payments_sepay_payment_code_key;
+
 CREATE UNIQUE INDEX IF NOT EXISTS payments_sepay_payment_code_key
-  ON payments(sepay_payment_code)
-  WHERE sepay_payment_code IS NOT NULL;
+  ON payments(sepay_payment_code);
+
+DROP INDEX IF EXISTS payments_sepay_transaction_id_key;
 
 CREATE UNIQUE INDEX IF NOT EXISTS payments_sepay_transaction_id_key
-  ON payments(sepay_transaction_id)
-  WHERE sepay_transaction_id IS NOT NULL;
+  ON payments(sepay_transaction_id);
