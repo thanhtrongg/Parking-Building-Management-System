@@ -97,7 +97,7 @@ model reservations {
   parking_slot_id     String?        @db.Uuid
   expected_start_time DateTime       @db.Timestamptz(6)
   expected_end_time   DateTime       @db.Timestamptz(6)
-  status              String?        @default("PENDING") @db.VarChar(20)
+  status              String?        @default("CONFIRMED") @db.VarChar(20)
   created_at          DateTime?      @default(now()) @db.Timestamptz(6)
   parking_slots       parking_slots? @relation(fields: [parking_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users               users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

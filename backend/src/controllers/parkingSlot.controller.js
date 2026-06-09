@@ -64,7 +64,7 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
             reservations: {
               none: {
                 status: {
-                  in: ["PENDING", "CONFIRMED", "CHECKED_IN"],
+                  in: ["CONFIRMED", "CHECKED_IN"],
                 },
                 expected_start_time: {
                   lt: parsedEndTime,

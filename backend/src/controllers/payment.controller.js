@@ -4,7 +4,7 @@ import { getFeeForVehicleType } from "../services/pricing.service.js";
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const ACTIVE_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN"];
+const ACTIVE_RESERVATION_STATUSES = ["CONFIRMED", "CHECKED_IN"];
 
 const getRequiredEnv = (name) => {
   const value = process.env[name];
