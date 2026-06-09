@@ -330,6 +330,34 @@ export const getFeedbacks = async (req, res) => {
   }
 };
 
+export const getMyFeedbacks = async (req, res) => {
+  try {
+    const feedbacks = await prisma.feedbacks.findMany({
+      where: {
+        user_id: req.user.id,
+      },
+      include: feedbackInclude,
+      orderBy: {
+        created_at: "desc",
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Get my feedbacks successfully",
+      data: feedbacks.map(mapFeedbackResponse),
+    });
+  } catch (error) {
+    console.error("Get my feedbacks error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export const getFeedbackById = async (req, res) => {
   try {
     const { id } = req.params;
