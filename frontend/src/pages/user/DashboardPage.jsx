@@ -6,6 +6,7 @@ import { apiRequest } from "../../services/api";
 const quickActions = [
   ["add_circle", "New Booking", "/user-bookings"],
   ["receipt_long", "View History", "/user-booking-history"],
+  ["confirmation_number", "Parking Sessions", "/user-parking-sessions"],
   ["manage_accounts", "Update Profile", "/user-settings"],
 ];
 

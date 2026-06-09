@@ -18,6 +18,11 @@ const navItems = [
     path: "/user-booking-history",
   },
   {
+    icon: "confirmation_number",
+    label: "Sessions",
+    path: "/user-parking-sessions",
+  },
+  {
     icon: "forum",
     label: "Feedback",
     path: "/user-feedback",
@@ -232,14 +237,14 @@ function Header() {
 function MobileNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl lg:hidden">
-      <div className="mx-auto flex max-w-3xl items-center justify-around gap-1">
+      <div className="mx-auto flex max-w-3xl items-center gap-1 overflow-x-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
               [
-                "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black transition",
+                "flex min-w-[72px] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black transition",
                 isActive
                   ? "bg-blue-50 text-blue-700"
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-950",
