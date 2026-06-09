@@ -11,6 +11,7 @@ const VALID_FEEDBACK_STATUSES = [
 ];
 
 const RESERVATION_MARKER_PREFIX = "[Reservation:";
+const STAFF_REPLY_MARKER_PREFIX = "[Staff Reply:";
 
 const isValidUUID = (id) => {
   return typeof id === "string" && UUID_REGEX.test(id);
@@ -32,28 +33,49 @@ const normalizeReservationCode = (value) => {
 
 const parseFeedbackDescription = (description) => {
   const text = String(description || "");
+  const replyMarkerIndex = text.indexOf(STAFF_REPLY_MARKER_PREFIX);
+  const customerText =
+    replyMarkerIndex === -1 ? text : text.slice(0, replyMarkerIndex).trimEnd();
+  const replyText = replyMarkerIndex === -1 ? "" : text.slice(replyMarkerIndex);
+  const replyMarkerEndIndex = replyText.indexOf("]");
+  const replyCreatedAt =
+    replyMarkerEndIndex === -1
+      ? null
+      : replyText
+          .slice(STAFF_REPLY_MARKER_PREFIX.length, replyMarkerEndIndex)
+          .trim();
+  const replyMessage =
+    replyMarkerEndIndex === -1
+      ? ""
+      : replyText.slice(replyMarkerEndIndex + 1).trimStart();
 
-  if (!text.startsWith(RESERVATION_MARKER_PREFIX)) {
+  if (!customerText.startsWith(RESERVATION_MARKER_PREFIX)) {
     return {
       reservationCode: null,
-      message: text,
+      message: customerText,
+      reply: replyMessage,
+      replyCreatedAt,
     };
   }
 
-  const markerEndIndex = text.indexOf("]");
+  const markerEndIndex = customerText.indexOf("]");
 
   if (markerEndIndex === -1) {
     return {
       reservationCode: null,
-      message: text,
+      message: customerText,
+      reply: replyMessage,
+      replyCreatedAt,
     };
   }
 
   return {
-    reservationCode: text
+    reservationCode: customerText
       .slice(RESERVATION_MARKER_PREFIX.length, markerEndIndex)
       .trim(),
-    message: text.slice(markerEndIndex + 1).trimStart(),
+    message: customerText.slice(markerEndIndex + 1).trimStart(),
+    reply: replyMessage,
+    replyCreatedAt,
   };
 };
 
@@ -61,6 +83,16 @@ const buildFeedbackDescription = (message, reservationCode) => {
   if (!reservationCode) return message;
 
   return `${RESERVATION_MARKER_PREFIX} ${reservationCode}]\n${message}`;
+};
+
+const buildFeedbackDescriptionWithReply = (feedback, reply) => {
+  const parsedDescription = parseFeedbackDescription(feedback.description);
+  const baseDescription = buildFeedbackDescription(
+    parsedDescription.message,
+    parsedDescription.reservationCode,
+  );
+
+  return `${baseDescription}\n\n${STAFF_REPLY_MARKER_PREFIX} ${new Date().toISOString()}]\n${reply}`;
 };
 
 const normalizeStatus = (status) => {
@@ -105,6 +137,8 @@ const mapFeedbackResponse = (feedback) => {
     ticketCode: parkingSession?.ticket_code || null,
     subject: feedback.issue_type,
     message: parsedDescription.message,
+    reply: parsedDescription.reply || null,
+    replyCreatedAt: parsedDescription.replyCreatedAt || null,
     status: feedback.status,
     createdAt: feedback.created_at,
     user: user
@@ -470,6 +504,62 @@ export const updateFeedbackStatus = async (req, res) => {
     });
   } catch (error) {
     console.error("Update feedback status error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export const updateFeedbackReply = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const reply = String(req.body.reply || "").trim();
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid feedback id",
+      });
+    }
+
+    if (!reply) {
+      return res.status(400).json({
+        success: false,
+        message: "Reply message is required",
+      });
+    }
+
+    const feedback = await prisma.feedbacks.findUnique({
+      where: { id },
+      include: feedbackInclude,
+    });
+
+    if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: "Feedback not found",
+      });
+    }
+
+    const updatedFeedback = await prisma.feedbacks.update({
+      where: { id },
+      data: {
+        description: buildFeedbackDescriptionWithReply(feedback, reply),
+        resolved_by: req.user.id,
+      },
+      include: feedbackInclude,
+    });
+
+    return res.json({
+      success: true,
+      message: "Reply saved successfully",
+      data: mapFeedbackResponse(updatedFeedback),
+    });
+  } catch (error) {
+    console.error("Update feedback reply error:", error);
 
     return res.status(500).json({
       success: false,
