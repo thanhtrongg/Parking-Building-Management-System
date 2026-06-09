@@ -32,8 +32,82 @@ function normalizeArray(value) {
   return [];
 }
 
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(amount || 0));
+}
+
 function toIsoString(localValue) {
   return new Date(localValue).toISOString();
+}
+
+function calculateHours(startTime, endTime) {
+  return Math.max(
+    1,
+    Math.ceil((new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60)),
+  );
+}
+
+function isNightHour(date) {
+  const hour = date.getHours();
+  return hour >= 22 || hour < 6;
+}
+
+function getBestPricingPolicy(policies, vehicleTypeId, startTime) {
+  const effectiveDate = new Date(startTime);
+  const candidates = policies
+    .filter((policy) => {
+      const policyVehicleTypeId = policy.vehicleTypeId || null;
+      const matchesVehicle =
+        policyVehicleTypeId === vehicleTypeId || policyVehicleTypeId === null;
+      return matchesVehicle && new Date(policy.effectiveDate) <= effectiveDate;
+    })
+    .sort((a, b) => {
+      const aExact = a.vehicleTypeId === vehicleTypeId ? 1 : 0;
+      const bExact = b.vehicleTypeId === vehicleTypeId ? 1 : 0;
+
+      if (aExact !== bExact) return bExact - aExact;
+      return new Date(b.effectiveDate) - new Date(a.effectiveDate);
+    });
+
+  return candidates[0] || null;
+}
+
+function calculateEstimatedFee({ policies, vehicleTypeId, startTime, endTime }) {
+  if (!vehicleTypeId || !startTime || !endTime) return null;
+  if (new Date(startTime) >= new Date(endTime)) return null;
+
+  const policy = getBestPricingPolicy(policies, vehicleTypeId, startTime);
+  if (!policy) return null;
+
+  const parkingHours = calculateHours(startTime, endTime);
+  const basePrice = Number(policy.basePrice || 0);
+  const hourlyRate = Number(policy.hourlyRate || 0);
+  const nightRate = Number(policy.nightRate ?? hourlyRate);
+  const startDate = new Date(startTime);
+  let billableHourlyHours = 0;
+  let billableNightHours = 0;
+
+  for (let hourIndex = 2; hourIndex < parkingHours; hourIndex += 1) {
+    const hourStart = new Date(startDate);
+    hourStart.setHours(startDate.getHours() + hourIndex);
+
+    if (isNightHour(hourStart)) {
+      billableNightHours += 1;
+    } else {
+      billableHourlyHours += 1;
+    }
+  }
+
+  return {
+    total: basePrice + billableHourlyHours * hourlyRate + billableNightHours * nightRate,
+    parkingHours,
+    basePrice,
+    hourlyRate,
+    nightRate,
+  };
 }
 
 function PageHeader() {
@@ -115,6 +189,7 @@ function SlotCard({ slot, selected, onSelect }) {
 
 export default function UserMyBookingsPage() {
   const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [pricingPolicies, setPricingPolicies] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [form, setForm] = useState(() => ({
@@ -133,9 +208,11 @@ export default function UserMyBookingsPage() {
     async function loadVehicleTypes() {
       try {
         const result = await apiRequest("/api/vehicle-types");
+        const pricingResult = await apiRequest("/api/pricing-policies");
 
         if (!ignore) {
           const types = normalizeArray(result);
+          setPricingPolicies(normalizeArray(pricingResult));
           const defaultVehicleTypeId = types[0]?.id || "";
           const defaultStartTime = getDefaultStartTime();
           const defaultEndTime = getDefaultEndTime();
@@ -205,6 +282,17 @@ export default function UserMyBookingsPage() {
     if (!form.vehicleTypeId || !form.startTime || !form.endTime) return false;
     return new Date(form.startTime) < new Date(form.endTime);
   }, [form]);
+
+  const estimatedFee = useMemo(
+    () =>
+      calculateEstimatedFee({
+        policies: pricingPolicies,
+        vehicleTypeId: form.vehicleTypeId,
+        startTime: form.startTime,
+        endTime: form.endTime,
+      }),
+    [form, pricingPolicies],
+  );
 
   const loadAvailableSlots = async () => {
     if (!canSearchSlots) {
@@ -353,6 +441,28 @@ export default function UserMyBookingsPage() {
                 required
               />
             </label>
+
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-blue-700">
+                    Estimated fee
+                  </p>
+                  <p className="mt-1 font-['Geist'] text-2xl font-black text-slate-950">
+                    {estimatedFee ? formatCurrency(estimatedFee.total) : "N/A"}
+                  </p>
+                </div>
+                <span className="material-symbols-outlined text-[24px] text-blue-600">
+                  payments
+                </span>
+              </div>
+              {estimatedFee && (
+                <p className="mt-2 text-xs font-semibold text-blue-700">
+                  {estimatedFee.parkingHours} hour(s), base{" "}
+                  {formatCurrency(estimatedFee.basePrice)}
+                </p>
+              )}
+            </div>
 
             <button
               type="button"

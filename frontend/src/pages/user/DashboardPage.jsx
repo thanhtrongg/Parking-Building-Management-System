@@ -30,6 +30,13 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(amount || 0));
+}
+
 function normalizeBookings(value) {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.data)) return value.data;
@@ -129,6 +136,12 @@ function PageHero({ nextBooking }) {
                     directions_car
                   </span>
                   {nextBooking.vehicleType?.typeName || "Vehicle"}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px]">
+                    payments
+                  </span>
+                  {formatCurrency(nextBooking.estimatedFee)}
                 </div>
               </div>
             </>

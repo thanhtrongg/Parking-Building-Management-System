@@ -1,114 +1,14 @@
 import prisma from "../config/prisma.js";
+import {
+    calculateParkingFee,
+    getPricingPolicyForSession,
+} from "../services/pricing.service.js";
 
 const generateTicketCode = () => {
     return `TK-${Date.now()}`;
 };
 
-const BASE_PRICE_HOURS = 2;
-const NIGHT_START_HOUR = 22;
-const NIGHT_END_HOUR = 6;
-
-const toNumber = (value, fallback = 0) => {
-    if (value === null || value === undefined) return fallback;
-
-    const number = Number(value);
-
-    return Number.isNaN(number) ? fallback : number;
-};
-
-const getPricingPolicyForSession = async (
-    vehicleTypeId,
-    checkInTime
-) => {
-    const effectiveDate = new Date(checkInTime);
-
-    const vehicleTypePolicy = vehicleTypeId
-        ? await prisma.pricing_policies.findFirst({
-            where: {
-                vehicle_type_id: vehicleTypeId,
-                effective_date: {
-                    lte: effectiveDate,
-                },
-            },
-            orderBy: {
-                effective_date: "desc",
-            },
-        })
-        : null;
-
-    if (vehicleTypePolicy) return vehicleTypePolicy;
-
-    return prisma.pricing_policies.findFirst({
-        where: {
-            vehicle_type_id: null,
-            effective_date: {
-                lte: effectiveDate,
-            },
-        },
-        orderBy: {
-            effective_date: "desc",
-        },
-    });
-};
-
-const isNightHour = (date) => {
-    const hour = date.getHours();
-
-    return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
-};
-
-const calculateParkingFee = (
-    checkInTime,
-    checkOutTime,
-    pricingPolicy
-) => {
-    if (!pricingPolicy) {
-        return {
-            totalAmount: 0,
-            parkingHours: calculateParkingHours(checkInTime, checkOutTime),
-            basePrice: 0,
-            hourlyRate: 0,
-            nightRate: 0,
-            billableHourlyHours: 0,
-            billableNightHours: 0,
-        };
-    }
-
-    const parkingHours = calculateParkingHours(checkInTime, checkOutTime);
-    const basePrice = toNumber(pricingPolicy.base_price);
-    const hourlyRate = toNumber(pricingPolicy.hourly_rate);
-    const nightRate = toNumber(pricingPolicy.night_rate, hourlyRate);
-
-    let billableHourlyHours = 0;
-    let billableNightHours = 0;
-    const checkInDate = new Date(checkInTime);
-
-    for (let hourIndex = BASE_PRICE_HOURS; hourIndex < parkingHours; hourIndex += 1) {
-        const hourStart = new Date(checkInDate);
-        hourStart.setHours(checkInDate.getHours() + hourIndex);
-
-        if (isNightHour(hourStart)) {
-            billableNightHours += 1;
-        } else {
-            billableHourlyHours += 1;
-        }
-    }
-
-    const totalAmount =
-        basePrice +
-        billableHourlyHours * hourlyRate +
-        billableNightHours * nightRate;
-
-    return {
-        totalAmount,
-        parkingHours,
-        basePrice,
-        hourlyRate,
-        nightRate,
-        billableHourlyHours,
-        billableNightHours,
-    };
-};
+const PAYMENT_METHODS = ["CASH", "CARD", "SEPAY"];
 
 export const getParkingSessions = async (req, res) => {
     try {
@@ -132,12 +32,25 @@ export const getParkingSessions = async (req, res) => {
                 vt.type_name AS "vehicleTypeName",
 
                 slot.slot_name AS "slotName",
-                z.zone_name AS "zoneName"
+                z.zone_name AS "zoneName",
+
+                p.id AS "paymentId",
+                p.amount AS "paidAmount",
+                p.payment_method AS "paymentMethod",
+                p.payment_time AS "paymentTime",
+                p.status AS "paymentStatus"
             FROM parking_sessions ps
             LEFT JOIN users u ON ps.user_id = u.id
             LEFT JOIN vehicle_types vt ON ps.vehicle_type_id = vt.id
             LEFT JOIN parking_slots slot ON ps.parking_slot_id = slot.id
             LEFT JOIN zones z ON slot.zone_id = z.id
+            LEFT JOIN LATERAL (
+                SELECT id, amount, payment_method, payment_time, status
+                FROM payments
+                WHERE parking_session_id = ps.id
+                ORDER BY payment_time DESC
+                LIMIT 1
+            ) p ON true
             ORDER BY ps.entry_time DESC
         `;
 
@@ -166,6 +79,15 @@ export const getParkingSessions = async (req, res) => {
                 parkingHours: fee.parkingHours,
                 billableHourlyHours: fee.billableHourlyHours,
                 billableNightHours: fee.billableNightHours,
+                payment: session.paymentId
+                    ? {
+                        id: session.paymentId,
+                        amount: Number(session.paidAmount || 0),
+                        method: session.paymentMethod,
+                        status: session.paymentStatus,
+                        paidAt: session.paymentTime,
+                    }
+                    : null,
                 user: session.userId
                     ? {
                         id: session.userId,
@@ -321,23 +243,19 @@ export const getParkingSessionById = async (req, res) => {
     }
 };
 
-const calculateParkingHours = (
-    checkInTime,
-    checkOutTime
-) => {
-    const diffMs =
-        checkOutTime - new Date(checkInTime);
-
-    return Math.max(
-        1,
-        Math.ceil(diffMs / (1000 * 60 * 60))
-    );
-};
-
 export const checkOutVehicle = async (req, res) => {
     try {
         const { id } = req.params;
-        const { checkOutStaffId } = req.body;
+        const { checkOutStaffId, paymentMethod = "CASH" } = req.body;
+        const normalizedPaymentMethod = String(paymentMethod).toUpperCase();
+        const finalCheckOutStaffId = checkOutStaffId || req.user?.id || null;
+
+        if (!PAYMENT_METHODS.includes(normalizedPaymentMethod)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid payment method",
+            });
+        }
 
         const session = await prisma.parking_sessions.findUnique({
             where: { id },
@@ -347,6 +265,13 @@ export const checkOutVehicle = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: "Parking session not found",
+            });
+        }
+
+        if (session.status === "COMPLETED") {
+            return res.status(400).json({
+                success: false,
+                message: "Parking session has already been completed",
             });
         }
 
@@ -370,24 +295,36 @@ export const checkOutVehicle = async (req, res) => {
             pricingPolicy
         );
 
-        await prisma.parking_sessions.update({
-            where: { id },
-            data: {
-                exit_time: checkOutTime,
+        const payment = await prisma.$transaction(async (tx) => {
+            await tx.parking_sessions.update({
+                where: { id },
+                data: {
+                    exit_time: checkOutTime,
+                    checkout_staff_id: finalCheckOutStaffId,
+                    status: "COMPLETED",
+                },
+            });
 
-                checkout_staff_id: checkOutStaffId,
+            if (session.parking_slot_id) {
+                await tx.parking_slots.update({
+                    where: {
+                        id: session.parking_slot_id,
+                    },
+                    data: {
+                        status: "AVAILABLE",
+                    },
+                });
+            }
 
-                status: "COMPLETED",
-            },
-        });
-
-        await prisma.parking_slots.update({
-            where: {
-                id: session.parking_slot_id,
-            },
-            data: {
-                status: "AVAILABLE",
-            },
+            return tx.payments.create({
+                data: {
+                    parking_session_id: id,
+                    amount: fee.totalAmount,
+                    payment_method: normalizedPaymentMethod,
+                    status: "SUCCESS",
+                    payment_time: checkOutTime,
+                },
+            });
         });
 
         return res.json({
@@ -396,6 +333,13 @@ export const checkOutVehicle = async (req, res) => {
             parkingHours: fee.parkingHours,
             billableHourlyHours: fee.billableHourlyHours,
             billableNightHours: fee.billableNightHours,
+            payment: {
+                id: payment.id,
+                amount: Number(payment.amount),
+                method: payment.payment_method,
+                status: payment.status,
+                paidAt: payment.payment_time,
+            },
         });
     } catch (error) {
         console.error("Check out error:", error);
