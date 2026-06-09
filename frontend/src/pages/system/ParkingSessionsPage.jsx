@@ -21,6 +21,12 @@ const formatCurrency = (amount) => {
     }).format(amount || 0);
 };
 
+const paymentMethods = [
+    { value: "CASH", label: "Cash", icon: "payments" },
+    { value: "CARD", label: "Card", icon: "credit_card" },
+    { value: "SEPAY", label: "SePay", icon: "qr_code_2" },
+];
+
 function EmptyState({ onRefresh }) {
     return (
         <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/80 px-6 py-14 text-center shadow-sm backdrop-blur">
@@ -187,6 +193,11 @@ function SessionCard({ session, onView, onCheckout }) {
                     <p className="font-['Geist'] text-xl font-bold text-slate-950">
                         {formatCurrency(session.totalFee)}
                     </p>
+                    <p className="mt-1 font-['Inter'] text-xs font-semibold text-slate-500">
+                        {session.payment
+                            ? `${session.payment.status} via ${session.payment.method}`
+                            : "Unpaid"}
+                    </p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -321,6 +332,17 @@ function DetailModal({ session, onClose }) {
                                 )}
                             </div>
                         </div>
+                        <div className="flex items-start gap-3">
+                            <span className="material-symbols-outlined mt-0.5 text-slate-400">payments</span>
+                            <div>
+                                <p className="font-['Inter'] text-xs font-semibold uppercase tracking-wide text-slate-400">Payment</p>
+                                <p className="font-['Inter'] text-sm font-semibold text-slate-800">
+                                    {session.payment
+                                        ? `${session.payment.status} - ${session.payment.method}`
+                                        : "Unpaid"}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="mt-6 flex justify-end">
@@ -337,7 +359,14 @@ function DetailModal({ session, onClose }) {
     );
 }
 
-function CheckoutModal({ session, processing, onClose, onConfirm }) {
+function CheckoutModal({
+    session,
+    paymentMethod,
+    processing,
+    onClose,
+    onConfirm,
+    onPaymentMethodChange,
+}) {
     if (!session) return null;
 
     return (
@@ -356,6 +385,32 @@ function CheckoutModal({ session, processing, onClose, onConfirm }) {
                     </span>
                     . The final fee will be calculated and the slot will be marked as available.
                 </p>
+
+                <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="font-['Inter'] text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Final fee
+                    </p>
+                    <p className="mt-1 font-['Geist'] text-3xl font-bold text-slate-950">
+                        {formatCurrency(session.totalFee)}
+                    </p>
+                    <label className="mt-4 block">
+                        <span className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700">
+                            Payment method
+                        </span>
+                        <select
+                            value={paymentMethod}
+                            onChange={(event) => onPaymentMethodChange(event.target.value)}
+                            disabled={processing}
+                            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {paymentMethods.map((method) => (
+                                <option key={method.value} value={method.value}>
+                                    {method.label}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                </div>
 
                 <div className="mt-6 flex justify-end gap-3">
                     <button
@@ -423,6 +478,7 @@ export default function ParkingSessionsPage() {
     // Modal State
     const [viewSession, setViewSession] = useState(null);
     const [checkoutSession, setCheckoutSession] = useState(null);
+    const [checkoutPaymentMethod, setCheckoutPaymentMethod] = useState("CASH");
 
     // Action State
     const [processing, setProcessing] = useState(false);
@@ -482,7 +538,9 @@ export default function ParkingSessionsPage() {
             // Ví dụ: PUT /api/parking-sessions/:id/checkout hoặc PUT /api/parking-sessions/:id với { status: "COMPLETED", endTime: new Date().toISOString() }
             await apiRequest(`/api/parking-sessions/${checkoutSession.id}/checkout`, {
                 method: "PUT",
-                // body: JSON.stringify({ endTime: new Date().toISOString() }) // Uncomment nếu backend yêu cầu
+                body: JSON.stringify({
+                    paymentMethod: checkoutPaymentMethod,
+                }),
             });
 
             setAlert({ type: "success", message: "Session completed successfully!" });
@@ -517,7 +575,10 @@ export default function ParkingSessionsPage() {
                 error={error}
                 onRefresh={fetchSessions}
                 onView={setViewSession}
-                onCheckout={setCheckoutSession}
+                onCheckout={(session) => {
+                    setCheckoutPaymentMethod("CASH");
+                    setCheckoutSession(session);
+                }}
             />
 
             <DetailModal
@@ -527,11 +588,13 @@ export default function ParkingSessionsPage() {
 
             <CheckoutModal
                 session={checkoutSession}
+                paymentMethod={checkoutPaymentMethod}
                 processing={processing}
                 onClose={() => {
                     if (!processing) setCheckoutSession(null);
                 }}
                 onConfirm={handleCheckout}
+                onPaymentMethodChange={setCheckoutPaymentMethod}
             />
         </AdminLayout>
     );

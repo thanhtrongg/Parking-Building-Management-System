@@ -23,7 +23,9 @@ import AdminVehiclesPage from "./pages/system/VehiclesPage";
 import ZonesPage from "./pages/system/ZonesPage";
 import UserDashboardPage from "./pages/user/DashboardPage";
 import UserBookingHistoryPage from "./pages/user/BookingHistoryPage";
+import UserFeedbackPage from "./pages/user/FeedbackPage";
 import UserMyBookingsPage from "./pages/user/MyBookingsPage";
+import UserParkingSessionsPage from "./pages/user/ParkingSessionsPage";
 import UserSettingsPage from "./pages/user/SettingsPage";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -299,6 +301,24 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={userRoles}>
               <UserBookingHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/user-parking-sessions"
+          element={
+            <ProtectedRoute allowedRoles={userRoles}>
+              <UserParkingSessionsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/user-feedback"
+          element={
+            <ProtectedRoute allowedRoles={userRoles}>
+              <UserFeedbackPage />
             </ProtectedRoute>
           }
         />

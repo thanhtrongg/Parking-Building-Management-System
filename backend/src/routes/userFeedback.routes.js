@@ -1,10 +1,15 @@
 import express from "express";
 
-import { createUserFeedback } from "../controllers/userFeedback.controller.js";
+import {
+  createFeedback,
+  getMyFeedbacks,
+} from "../controllers/feedback.controller.js";
 import { requireRoles, verifyToken } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", verifyToken, requireRoles("USER"), createUserFeedback);
+router.get("/", verifyToken, requireRoles("USER"), getMyFeedbacks);
+
+router.post("/", verifyToken, requireRoles("USER"), createFeedback);
 
 export default router;

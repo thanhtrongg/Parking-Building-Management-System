@@ -3,7 +3,6 @@ import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
 
 const statusStyles = {
-  PENDING: "bg-amber-50 text-amber-700 ring-amber-100",
   CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   CHECKED_IN: "bg-blue-50 text-blue-700 ring-blue-100",
   CANCELLED: "bg-red-50 text-red-700 ring-red-100",
@@ -11,7 +10,7 @@ const statusStyles = {
   FULFILLED: "bg-slate-100 text-slate-700 ring-slate-200",
 };
 
-const cancellableStatuses = ["PENDING", "CONFIRMED"];
+const cancellableStatuses = ["CONFIRMED"];
 
 function formatDateTime(value) {
   if (!value) return "N/A";
@@ -25,19 +24,32 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(amount || 0));
+}
+
 function normalizeBookings(value) {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.data)) return value.data;
   return [];
 }
 
+export function getReservationCode(reservationId) {
+  return reservationId
+    ? `RSV-${String(reservationId).slice(0, 8).toUpperCase()}`
+    : "RSV-N/A";
+}
+
 function StatusBadge({ status }) {
-  const normalizedStatus = String(status || "PENDING").toUpperCase();
+  const normalizedStatus = String(status || "CONFIRMED").toUpperCase();
 
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black uppercase ring-1 ${
-        statusStyles[normalizedStatus] || statusStyles.PENDING
+        statusStyles[normalizedStatus] || statusStyles.CONFIRMED
       }`}
     >
       {normalizedStatus}
@@ -130,6 +142,7 @@ function BookingCard({ booking, cancelling, onCancel }) {
   const slotName = booking.parkingSlot?.slotName || "Unassigned";
   const zoneName = booking.parkingSlot?.zone?.zoneName || "N/A";
   const vehicleType = booking.vehicleType?.typeName || "N/A";
+  const reservationCode = getReservationCode(booking.id);
   const status = String(booking.status || "").toUpperCase();
   const canCancel = cancellableStatuses.includes(status);
 
@@ -139,7 +152,7 @@ function BookingCard({ booking, cancelling, onCancel }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-['Geist'] text-lg font-black text-slate-950">
-              {booking.id?.slice(0, 8) || "Booking"}
+              {reservationCode}
             </h2>
             <StatusBadge status={booking.status} />
           </div>
@@ -155,13 +168,16 @@ function BookingCard({ booking, cancelling, onCancel }) {
       </div>
 
       <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+        <Info label="Booking ID" value={reservationCode} />
         <Info label="Slot" value={slotName} />
         <Info label="Vehicle" value={vehicleType} />
         <Info label="Start" value={formatDateTime(booking.startTime)} />
         <Info label="End" value={formatDateTime(booking.endTime)} />
+        <Info label="Estimated fee" value={formatCurrency(booking.estimatedFee)} />
+        <Info label="Payment" value="Pay when checkout" />
       </div>
 
-      <div className="mt-5 flex justify-end border-t border-slate-100 pt-4">
+      <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
         {canCancel ? (
           <button
             type="button"

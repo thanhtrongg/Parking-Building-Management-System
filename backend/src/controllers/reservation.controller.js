@@ -1,14 +1,14 @@
 import prisma from "../config/prisma.js";
+import { getFeeForVehicleType } from "../services/pricing.service.js";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const ACTIVE_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN"];
+const ACTIVE_RESERVATION_STATUSES = ["CONFIRMED", "CHECKED_IN"];
 
 const FINAL_RESERVATION_STATUSES = ["CANCELLED", "COMPLETED"];
 
 const VALID_RESERVATION_STATUSES = [
-  "PENDING",
   "CONFIRMED",
   "CHECKED_IN",
   "CANCELLED",
@@ -24,7 +24,7 @@ const STAFF_ALLOWED_STATUSES = [
   "COMPLETED",
 ];
 
-const USER_CANCELLABLE_STATUSES = ["PENDING", "CONFIRMED"];
+const USER_CANCELLABLE_STATUSES = ["CONFIRMED"];
 
 const ACTIVE_PARKING_SESSION_STATUSES = ["ACTIVE"];
 
@@ -45,6 +45,10 @@ const isValidDate = (date) => {
 };
 
 const mapReservationResponse = (reservation) => {
+  const latestPayment = Array.isArray(reservation.payments)
+    ? reservation.payments[0]
+    : null;
+
   return {
     id: reservation.id,
     userId: reservation.user_id,
@@ -87,7 +91,32 @@ const mapReservationResponse = (reservation) => {
     endTime: reservation.expected_end_time,
     status: reservation.status,
     createdAt: reservation.created_at,
+    estimatedFee: reservation.estimatedFee ?? 0,
+    parkingHours: reservation.parkingHours ?? 0,
+    payment: latestPayment
+      ? {
+          id: latestPayment.id,
+          amount: Number(latestPayment.amount),
+          method: latestPayment.payment_method,
+          status: latestPayment.status,
+          paidAt: latestPayment.payment_time,
+        }
+      : null,
   };
+};
+
+const mapReservationResponseWithFee = async (reservation) => {
+  const fee = await getFeeForVehicleType(
+    reservation.vehicle_type_id,
+    reservation.expected_start_time,
+    reservation.expected_end_time,
+  );
+
+  return mapReservationResponse({
+    ...reservation,
+    estimatedFee: fee.totalAmount,
+    parkingHours: fee.parkingHours,
+  });
 };
 
 const reservationInclude = {
@@ -120,6 +149,19 @@ const reservationInclude = {
         },
       },
     },
+  },
+  payments: {
+    select: {
+      id: true,
+      amount: true,
+      payment_method: true,
+      payment_time: true,
+      status: true,
+    },
+    orderBy: {
+      payment_time: "desc",
+    },
+    take: 1,
   },
 };
 
@@ -165,7 +207,7 @@ export const getReservations = async (req, res) => {
     return res.json({
       success: true,
       message: "Get reservations successfully",
-      data: reservations.map(mapReservationResponse),
+      data: await Promise.all(reservations.map(mapReservationResponseWithFee)),
     });
   } catch (error) {
     console.error("Get reservations error:", error);
@@ -211,7 +253,7 @@ export const getReservationById = async (req, res) => {
     return res.json({
       success: true,
       message: "Get reservation detail successfully",
-      data: mapReservationResponse(reservation),
+      data: await mapReservationResponseWithFee(reservation),
     });
   } catch (error) {
     console.error("Get reservation detail error:", error);
@@ -327,10 +369,14 @@ export const createReservation = async (req, res) => {
       });
     }
 
-    if (
-      parkingSlot.zones?.vehicle_type_id &&
-      parkingSlot.zones.vehicle_type_id !== vehicleTypeId
-    ) {
+    if (!parkingSlot.zones?.vehicle_type_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Parking slot zone does not support reservations by vehicle type",
+      });
+    }
+
+    if (parkingSlot.zones.vehicle_type_id !== vehicleTypeId) {
       return res.status(400).json({
         success: false,
         message: "Vehicle type does not match parking slot zone",
@@ -358,7 +404,7 @@ export const createReservation = async (req, res) => {
         parking_slot_id: parkingSlotId,
         expected_start_time: parsedStartTime,
         expected_end_time: parsedEndTime,
-        status: "PENDING",
+        status: "CONFIRMED",
       },
       include: reservationInclude,
     });
@@ -366,7 +412,7 @@ export const createReservation = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Create reservation successfully",
-      data: mapReservationResponse(reservation),
+      data: await mapReservationResponseWithFee(reservation),
     });
   } catch (error) {
     console.error("Create reservation error:", error);
@@ -442,10 +488,15 @@ export const updateReservation = async (req, res) => {
     }
 
     if (req.user.role === "STAFF") {
-      if (!status || Object.keys(req.body).some((key) => key !== "status")) {
+      if (
+        !status ||
+        Object.keys(req.body).some(
+          (key) => key !== "status" && key !== "parkingSlotId",
+        )
+      ) {
         return res.status(403).json({
           success: false,
-          message: "Staff can only update reservation status",
+          message: "Staff can only update reservation status and assigned slot",
         });
       }
 
@@ -509,10 +560,15 @@ export const updateReservation = async (req, res) => {
         });
       }
 
-      if (
-        parkingSlot.zones?.vehicle_type_id &&
-        parkingSlot.zones.vehicle_type_id !== nextVehicleTypeId
-      ) {
+      if (!parkingSlot.zones?.vehicle_type_id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Parking slot zone does not support reservations by vehicle type",
+        });
+      }
+
+      if (parkingSlot.zones.vehicle_type_id !== nextVehicleTypeId) {
         return res.status(400).json({
           success: false,
           message: "Vehicle type does not match parking slot zone",
@@ -568,7 +624,7 @@ export const updateReservation = async (req, res) => {
     return res.json({
       success: true,
       message: "Update reservation successfully",
-      data: mapReservationResponse(updatedReservation),
+      data: await mapReservationResponseWithFee(updatedReservation),
     });
   } catch (error) {
     console.error("Update reservation error:", error);
@@ -637,7 +693,7 @@ export const deleteReservation = async (req, res) => {
     return res.json({
       success: true,
       message: "Cancel reservation successfully",
-      data: mapReservationResponse(cancelledReservation),
+      data: await mapReservationResponseWithFee(cancelledReservation),
     });
   } catch (error) {
     console.error("Delete reservation error:", error);
@@ -683,7 +739,7 @@ export const cancelMyReservation = async (req, res) => {
     if (!USER_CANCELLABLE_STATUSES.includes(reservation.status)) {
       return res.status(400).json({
         success: false,
-        message: "Only pending or confirmed reservations can be cancelled",
+        message: "Only confirmed reservations can be cancelled",
       });
     }
 
@@ -743,7 +799,7 @@ export const cancelMyReservation = async (req, res) => {
         id: updatedReservation.id,
         status: updatedReservation.status,
         slotName: updatedReservation.parking_slots?.slot_name || null,
-        reservation: mapReservationResponse(updatedReservation),
+        reservation: await mapReservationResponseWithFee(updatedReservation),
       },
     });
   } catch (error) {

@@ -14,6 +14,8 @@ model feedbacks {
   issue_type                         String            @db.VarChar(50)
   description                        String
   status                             String?           @default("OPEN") @db.VarChar(20)
+  reply                              String?
+  reply_created_at                   DateTime?         @db.Timestamptz(6)
   resolved_by                        String?           @db.Uuid
   created_at                         DateTime?         @default(now()) @db.Timestamptz(6)
   parking_sessions                   parking_sessions? @relation(fields: [parking_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -63,11 +65,17 @@ model parking_slots {
 model payments {
   id                 String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   parking_session_id String?           @db.Uuid
+  reservation_id     String?           @db.Uuid
   amount             Decimal           @db.Decimal(10, 2)
   payment_method     String            @db.VarChar(20)
   payment_time       DateTime?         @default(now()) @db.Timestamptz(6)
-  status             String?           @default("SUCCESS") @db.VarChar(20)
+  status             String?           @default("PENDING") @db.VarChar(20)
+  sepay_payment_code   String?         @unique @db.VarChar(50)
+  sepay_transaction_id String?         @unique @db.VarChar(50)
+  sepay_reference_code String?         @db.VarChar(100)
+  sepay_payload      Json?
   parking_sessions   parking_sessions? @relation(fields: [parking_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservations       reservations?     @relation(fields: [reservation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model pricing_policies {
@@ -89,11 +97,12 @@ model reservations {
   parking_slot_id     String?        @db.Uuid
   expected_start_time DateTime       @db.Timestamptz(6)
   expected_end_time   DateTime       @db.Timestamptz(6)
-  status              String?        @default("PENDING") @db.VarChar(20)
+  status              String?        @default("CONFIRMED") @db.VarChar(20)
   created_at          DateTime?      @default(now()) @db.Timestamptz(6)
   parking_slots       parking_slots? @relation(fields: [parking_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users               users          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   vehicle_types       vehicle_types  @relation(fields: [vehicle_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments            payments[]
 }
 
 model system_configs {
