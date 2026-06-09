@@ -332,9 +332,20 @@ export const getFeedbacks = async (req, res) => {
 
 export const getMyFeedbacks = async (req, res) => {
   try {
+    const status = req.query.status ? normalizeStatus(req.query.status) : "";
+
+    if (status && !VALID_FEEDBACK_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid feedback status. Allowed values: OPEN, IN_PROGRESS, RESOLVED, CLOSED",
+      });
+    }
+
     const feedbacks = await prisma.feedbacks.findMany({
       where: {
         user_id: req.user.id,
+        ...(status ? { status } : {}),
       },
       include: feedbackInclude,
       orderBy: {
