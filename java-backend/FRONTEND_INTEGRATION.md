@@ -34,6 +34,8 @@ The backend exposes an interactive **Swagger UI** containing all endpoints, requ
 
 > [!TIP]
 > You can import the **Raw OpenAPI JSON Spec** directly into **Postman** or **Insomnia** to instantly generate an API collection for manual testing.
+>
+> Alternatively, you can use the pre-configured [api_tests.http](file:///home/duu/FPT/Parking-Building-Management-System/java-backend/api_tests.http) file in the project root to run requests directly from IntelliJ or VS Code (using the REST Client extension). It is fully mapped to the seeded development mock data.
 
 ---
 

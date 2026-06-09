@@ -1,0 +1,372 @@
+### Parking Building Management System - API Integration & Verification Tests
+#
+# This file is compatible with IntelliJ HTTP Client and VS Code REST Client extension.
+# You can execute these endpoints to test backend services and verify integrations.
+#
+# Note: Variables like {{adminToken}}, {{managerToken}}, {{staffToken}}, {{driverToken}}
+# will be populated after running their respective login requests, if your client supports
+# auto-saving variables. Otherwise, copy the accessToken value from the login response
+# and replace it manually.
+
+@host = http://localhost:8080/api/v1
+@contentType = application/json
+
+# ==========================================
+# 1. AUTHENTICATION & LOGIN
+# ==========================================
+
+### Login as Admin (to perform user management)
+# @name adminLogin
+POST {{host}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@parking.com",
+  "password": "admin123"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+%}
+
+### Login as Manager (to perform building/floor/pricing/report actions)
+# @name managerLogin
+POST {{host}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "manager@parking.com",
+  "password": "manager123"
+}
+
+> {%
+    client.global.set("managerToken", response.body.data.accessToken);
+%}
+
+### Login as Staff (to perform check-in/check-out/payment actions)
+# @name staffLogin
+POST {{host}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "staff@parking.com",
+  "password": "staff123"
+}
+
+> {%
+    client.global.set("staffToken", response.body.data.accessToken);
+%}
+
+### Login as Driver (to perform reservations/feedback/session lookups)
+# @name driverLogin
+POST {{host}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "driver@parking.com",
+  "password": "driver123"
+}
+
+> {%
+    client.global.set("driverToken", response.body.data.accessToken);
+    client.global.set("driverRefreshToken", response.body.data.refreshToken);
+%}
+
+### Invalidate token & Logout
+POST {{host}}/auth/logout
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "{{driverRefreshToken}}"
+}
+
+### Refresh access token
+POST {{host}}/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "{{driverRefreshToken}}"
+}
+
+
+# ==========================================
+# 2. BUILDINGS & FLOORS
+# ==========================================
+
+### Get all buildings (Driver/Staff/Manager)
+GET {{host}}/buildings
+Authorization: Bearer {{driverToken}}
+
+### Get all active buildings
+GET {{host}}/buildings/active
+Authorization: Bearer {{driverToken}}
+
+### Get Building A - Center details by ID (using seeded UUID)
+GET {{host}}/buildings/8b72da1f-50b3-4632-a5e2-632b8ac425f1
+Authorization: Bearer {{driverToken}}
+
+### Get floors in Building A - Center (using seeded UUID)
+GET {{host}}/floors/building/8b72da1f-50b3-4632-a5e2-632b8ac425f1
+Authorization: Bearer {{driverToken}}
+
+### Create a new building (Requires Manager)
+POST {{host}}/buildings
+Authorization: Bearer {{managerToken}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Building B - West Wing",
+  "address": "456 Nguyen Trai Street, District 5, Ho Chi Minh City",
+  "phone": "02899999999",
+  "openingTime": "07:00:00",
+  "closingTime": "23:00:00"
+}
+
+### Toggle building status (Requires Manager)
+PATCH {{host}}/buildings/8b72da1f-50b3-4632-a5e2-632b8ac425f1/toggle-status
+Authorization: Bearer {{managerToken}}
+
+
+# ==========================================
+# 3. PARKING SLOTS & AI RECOMMENDATION
+# ==========================================
+
+### Get all slots on Floor 1 (using seeded Floor 1 UUID)
+GET {{host}}/slots/floor/9f3c1d9b-a48e-49b0-9b43-982823a0b12f
+Authorization: Bearer {{driverToken}}
+
+### Get available slots on Floor 1
+GET {{host}}/slots/floor/9f3c1d9b-a48e-49b0-9b43-982823a0b12f/available
+Authorization: Bearer {{driverToken}}
+
+### Get AI-recommended parking slot in Building A
+POST {{host}}/slots/recommend
+Authorization: Bearer {{driverToken}}
+Content-Type: {{contentType}}
+
+{
+  "buildingId": "8b72da1f-50b3-4632-a5e2-632b8ac425f1",
+  "vehicleType": "CAR"
+}
+
+### Update slot A-01 status to MAINTENANCE (Requires Manager/Staff)
+PATCH {{host}}/slots/1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a01/status
+Authorization: Bearer {{staffToken}}
+Content-Type: {{contentType}}
+
+{
+  "status": "MAINTENANCE"
+}
+
+
+# ==========================================
+# 4. PRICING CONFIGURATION
+# ==========================================
+
+### Get pricing for Building A (using seeded UUID)
+GET {{host}}/pricing/building/8b72da1f-50b3-4632-a5e2-632b8ac425f1
+Authorization: Bearer {{driverToken}}
+
+### Create a new pricing configuration (Requires Manager)
+POST {{host}}/pricing
+Authorization: Bearer {{managerToken}}
+Content-Type: {{contentType}}
+
+{
+  "buildingId": "8b72da1f-50b3-4632-a5e2-632b8ac425f1",
+  "vehicleTypeId": "e2a8340b-0c81-4ada-b084-03975d3f5ddb",
+  "hourlyRate": 12000.00,
+  "dailyRate": 160000.00,
+  "lostTicketFee": 250000.00,
+  "overtimeFeeMultiplier": 1.50,
+  "basePrice": 25000.00,
+  "nightRate": 18000.00,
+  "effectiveFrom": "2026-07-01T00:00:00"
+}
+
+
+# ==========================================
+# 5. PARKING SESSIONS
+# ==========================================
+
+### Get all active parking sessions (Requires Staff)
+GET {{host}}/sessions/active
+Authorization: Bearer {{staffToken}}
+
+### Check in a CAR (Staff scan/entry)
+POST {{host}}/sessions/check-in
+Authorization: Bearer {{staffToken}}
+Content-Type: {{contentType}}
+
+{
+  "slotId": "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a01",
+  "driverId": "6b88b2a3-83cf-424a-b9c1-512c0199e52c",
+  "licensePlate": "30A-88888",
+  "vehicleType": "CAR",
+  "ticketCode": "TKT-CAR-LIVE-TEST",
+  "gateIn": "Gate 1"
+}
+
+### Check out a CAR session (using active session UUID)
+POST {{host}}/sessions/a3333333-3333-3333-3333-333333333333/check-out?gateOut=Gate%201
+Authorization: Bearer {{staffToken}}
+
+### Process a lost ticket (using active session UUID)
+POST {{host}}/sessions/a4444444-4444-4444-4444-444444444444/lost-ticket
+Authorization: Bearer {{staffToken}}
+
+### Get current driver's sessions (paginated, Driver role)
+GET {{host}}/sessions/my?page=0&size=5&sort=checkInTime,desc
+Authorization: Bearer {{driverToken}}
+
+
+# ==========================================
+# 6. PAYMENTS & VNPAY
+# ==========================================
+
+### Process a Cash Payment for a completed checkout (Requires Staff)
+POST {{host}}/payments
+Authorization: Bearer {{staffToken}}
+Content-Type: {{contentType}}
+
+{
+  "sessionId": "a3333333-3333-3333-3333-333333333333",
+  "amount": 40000.00,
+  "extraFee": 0.00,
+  "method": "CASH"
+}
+
+### Get payments associated with a session
+GET {{host}}/payments/session/a1111111-1111-1111-1111-111111111111
+Authorization: Bearer {{staffToken}}
+
+### Create a VNPay payment URL for a session (Driver/Staff)
+GET {{host}}/payments/vnpay/create?sessionId=a3333333-3333-3333-3333-333333333333
+Authorization: Bearer {{driverToken}}
+
+### Mock VNPay IPN Callback (Public webhook - simulates VNPay server response)
+GET {{host}}/payments/vnpay/ipn?vnp_Amount=4000000&vnp_BankCode=NCB&vnp_BankTranNo=VNP12345678&vnp_CardType=ATM&vnp_OrderInfo=Payment%20for%20session%20a3333333-3333-3333-3333-333333333333&vnp_PayDate=20260610031500&vnp_ResponseCode=00&vnp_TmnCode=2QRY7YW8&vnp_TransactionNo=123456&vnp_TransactionStatus=00&vnp_TxnRef=a3333333-3333-3333-3333-333333333333&vnp_SecureHash=72a6b2c6cfb48995325c8ab489115fef
+
+
+# ==========================================
+# 7. SLOT RESERVATIONS
+# ==========================================
+
+### Create a specific slot reservation (Driver role)
+POST {{host}}/reservations
+Authorization: Bearer {{driverToken}}
+Content-Type: {{contentType}}
+
+{
+  "buildingId": "8b72da1f-50b3-4632-a5e2-632b8ac425f1",
+  "slotId": "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a02",
+  "vehicleType": "CAR",
+  "reservedFrom": "2026-06-12T14:00:00",
+  "reservedTo": "2026-06-12T16:00:00"
+}
+
+### Create a flexible reservation (overall building capacity)
+POST {{host}}/reservations
+Authorization: Bearer {{driverToken}}
+Content-Type: {{contentType}}
+
+{
+  "buildingId": "8b72da1f-50b3-4632-a5e2-632b8ac425f1",
+  "slotId": null,
+  "vehicleType": "CAR",
+  "reservedFrom": "2026-06-12T17:00:00",
+  "reservedTo": "2026-06-12T19:00:00"
+}
+
+### Cancel a reservation (Driver / Manager role)
+PATCH {{host}}/reservations/r1111111-1111-1111-1111-111111111111/cancel
+Authorization: Bearer {{driverToken}}
+
+### Get current driver's reservations
+GET {{host}}/reservations/my
+Authorization: Bearer {{driverToken}}
+
+### Get reservations by status CONFIRMED (Requires Manager)
+GET {{host}}/reservations?status=CONFIRMED
+Authorization: Bearer {{managerToken}}
+
+
+# ==========================================
+# 8. DRIVER FEEDBACK
+# ==========================================
+
+### Submit a feedback (Driver role)
+POST {{host}}/feedback
+Authorization: Bearer {{driverToken}}
+Content-Type: {{contentType}}
+
+{
+  "category": "Parking Area",
+  "content": "Building A is exceptionally clean and spacious. Finding the floor was very easy."
+}
+
+### Get driver's feedbacks (paginated)
+GET {{host}}/feedback/my?page=0&size=5&sort=createdAt,desc
+Authorization: Bearer {{driverToken}}
+
+### Get all feedback (Requires Manager)
+GET {{host}}/feedback
+Authorization: Bearer {{managerToken}}
+
+### Update feedback status to RESOLVED (Requires Manager)
+PATCH {{host}}/feedback/f1111111-1111-1111-1111-111111111111/status
+Authorization: Bearer {{managerToken}}
+Content-Type: {{contentType}}
+
+{
+  "status": "RESOLVED"
+}
+
+
+# ==========================================
+# 9. REPORTS & ANALYTICS
+# ==========================================
+
+### Get revenue report (Requires Manager)
+GET {{host}}/reports/revenue?startDate=2026-06-01T00:00:00&endDate=2026-06-10T23:59:59&buildingId=8b72da1f-50b3-4632-a5e2-632b8ac425f1
+Authorization: Bearer {{managerToken}}
+
+### Get occupancy report (Requires Manager)
+GET {{host}}/reports/occupancy?buildingId=8b72da1f-50b3-4632-a5e2-632b8ac425f1
+Authorization: Bearer {{managerToken}}
+
+### Get peak hours report (Requires Manager)
+GET {{host}}/reports/peak-hours?startDate=2026-06-01T00:00:00&endDate=2026-06-10T23:59:59&buildingId=8b72da1f-50b3-4632-a5e2-632b8ac425f1
+Authorization: Bearer {{managerToken}}
+
+
+# ==========================================
+# 10. SYSTEM ADMINISTRATION
+# ==========================================
+
+### Search users (Requires Admin)
+GET {{host}}/admin/users?role=DRIVER&isActive=true&search=Regular
+Authorization: Bearer {{adminToken}}
+
+### Update a user's role to MANAGER (Requires Admin)
+# id: 7b98b2a3-83cf-424a-b9c1-512c0199e52d (Secondary Driver)
+PATCH {{host}}/admin/users/7b98b2a3-83cf-424a-b9c1-512c0199e52d/role
+Authorization: Bearer {{adminToken}}
+Content-Type: {{contentType}}
+
+{
+  "role": "MANAGER"
+}
+
+### Toggle user active status to FALSE (Requires Admin)
+PATCH {{host}}/admin/users/7b98b2a3-83cf-424a-b9c1-512c0199e52d/status
+Authorization: Bearer {{adminToken}}
+Content-Type: {{contentType}}
+
+{
+  "active": false
+}
+
+### Get system configuration (Requires Admin)
+GET {{host}}/admin/config
+Authorization: Bearer {{adminToken}}
