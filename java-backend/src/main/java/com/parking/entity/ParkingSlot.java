@@ -32,6 +32,9 @@ public class ParkingSlot {
     @Column(name = "vehicle_type")
     private VehicleTypeEnum vehicleType;
 
+    @Column(name = "zone")
+    private String zone;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "floor_id", nullable = false)
     private Floor floor;

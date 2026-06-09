@@ -18,7 +18,8 @@ public class FloorRequest {
 
     private int floorNumber;
 
-    @NotNull(message = "Vehicle type is required")
+    // Used as the default vehicle type for slots generated during floor creation
+    @NotNull(message = "Vehicle type is required (used as default for generated slots)")
     private VehicleTypeEnum vehicleType;
 
     private int totalSlots;

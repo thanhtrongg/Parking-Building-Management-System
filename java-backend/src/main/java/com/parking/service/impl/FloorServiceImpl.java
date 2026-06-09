@@ -55,7 +55,6 @@ public class FloorServiceImpl implements FloorService {
                 .building(building)
                 .floorName(request.getFloorName())
                 .floorNumber(request.getFloorNumber())
-                .vehicleType(request.getVehicleType())
                 .totalSlots(request.getTotalSlots())
                 .isActive(true)
                 .build();
@@ -70,7 +69,7 @@ public class FloorServiceImpl implements FloorService {
                     .floor(floor)
                     .slotCode(slotCode)
                     .status(SlotStatus.AVAILABLE)
-                    .vehicleType(floor.getVehicleType())
+                    .vehicleType(request.getVehicleType())
                     .build();
             slots.add(slot);
         }
@@ -133,13 +132,10 @@ public class FloorServiceImpl implements FloorService {
             floor.setTotalSlots(floor.getSlots().size());
         }
 
-        // Update slot vehicle types if floor vehicle type changes
-        if (floor.getVehicleType() != request.getVehicleType()) {
-            floor.setVehicleType(request.getVehicleType());
-            if (floor.getSlots() != null) {
-                for (ParkingSlot slot : floor.getSlots()) {
-                    slot.setVehicleType(request.getVehicleType());
-                }
+        // Update slot vehicle types if request vehicle type is provided
+        if (request.getVehicleType() != null && floor.getSlots() != null) {
+            for (ParkingSlot slot : floor.getSlots()) {
+                slot.setVehicleType(request.getVehicleType());
             }
         }
 
@@ -176,7 +172,6 @@ public class FloorServiceImpl implements FloorService {
                 .buildingName(floor.getBuilding().getName())
                 .floorName(floor.getFloorName())
                 .floorNumber(floor.getFloorNumber())
-                .vehicleType(floor.getVehicleType())
                 .totalSlots(totalSlots)
                 .availableSlots(availableSlots)
                 .occupiedSlots(occupiedSlots)

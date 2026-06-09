@@ -15,8 +15,6 @@ public interface FloorRepository extends JpaRepository<Floor, UUID> {
 
     List<Floor> findByBuildingId(UUID buildingId);
 
-    List<Floor> findByBuildingIdAndVehicleType(UUID buildingId, VehicleTypeEnum vehicleType);
-
     @Query("SELECT DISTINCT f FROM Floor f LEFT JOIN FETCH f.slots s LEFT JOIN FETCH f.building b WHERE (:buildingId IS NULL OR b.id = :buildingId)")
     List<Floor> findFloorsWithSlots(@Param("buildingId") UUID buildingId);
 }

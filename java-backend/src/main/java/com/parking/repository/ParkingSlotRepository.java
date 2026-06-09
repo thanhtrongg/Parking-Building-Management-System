@@ -21,7 +21,7 @@ public interface ParkingSlotRepository extends JpaRepository<ParkingSlot, UUID> 
     long countByFloorIdAndStatus(UUID floorId, SlotStatus status);
 
     @Query("SELECT s FROM ParkingSlot s JOIN FETCH s.floor f " +
-           "WHERE f.building.id = :buildingId AND f.vehicleType = :vehicleType AND s.status = 'AVAILABLE'")
+           "WHERE f.building.id = :buildingId AND s.vehicleType = :vehicleType AND s.status = 'AVAILABLE'")
     List<ParkingSlot> findAvailableSlotsByBuildingAndVehicleType(
         @Param("buildingId") UUID buildingId,
         @Param("vehicleType") VehicleTypeEnum vehicleType

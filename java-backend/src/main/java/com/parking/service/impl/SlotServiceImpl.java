@@ -123,6 +123,7 @@ public class SlotServiceImpl implements SlotService {
                 .slotCode(slot.getSlotCode())
                 .status(slot.getStatus())
                 .vehicleType(slot.getVehicleType())
+                .zone(slot.getZone())
                 .build();
     }
 }

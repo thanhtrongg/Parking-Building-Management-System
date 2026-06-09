@@ -21,4 +21,5 @@ public class SlotResponse {
     private String slotCode;
     private SlotStatus status;
     private VehicleTypeEnum vehicleType;
+    private String zone;
 }

@@ -8,6 +8,8 @@ target/
 *.iml
 *.iws
 .project
+GEMINI.md
+.factorypath
 .classpath
 .settings/
 .vscode/

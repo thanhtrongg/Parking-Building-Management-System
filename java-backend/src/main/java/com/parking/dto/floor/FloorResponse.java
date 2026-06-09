@@ -19,7 +19,6 @@ public class FloorResponse {
     private String buildingName;
     private String floorName;
     private int floorNumber;
-    private VehicleTypeEnum vehicleType;
     private int totalSlots;
     private int availableSlots;
     private int occupiedSlots;

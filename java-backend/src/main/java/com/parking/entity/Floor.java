@@ -27,9 +27,6 @@ public class Floor {
     @Column(name = "floor_number", nullable = false)
     private int floorNumber;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "vehicle_type")
-    private VehicleTypeEnum vehicleType;
 
     @Column(name = "total_slots")
     private int totalSlots;
