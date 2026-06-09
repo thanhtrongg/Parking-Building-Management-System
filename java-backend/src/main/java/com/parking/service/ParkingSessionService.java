@@ -2,6 +2,7 @@ package com.parking.service;
 
 import com.parking.dto.session.CheckInRequest;
 import com.parking.dto.session.CheckOutResponse;
+import com.parking.dto.session.GuestSessionResponse;
 import com.parking.dto.session.SessionResponse;
 
 import org.springframework.data.domain.Page;
@@ -25,4 +26,6 @@ public interface ParkingSessionService {
     java.math.BigDecimal calculateSessionFee(UUID sessionId, java.time.LocalDateTime checkoutTime);
 
     SessionResponse assignSlot(UUID sessionId, UUID slotId, String currentUserEmail);
+
+    GuestSessionResponse lookupGuestSession(String ticketCode, String licensePlate);
 }

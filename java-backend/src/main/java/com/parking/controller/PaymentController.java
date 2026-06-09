@@ -72,4 +72,16 @@ public class PaymentController {
         Map<String, String> response = vnpayService.processIpn(params);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "Create a VNPay payment URL for guests")
+    @GetMapping("/vnpay/create-guest")
+    public ResponseEntity<ApiResponse<VNPayResponse>> createGuestPayment(
+            @RequestParam UUID sessionId,
+            HttpServletRequest httpRequest) {
+        String xff = httpRequest.getHeader("X-Forwarded-For");
+        String ipAddress = (xff != null && !xff.isEmpty()) ? xff.split(",")[0].trim() : httpRequest.getRemoteAddr();
+        
+        VNPayResponse response = vnpayService.createPayment(sessionId, ipAddress, null, "ROLE_ANONYMOUS");
+        return ResponseEntity.ok(ApiResponse.success("VNPay payment URL generated successfully", response));
+    }
 }

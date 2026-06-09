@@ -3,6 +3,7 @@ package com.parking.controller;
 import com.parking.dto.ApiResponse;
 import com.parking.dto.session.CheckInRequest;
 import com.parking.dto.session.CheckOutResponse;
+import com.parking.dto.session.GuestSessionResponse;
 import com.parking.dto.session.SessionResponse;
 import com.parking.service.ParkingSessionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -89,5 +90,14 @@ public class ParkingSessionController {
             Principal principal) {
         SessionResponse response = sessionService.assignSlot(id, slotId, principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Slot assigned to parking session successfully", response));
+    }
+
+    @Operation(summary = "Lookup a guest parking session by ticket code or license plate")
+    @GetMapping("/public/lookup")
+    public ResponseEntity<ApiResponse<GuestSessionResponse>> lookupGuestSession(
+            @RequestParam(required = false) String ticketCode,
+            @RequestParam(required = false) String licensePlate) {
+        GuestSessionResponse response = sessionService.lookupGuestSession(ticketCode, licensePlate);
+        return ResponseEntity.ok(ApiResponse.success("Guest session retrieved successfully", response));
     }
 }

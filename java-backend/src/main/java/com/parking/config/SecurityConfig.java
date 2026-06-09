@@ -42,6 +42,12 @@ public class SecurityConfig {
                         .requestMatchers("/api-docs/**", "/api-docs").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/v3/api-docs").permitAll()
                         .requestMatchers("/payments/vnpay/ipn").permitAll()
+                        .requestMatchers("/buildings/active").permitAll()
+                        .requestMatchers("/buildings/{id}").permitAll()
+                        .requestMatchers("/floors/building/{buildingId}").permitAll()
+                        .requestMatchers("/pricing/building/{buildingId}").permitAll()
+                        .requestMatchers("/sessions/public/lookup").permitAll()
+                        .requestMatchers("/payments/vnpay/create-guest").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

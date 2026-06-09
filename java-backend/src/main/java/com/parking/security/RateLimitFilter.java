@@ -86,8 +86,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        // Only rate-limit auth endpoints and VNPay IPN
-        return !path.startsWith("/auth/") && !path.equals("/payments/vnpay/ipn");
+        // Only rate-limit auth endpoints, VNPay IPN, and public guest endpoints
+        return !path.startsWith("/auth/") 
+               && !path.equals("/payments/vnpay/ipn")
+               && !path.equals("/sessions/public/lookup")
+               && !path.equals("/payments/vnpay/create-guest");
     }
 
     private String getClientIp(HttpServletRequest request) {

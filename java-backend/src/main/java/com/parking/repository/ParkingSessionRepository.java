@@ -36,6 +36,8 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
 
     Optional<ParkingSession> findByTicketCode(String ticketCode);
 
+    Optional<ParkingSession> findFirstByLicensePlateAndStatusInOrderByCheckInTimeDesc(String licensePlate, List<SessionStatus> statuses);
+
     List<ParkingSession> findBySlotIdAndStatus(UUID slotId, SessionStatus status);
 
     @Query("SELECT s FROM ParkingSession s LEFT JOIN FETCH s.slot sl LEFT JOIN FETCH sl.floor f LEFT JOIN FETCH f.building b " +

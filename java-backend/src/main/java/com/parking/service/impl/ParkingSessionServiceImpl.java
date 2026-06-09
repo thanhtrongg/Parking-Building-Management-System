@@ -2,6 +2,7 @@ package com.parking.service.impl;
 
 import com.parking.dto.session.CheckInRequest;
 import com.parking.dto.session.CheckOutResponse;
+import com.parking.dto.session.GuestSessionResponse;
 import com.parking.dto.session.SessionResponse;
 import com.parking.entity.*;
 import com.parking.enums.SessionStatus;
@@ -352,5 +353,35 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
         session.setParkedAt(LocalDateTime.now());
         ParkingSession saved = sessionRepository.save(session);
         return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GuestSessionResponse lookupGuestSession(String ticketCode, String licensePlate) {
+        if ((ticketCode == null || ticketCode.isBlank()) && (licensePlate == null || licensePlate.isBlank())) {
+            throw new BadRequestException("Either ticketCode or licensePlate must be provided.");
+        }
+
+        ParkingSession session;
+
+        if (ticketCode != null && !ticketCode.isBlank()) {
+            session = sessionRepository.findByTicketCode(ticketCode)
+                    .orElseThrow(() -> new ResourceNotFoundException("Parking session not found with ticket code: " + ticketCode));
+        } else {
+            session = sessionRepository.findFirstByLicensePlateAndStatusInOrderByCheckInTimeDesc(
+                    licensePlate, List.of(SessionStatus.ACTIVE, SessionStatus.LOST_TICKET)
+            ).orElseThrow(() -> new ResourceNotFoundException("No active parking session found for license plate: " + licensePlate));
+        }
+
+        if (session.getStatus() != SessionStatus.ACTIVE && session.getStatus() != SessionStatus.LOST_TICKET) {
+            throw new ResourceNotFoundException("Parking session is not active or lost ticket.");
+        }
+
+        BigDecimal accumulatedFee = calculateSessionFee(session.getId(), LocalDateTime.now());
+
+        return GuestSessionResponse.builder()
+                .session(mapToResponse(session))
+                .accumulatedFee(accumulatedFee)
+                .build();
     }
 }
