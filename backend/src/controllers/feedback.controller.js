@@ -85,16 +85,6 @@ const buildFeedbackDescription = (message, reservationCode) => {
   return `${RESERVATION_MARKER_PREFIX} ${reservationCode}]\n${message}`;
 };
 
-const buildFeedbackDescriptionWithReply = (feedback, reply) => {
-  const parsedDescription = parseFeedbackDescription(feedback.description);
-  const baseDescription = buildFeedbackDescription(
-    parsedDescription.message,
-    parsedDescription.reservationCode,
-  );
-
-  return `${baseDescription}\n\n${STAFF_REPLY_MARKER_PREFIX} ${new Date().toISOString()}]\n${reply}`;
-};
-
 const normalizeStatus = (status) => {
   return String(status || "")
     .trim()
@@ -137,8 +127,9 @@ const mapFeedbackResponse = (feedback) => {
     ticketCode: parkingSession?.ticket_code || null,
     subject: feedback.issue_type,
     message: parsedDescription.message,
-    reply: parsedDescription.reply || null,
-    replyCreatedAt: parsedDescription.replyCreatedAt || null,
+    reply: feedback.reply || parsedDescription.reply || null,
+    replyCreatedAt:
+      feedback.reply_created_at || parsedDescription.replyCreatedAt || null,
     status: feedback.status,
     createdAt: feedback.created_at,
     user: user
@@ -586,7 +577,8 @@ export const updateFeedbackReply = async (req, res) => {
     const updatedFeedback = await prisma.feedbacks.update({
       where: { id },
       data: {
-        description: buildFeedbackDescriptionWithReply(feedback, reply),
+        reply,
+        reply_created_at: new Date(),
         resolved_by: req.user.id,
       },
       include: feedbackInclude,

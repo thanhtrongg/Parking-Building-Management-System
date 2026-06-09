@@ -14,6 +14,8 @@ model feedbacks {
   issue_type                         String            @db.VarChar(50)
   description                        String
   status                             String?           @default("OPEN") @db.VarChar(20)
+  reply                              String?
+  reply_created_at                   DateTime?         @db.Timestamptz(6)
   resolved_by                        String?           @db.Uuid
   created_at                         DateTime?         @default(now()) @db.Timestamptz(6)
   parking_sessions                   parking_sessions? @relation(fields: [parking_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
