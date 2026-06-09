@@ -27,74 +27,50 @@ public class VehicleTypeRepositoryTest {
         vehicleTypeRepository.deleteAll();
 
         // Seed data for repository test
-        vehicleTypeRepository.save(VehicleType.builder().name("Ô tô").description("Xe ô tô").build());
-        vehicleTypeRepository.save(VehicleType.builder().name("Xe máy").description("Xe máy").build());
-        vehicleTypeRepository.save(VehicleType.builder().name("Xe đạp").description("Xe đạp").build());
-        vehicleTypeRepository.save(VehicleType.builder().name("Xe điện").description("Xe điện").build());
-        vehicleTypeRepository.save(VehicleType.builder().name("Xe tải nhỏ").description("Xe tải nhỏ").build());
+        vehicleTypeRepository.save(VehicleType.builder().name("CAR").description("Private car").build());
+        vehicleTypeRepository.save(VehicleType.builder().name("MOTORBIKE").description("Motorbike").build());
+        vehicleTypeRepository.save(VehicleType.builder().name("BICYCLE").description("Bicycle").build());
+        vehicleTypeRepository.save(VehicleType.builder().name("ELECTRIC_VEHICLE").description("Electric vehicle").build());
+        vehicleTypeRepository.save(VehicleType.builder().name("LIGHT_TRUCK").description("Light truck").build());
     }
 
     @Test
-    @DisplayName("Should retrieve 'Ô tô' when searching for 'CAR'")
+    @DisplayName("Should retrieve CAR when searching for 'CAR'")
     void testFindByNameCar() {
         Optional<VehicleType> result = vehicleTypeRepository.findByName("CAR");
         assertTrue(result.isPresent());
-        assertEquals("Ô tô", result.get().getName());
+        assertEquals("CAR", result.get().getName());
     }
 
     @Test
-    @DisplayName("Should retrieve 'Xe máy' when searching for 'MOTORBIKE'")
+    @DisplayName("Should retrieve MOTORBIKE when searching for 'MOTORBIKE'")
     void testFindByNameMotorbike() {
         Optional<VehicleType> result = vehicleTypeRepository.findByName("MOTORBIKE");
         assertTrue(result.isPresent());
-        assertEquals("Xe máy", result.get().getName());
+        assertEquals("MOTORBIKE", result.get().getName());
     }
 
     @Test
-    @DisplayName("Should retrieve 'Xe đạp' when searching for 'BICYCLE'")
+    @DisplayName("Should retrieve BICYCLE when searching for 'BICYCLE'")
     void testFindByNameBicycle() {
         Optional<VehicleType> result = vehicleTypeRepository.findByName("BICYCLE");
         assertTrue(result.isPresent());
-        assertEquals("Xe đạp", result.get().getName());
+        assertEquals("BICYCLE", result.get().getName());
     }
 
     @Test
-    @DisplayName("Should retrieve 'Ô tô' when searching for 'Ô tô'")
-    void testFindByNameVietnameseCar() {
-        Optional<VehicleType> result = vehicleTypeRepository.findByName("Ô tô");
-        assertTrue(result.isPresent());
-        assertEquals("Ô tô", result.get().getName());
-    }
-
-    @Test
-    @DisplayName("Should retrieve 'Xe máy' when searching for 'Xe máy'")
-    void testFindByNameVietnameseMotorbike() {
-        Optional<VehicleType> result = vehicleTypeRepository.findByName("Xe máy");
-        assertTrue(result.isPresent());
-        assertEquals("Xe máy", result.get().getName());
-    }
-
-    @Test
-    @DisplayName("Should retrieve 'Xe đạp' when searching for 'Xe đạp'")
-    void testFindByNameVietnameseBicycle() {
-        Optional<VehicleType> result = vehicleTypeRepository.findByName("Xe đạp");
-        assertTrue(result.isPresent());
-        assertEquals("Xe đạp", result.get().getName());
-    }
-
-    @Test
-    @DisplayName("Should retrieve 'Xe điện' when searching for 'Xe điện'")
+    @DisplayName("Should retrieve ELECTRIC_VEHICLE when searching for 'ELECTRIC_VEHICLE'")
     void testFindByNameElectric() {
-        Optional<VehicleType> result = vehicleTypeRepository.findByName("Xe điện");
+        Optional<VehicleType> result = vehicleTypeRepository.findByName("ELECTRIC_VEHICLE");
         assertTrue(result.isPresent());
-        assertEquals("Xe điện", result.get().getName());
+        assertEquals("ELECTRIC_VEHICLE", result.get().getName());
     }
 
     @Test
-    @DisplayName("Should retrieve 'Xe tải nhỏ' when searching for 'Xe tải nhỏ'")
+    @DisplayName("Should retrieve LIGHT_TRUCK when searching for 'LIGHT_TRUCK'")
     void testFindByNameTruck() {
-        Optional<VehicleType> result = vehicleTypeRepository.findByName("Xe tải nhỏ");
+        Optional<VehicleType> result = vehicleTypeRepository.findByName("LIGHT_TRUCK");
         assertTrue(result.isPresent());
-        assertEquals("Xe tải nhỏ", result.get().getName());
+        assertEquals("LIGHT_TRUCK", result.get().getName());
     }
 }

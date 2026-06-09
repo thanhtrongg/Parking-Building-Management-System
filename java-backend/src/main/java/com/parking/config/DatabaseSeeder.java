@@ -68,17 +68,17 @@ public class DatabaseSeeder implements CommandLineRunner {
             String electricTypeId = "151a22a1-8ff0-4ec7-bee4-ca2444d381fc";
             String truckTypeId = "b220a840-e57b-4141-8071-55c41a485604";
 
-            insertVehicleType(carTypeId, "Ô tô", "Xe ô tô cá nhân, xe gia đình, xe dịch vụ dưới 9 chỗ");
-            insertVehicleType(motoTypeId, "Xe máy", "Xe máy cá nhân, xe tay ga, xe số");
-            insertVehicleType(bikeTypeId, "Xe đạp", "Xe đạp thường, xe đạp thể thao");
-            insertVehicleType(electricTypeId, "Xe điện", "Xe máy điện, xe đạp điện");
-            insertVehicleType(truckTypeId, "Xe tải nhỏ", "Xe tải nhỏ hoặc xe giao hàng được phép gửi trong khu vực quy định");
+            insertVehicleType(carTypeId, "CAR", "Private cars, family cars, service vehicles under 9 seats");
+            insertVehicleType(motoTypeId, "MOTORBIKE", "Personal motorbikes, scooters, geared motorbikes");
+            insertVehicleType(bikeTypeId, "BICYCLE", "Regular bicycles, sport bicycles");
+            insertVehicleType(electricTypeId, "ELECTRIC_VEHICLE", "Electric motorbikes, electric bicycles");
+            insertVehicleType(truckTypeId, "LIGHT_TRUCK", "Light trucks or delivery vans permitted in designated areas");
 
             log.info("Vehicle types seeded successfully.");
 
             // 3. Seed Parking Building
             String buildingId = "8b72da1f-50b3-4632-a5e2-632b8ac425f1";
-            insertBuilding(buildingId, "Tòa nhà A - Trung tâm", "123 Đường Lê Lợi, Quận 1, TP. HCM", "02812345678", LocalTime.of(6, 0), LocalTime.of(23, 30));
+            insertBuilding(buildingId, "Building A - Center", "123 Le Loi Street, District 1, Ho Chi Minh City", "02812345678", LocalTime.of(6, 0), LocalTime.of(23, 30));
 
             log.info("Parking buildings seeded successfully.");
 
@@ -96,9 +96,9 @@ public class DatabaseSeeder implements CommandLineRunner {
             String floor2Id = "4f2d3a9b-b48e-49b0-9b43-982823a0b13f";
             String floor3Id = "5f2d3a9b-b48e-49b0-9b43-982823a0b14f";
 
-            insertFloor(floor1Id, buildingId, "Tầng 1", 1, VehicleTypeEnum.CAR.name(), 10);
-            insertFloor(floor2Id, buildingId, "Tầng 2", 2, VehicleTypeEnum.MOTORBIKE.name(), 15);
-            insertFloor(floor3Id, buildingId, "Tầng 3", 3, VehicleTypeEnum.BICYCLE.name(), 10);
+            insertFloor(floor1Id, buildingId, "Floor 1", 1, VehicleTypeEnum.CAR.name(), 10);
+            insertFloor(floor2Id, buildingId, "Floor 2", 2, VehicleTypeEnum.MOTORBIKE.name(), 15);
+            insertFloor(floor3Id, buildingId, "Floor 3", 3, VehicleTypeEnum.BICYCLE.name(), 10);
 
             log.info("Floors seeded successfully.");
 
@@ -181,7 +181,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             log.info("Reservations seeded successfully.");
 
             // 9. Seed Feedbacks
-            insertFeedback("f1111111-1111-1111-1111-111111111111", driverId, session1Id, "Dịch vụ", "Nhân viên thân thiện, bãi đỗ xe sạch sẽ và an toàn.", FeedbackStatus.OPEN.name(), LocalDateTime.of(2026, 6, 8, 12, 30, 0));
+            insertFeedback("f1111111-1111-1111-1111-111111111111", driverId, session1Id, "Service", "Friendly staff, clean and safe parking space.", FeedbackStatus.OPEN.name(), LocalDateTime.of(2026, 6, 8, 12, 30, 0));
 
             log.info("Feedbacks seeded successfully.");
             log.info("Development mock data seeding complete!");
