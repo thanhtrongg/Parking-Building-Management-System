@@ -64,7 +64,7 @@ function PageHeader() {
 
 function SummaryCard({ title, value, icon, className }) {
   return (
-    <div className="rounded-2xl border border-[#d7d9e4] bg-white p-5 shadow-sm">
+    <div>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
@@ -140,7 +140,7 @@ function FeedbackTable({
   loading,
   updatingId,
   onStatusChange,
-  onSelectFeedback,
+  onOpenDetail,
 }) {
   if (loading) {
     return (
@@ -185,7 +185,7 @@ function FeedbackTable({
                 "Subject",
                 "Status",
                 "Created",
-                "Update Status",
+                "Actions",
               ].map((heading) => (
                 <th
                   key={heading}
@@ -203,18 +203,14 @@ function FeedbackTable({
                 className="transition hover:bg-[#f8f9fc]"
               >
                 <td className="px-5 py-4">
-                  <button
-                    type="button"
-                    onClick={() => onSelectFeedback(feedback)}
-                    className="text-left"
-                  >
+                  <div className="text-left">
                     <p className="font-['Geist'] text-sm font-bold text-[#191b23]">
                       {feedback.customerName || "Unknown user"}
                     </p>
                     <p className="mt-0.5 max-w-[220px] truncate font-['Inter'] text-xs text-[#6b7280]">
                       {feedback.user?.email || "No email"}
                     </p>
-                  </button>
+                  </div>
                 </td>
                 <td className="px-5 py-4">
                   <p className="font-['Geist'] text-sm font-bold text-[#191b23]">
@@ -239,20 +235,34 @@ function FeedbackTable({
                   {formatDateTime(feedback.createdAt)}
                 </td>
                 <td className="px-5 py-4">
-                  <select
-                    value={feedback.status || "OPEN"}
-                    disabled={updatingId === feedback.id}
-                    onChange={(event) =>
-                      onStatusChange(feedback, event.target.value)
-                    }
-                    className="h-10 rounded-xl border border-[#d7d9e4] bg-white px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {feedbackStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {getStatusMeta(status).label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={feedback.status || "OPEN"}
+                      disabled={updatingId === feedback.id}
+                      onChange={(event) =>
+                        onStatusChange(feedback, event.target.value)
+                      }
+                      className="h-10 rounded-xl border border-[#d7d9e4] bg-white px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label={`Update status for ${feedback.subject}`}
+                    >
+                      {feedbackStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {getStatusMeta(status).label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => onOpenDetail(feedback)}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 font-['Inter'] text-sm font-black text-blue-700 transition hover:bg-blue-100"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        visibility
+                      </span>
+                      Detail
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -263,65 +273,158 @@ function FeedbackTable({
   );
 }
 
-function DetailPanel({ feedback }) {
+function DetailPage({
+  feedback,
+  updatingId,
+  reply,
+  replySentAt,
+  replying,
+  onBack,
+  onReplyChange,
+  onReplySubmit,
+  onStatusChange,
+}) {
   if (!feedback) {
-    return (
-      <aside className="rounded-2xl border border-[#d7d9e4] bg-white p-5 shadow-sm">
-        <h3 className="font-['Geist'] text-lg font-bold text-[#191b23]">
-          Feedback Detail
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-[#6b7280]">
-          Select a feedback row to inspect the full message and linked parking
-          session.
-        </p>
-      </aside>
-    );
+    return null;
   }
 
   return (
-    <aside className="rounded-2xl border border-[#d7d9e4] bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="font-['Geist'] text-lg font-bold text-[#191b23]">
-            {feedback.subject}
-          </h3>
-          <p className="mt-1 text-xs font-semibold text-[#6b7280]">
-            {formatDateTime(feedback.createdAt)}
-          </p>
-        </div>
-        <StatusBadge status={feedback.status} />
-      </div>
+    <div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-['Inter'] text-sm font-black text-slate-700 transition hover:bg-slate-50"
+      >
+        <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+        Back to feedbacks
+      </button>
 
-      <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-100">
-        {feedback.message}
-      </div>
+      <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="font-['Inter'] text-xs font-black uppercase tracking-wider text-[#6b7280]">
+                Feedback Detail
+              </p>
+              <h3 className="mt-1 font-['Geist'] text-2xl font-bold text-[#191b23]">
+                {feedback.subject}
+              </h3>
+              <p className="mt-1 text-xs font-semibold text-[#6b7280]">
+                {formatDateTime(feedback.createdAt)}
+              </p>
+            </div>
+            <StatusBadge status={feedback.status} />
+          </div>
 
-      <div className="mt-5 space-y-3">
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-            Customer
-          </p>
-          <p className="mt-1 font-['Geist'] text-sm font-bold text-slate-900">
-            {feedback.customerName || "Unknown user"}
-          </p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {feedback.user?.email || "No email"}
-          </p>
+          <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-100">
+            {feedback.message}
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                Customer
+              </p>
+              <p className="mt-1 font-['Geist'] text-sm font-bold text-slate-900">
+                {feedback.customerName || "Unknown user"}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {feedback.user?.email || "No email"}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Phone: {feedback.user?.phone || "N/A"}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                Booking
+              </p>
+              <p className="mt-1 font-['Geist'] text-sm font-bold text-slate-900">
+                {feedback.reservationCode ||
+                  feedback.ticketCode ||
+                  "No linked booking"}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                License plate: {feedback.parkingSession?.licensePlate || "N/A"}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Ticket: {feedback.ticketCode || "N/A"}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-            Booking
-          </p>
-          <p className="mt-1 font-['Geist'] text-sm font-bold text-slate-900">
-            {feedback.reservationCode || feedback.ticketCode || "No linked booking"}
-          </p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            License plate: {feedback.parkingSession?.licensePlate || "N/A"}
-          </p>
-        </div>
-      </div>
-    </aside>
+        <form
+          onSubmit={onReplySubmit}
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="font-['Geist'] text-lg font-bold text-[#191b23]">
+                Reply to Customer
+              </h3>
+              <p className="mt-1 text-sm leading-6 text-[#6b7280]">
+                Send and save a support response for this feedback.
+              </p>
+            </div>
+            <span className="material-symbols-outlined text-blue-600">
+              outgoing_mail
+            </span>
+          </div>
+
+          <label className="mt-5 block">
+            <span className="font-['Inter'] text-xs font-black uppercase tracking-wider text-slate-400">
+              Customer Response
+            </span>
+            <textarea
+              value={reply}
+              onChange={(event) => onReplyChange(event.target.value)}
+              rows={8}
+              className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              placeholder="Write the response to send to the customer..."
+              required
+            />
+          </label>
+
+          {replySentAt ? (
+            <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+              Reply saved at {formatDateTime(replySentAt)}.
+            </div>
+          ) : null}
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <select
+              value={feedback.status || "OPEN"}
+              disabled={updatingId === feedback.id}
+              onChange={(event) => onStatusChange(feedback, event.target.value)}
+              className="h-11 rounded-xl border border-[#d7d9e4] bg-white px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {feedbackStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {getStatusMeta(status).label}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="submit"
+              disabled={replying}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 font-['Inter'] text-sm font-black text-white shadow-md shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {replying ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <span className="material-symbols-outlined text-[20px]">
+                  send
+                </span>
+              )}
+              {replying ? "Sending..." : "Send Reply"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
   );
 }
 
@@ -331,8 +434,10 @@ export default function FeedbacksPage() {
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [detailFeedback, setDetailFeedback] = useState(null);
+  const [replies, setReplies] = useState({});
   const [updatingId, setUpdatingId] = useState("");
+  const [replyingId, setReplyingId] = useState("");
 
   useEffect(() => {
     const fetchFeedbacks = async () => {
@@ -342,7 +447,6 @@ export default function FeedbacksPage() {
         const result = await apiRequest("/api/feedbacks");
         const nextFeedbacks = result.data || [];
         setFeedbacks(nextFeedbacks);
-        setSelectedFeedback(nextFeedbacks[0] || null);
       } catch (fetchError) {
         setError(fetchError.message);
       } finally {
@@ -392,7 +496,7 @@ export default function FeedbacksPage() {
           currentFeedback.id === feedback.id ? result.data : currentFeedback,
         ),
       );
-      setSelectedFeedback((currentFeedback) =>
+      setDetailFeedback((currentFeedback) =>
         currentFeedback?.id === feedback.id ? result.data : currentFeedback,
       );
     } catch (updateError) {
@@ -401,6 +505,78 @@ export default function FeedbacksPage() {
       setUpdatingId("");
     }
   };
+
+  const handleOpenDetail = (feedback) => {
+    setDetailFeedback(feedback);
+  };
+
+  const handleReplyChange = (value) => {
+    if (!detailFeedback) return;
+
+    setReplies((currentReplies) => ({
+      ...currentReplies,
+      [detailFeedback.id]: {
+        ...(currentReplies[detailFeedback.id] || {}),
+        message: value,
+      },
+    }));
+  };
+
+  const handleReplySubmit = async (event) => {
+    event.preventDefault();
+    if (!detailFeedback) return;
+
+    const message = replies[detailFeedback.id]?.message?.trim();
+    if (!message) return;
+
+    try {
+      setReplyingId(detailFeedback.id);
+      const result = await apiRequest(`/api/feedbacks/${detailFeedback.id}/reply`, {
+        method: "PATCH",
+        body: JSON.stringify({ reply: message }),
+      });
+
+      setFeedbacks((currentFeedbacks) =>
+        currentFeedbacks.map((feedback) =>
+          feedback.id === detailFeedback.id ? result.data : feedback,
+        ),
+      );
+      setDetailFeedback(result.data);
+      setReplies((currentReplies) => ({
+        ...currentReplies,
+        [detailFeedback.id]: {
+          message: result.data.reply || message,
+          sentAt: result.data.replyCreatedAt || new Date().toISOString(),
+        },
+      }));
+    } catch (replyError) {
+      alert(replyError.message);
+    } finally {
+      setReplyingId("");
+    }
+  };
+
+  if (detailFeedback) {
+    const detailReply = replies[detailFeedback.id] || {};
+    const replyMessage = detailReply.message ?? detailFeedback.reply ?? "";
+    const replySentAt = detailReply.sentAt || detailFeedback.replyCreatedAt || "";
+
+    return (
+      <AdminLayout>
+        <DetailPage
+          feedback={detailFeedback}
+          updatingId={updatingId}
+          reply={replyMessage}
+          replySentAt={replySentAt}
+          replying={replyingId === detailFeedback.id}
+          onBack={() => setDetailFeedback(null)}
+          onReplyChange={handleReplyChange}
+          onReplySubmit={handleReplySubmit}
+          onStatusChange={handleStatusChange}
+        />
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -445,15 +621,14 @@ export default function FeedbacksPage() {
           <p className="mt-1 text-sm">{error}</p>
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+        <div>
           <FeedbackTable
             feedbacks={filteredFeedbacks}
             loading={loading}
             updatingId={updatingId}
             onStatusChange={handleStatusChange}
-            onSelectFeedback={setSelectedFeedback}
+            onOpenDetail={handleOpenDetail}
           />
-          <DetailPanel feedback={selectedFeedback} />
         </div>
       )}
     </AdminLayout>
