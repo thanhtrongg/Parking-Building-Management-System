@@ -9,6 +9,19 @@ function normalizeBookings(value) {
   return [];
 }
 
+function normalizeFeedbacks(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+}
+
+const statusStyles = {
+  OPEN: "bg-blue-50 text-blue-700 ring-blue-100",
+  IN_PROGRESS: "bg-amber-50 text-amber-700 ring-amber-100",
+  RESOLVED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  CLOSED: "bg-slate-100 text-slate-700 ring-slate-200",
+};
+
 function formatDateTime(value) {
   if (!value) return "N/A";
 
@@ -19,6 +32,20 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function StatusBadge({ status }) {
+  const normalizedStatus = String(status || "OPEN").toUpperCase();
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black uppercase ring-1 ${
+        statusStyles[normalizedStatus] || statusStyles.OPEN
+      }`}
+    >
+      {normalizedStatus.replace("_", " ")}
+    </span>
+  );
 }
 
 function Alert({ type, message, onClose }) {
@@ -106,9 +133,106 @@ function Info({ label, value }) {
   );
 }
 
+function FeedbackHistory({ feedbacks, loading }) {
+  if (loading) {
+    return (
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="h-6 w-40 animate-pulse rounded-full bg-slate-100" />
+        <div className="mt-5 grid gap-4">
+          {[1, 2].map((item) => (
+            <div
+              key={item}
+              className="h-36 animate-pulse rounded-xl bg-slate-100"
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-['Geist'] text-lg font-black text-slate-950">
+            My Feedbacks
+          </h2>
+          <p className="text-sm text-slate-500">
+            Track staff responses and support status.
+          </p>
+        </div>
+        <span className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-50 px-3 text-sm font-black text-slate-700 ring-1 ring-slate-100">
+          <span className="material-symbols-outlined text-[19px]">forum</span>
+          {feedbacks.length} items
+        </span>
+      </div>
+
+      {feedbacks.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 px-5 py-10 text-center text-sm font-semibold text-slate-500">
+          You have not submitted feedback yet.
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {feedbacks.map((feedback) => (
+            <article
+              key={feedback.id}
+              className="rounded-xl border border-slate-200 p-4"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-['Geist'] text-base font-black text-slate-950">
+                      {feedback.subject}
+                    </h3>
+                    <StatusBadge status={feedback.status} />
+                  </div>
+                  <p className="mt-1 text-xs font-bold text-slate-400">
+                    {feedback.reservationCode ||
+                      feedback.bookingId ||
+                      feedback.ticketCode ||
+                      "No booking"}{" "}
+                    - {formatDateTime(feedback.createdAt)}
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-700 ring-1 ring-slate-100">
+                {feedback.message}
+              </p>
+
+              {feedback.reply ? (
+                <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                  <div className="flex items-center gap-2 text-sm font-black text-emerald-800">
+                    <span className="material-symbols-outlined text-[19px]">
+                      support_agent
+                    </span>
+                    Staff Response
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-emerald-900">
+                    {feedback.reply}
+                  </p>
+                  <p className="mt-2 text-xs font-bold text-emerald-700/80">
+                    {formatDateTime(feedback.replyCreatedAt)}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+                  Staff has not responded yet.
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function UserFeedbackPage() {
   const [bookings, setBookings] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
   const [form, setForm] = useState({
@@ -120,14 +244,19 @@ export default function UserFeedbackPage() {
   useEffect(() => {
     let ignore = false;
 
-    async function loadBookings() {
+    async function loadPageData() {
       try {
         setLoadingBookings(true);
-        const result = await apiRequest("/api/reservations");
+        setLoadingFeedbacks(true);
+        const [bookingsResult, feedbacksResult] = await Promise.all([
+          apiRequest("/api/reservations"),
+          apiRequest("/api/user/feedbacks"),
+        ]);
 
         if (!ignore) {
-          const nextBookings = normalizeBookings(result);
+          const nextBookings = normalizeBookings(bookingsResult);
           setBookings(nextBookings);
+          setFeedbacks(normalizeFeedbacks(feedbacksResult));
           setForm((current) => ({
             ...current,
             bookingId: nextBookings[0] ? getReservationCode(nextBookings[0].id) : "",
@@ -137,17 +266,18 @@ export default function UserFeedbackPage() {
         if (!ignore) {
           setAlert({
             type: "error",
-            message: error.message || "Cannot load your bookings",
+            message: error.message || "Cannot load feedback data",
           });
         }
       } finally {
         if (!ignore) {
           setLoadingBookings(false);
+          setLoadingFeedbacks(false);
         }
       }
     }
 
-    loadBookings();
+    loadPageData();
 
     return () => {
       ignore = true;
@@ -189,7 +319,7 @@ export default function UserFeedbackPage() {
       setSubmitting(true);
       setAlert({ type: "", message: "" });
 
-      await apiRequest("/api/feedbacks", {
+      const result = await apiRequest("/api/user/feedbacks", {
         method: "POST",
         body: JSON.stringify({
           bookingId: form.bookingId,
@@ -198,6 +328,10 @@ export default function UserFeedbackPage() {
         }),
       });
 
+      setFeedbacks((currentFeedbacks) => [
+        result.data,
+        ...currentFeedbacks,
+      ]);
       setForm((current) => ({
         ...current,
         subject: "",
@@ -309,6 +443,8 @@ export default function UserFeedbackPage() {
 
         <BookingPreview booking={selectedBooking} />
       </div>
+
+      <FeedbackHistory feedbacks={feedbacks} loading={loadingFeedbacks} />
     </UserLayout>
   );
 }
