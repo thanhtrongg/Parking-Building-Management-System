@@ -40,7 +40,7 @@ public class ReservationServiceImpl implements ReservationService {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
 
-        ParkingBuilding building = buildingRepository.findById(request.getBuildingId())
+        ParkingBuilding building = buildingRepository.findByIdWithWriteLock(request.getBuildingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
 
         if (request.getReservedFrom().isBefore(LocalDateTime.now())) {

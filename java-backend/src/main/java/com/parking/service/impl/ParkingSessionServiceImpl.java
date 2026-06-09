@@ -293,7 +293,11 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
         if (session.getSlot() == null) {
             throw new BadRequestException("Parking slot must be assigned to the session before checkout.");
         }
-        return calculateFee(session, checkoutTime);
+        BigDecimal fee = calculateFee(session, checkoutTime);
+        if (session.getStatus() == SessionStatus.LOST_TICKET) {
+            fee = fee.add(getLostTicketFee(session));
+        }
+        return fee;
     }
 
     @Override

@@ -91,10 +91,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isEmpty()) {
-            return xff.split(",")[0].trim();
-        }
+        // Safe from IP spoofing because server.forward-headers-strategy=framework is configured in application.yml
         return request.getRemoteAddr();
     }
 }

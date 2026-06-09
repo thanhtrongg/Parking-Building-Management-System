@@ -4,15 +4,20 @@ import com.parking.dto.payment.VNPayResponse;
 import com.parking.entity.ParkingSession;
 import com.parking.entity.ParkingSlot;
 import com.parking.entity.Payment;
+import com.parking.entity.Pricing;
+import com.parking.entity.VehicleType;
 import com.parking.enums.PaymentMethod;
 import com.parking.enums.PaymentStatus;
 import com.parking.enums.SessionStatus;
 import com.parking.enums.SlotStatus;
+import com.parking.enums.VehicleTypeEnum;
 import com.parking.exception.BadRequestException;
 import com.parking.exception.ResourceNotFoundException;
 import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.PaymentRepository;
+import com.parking.repository.PricingRepository;
+import com.parking.repository.VehicleTypeRepository;
 import com.parking.service.ParkingSessionService;
 import com.parking.service.VNPayService;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +57,8 @@ public class VNPayServiceImpl implements VNPayService {
     private final ParkingSessionRepository sessionRepository;
     private final PaymentRepository paymentRepository;
     private final ParkingSlotRepository slotRepository;
+    private final PricingRepository pricingRepository;
+    private final VehicleTypeRepository vehicleTypeRepository;
 
     @Override
     public VNPayResponse createPayment(UUID sessionId, String ipAddress, String currentUserEmail, String role) {
@@ -69,10 +76,40 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
         LocalDateTime checkoutTime = LocalDateTime.now();
-        BigDecimal amount = sessionService.calculateSessionFee(sessionId, checkoutTime);
+        BigDecimal totalAmount = sessionService.calculateSessionFee(sessionId, checkoutTime);
+
+        BigDecimal extraFee = BigDecimal.ZERO;
+        BigDecimal baseAmount = totalAmount;
+
+        if (session.getStatus() == SessionStatus.LOST_TICKET) {
+            BigDecimal lostFee = getLostTicketFee(session);
+            extraFee = lostFee;
+            baseAmount = totalAmount.subtract(lostFee);
+            if (baseAmount.compareTo(BigDecimal.ZERO) < 0) {
+                baseAmount = BigDecimal.ZERO;
+            }
+        }
+
+        // Check if there is already a PENDING payment for this session
+        Payment payment = paymentRepository.findBySessionIdAndStatus(sessionId, PaymentStatus.PENDING).orElse(null);
+        if (payment == null) {
+            payment = Payment.builder()
+                    .session(session)
+                    .amount(baseAmount)
+                    .extraFee(extraFee)
+                    .method(PaymentMethod.VNPAY)
+                    .status(PaymentStatus.PENDING)
+                    .build();
+        } else {
+            payment.setAmount(baseAmount);
+            payment.setExtraFee(extraFee);
+            payment.setMethod(PaymentMethod.VNPAY);
+            payment.setPaidAt(null);
+        }
+        paymentRepository.save(payment);
 
         // VNPay expects amount multiplied by 100 (in VND, so no decimal points)
-        long vnpAmount = amount.multiply(new BigDecimal("100")).longValue();
+        long vnpAmount = totalAmount.multiply(new BigDecimal("100")).longValue();
 
         Map<String, String> vnpParams = new TreeMap<>();
         vnpParams.put("vnp_Version", "2.1.0");
@@ -91,27 +128,19 @@ public class VNPayServiceImpl implements VNPayService {
         vnpParams.put("vnp_CreateDate", LocalDateTime.now().format(formatter));
 
         // Build query data and hash data
-        StringBuilder hashData = new StringBuilder();
-        StringBuilder query = new StringBuilder();
-        Iterator<Map.Entry<String, String>> itr = vnpParams.entrySet().iterator();
-        while (itr.hasNext()) {
-            Map.Entry<String, String> entry = itr.next();
+        List<String> queryList = new ArrayList<>();
+        List<String> hashList = new ArrayList<>();
+        for (Map.Entry<String, String> entry : vnpParams.entrySet()) {
             String k = entry.getKey();
             String v = entry.getValue();
             if (v != null && !v.isEmpty()) {
-                hashData.append(k).append("=").append(URLEncoder.encode(v, StandardCharsets.US_ASCII));
-                query.append(URLEncoder.encode(k, StandardCharsets.US_ASCII))
-                        .append("=")
-                        .append(URLEncoder.encode(v, StandardCharsets.US_ASCII));
-                if (itr.hasNext()) {
-                    query.append("&");
-                    hashData.append("&");
-                }
+                hashList.add(k + "=" + URLEncoder.encode(v, StandardCharsets.US_ASCII));
+                queryList.add(URLEncoder.encode(k, StandardCharsets.US_ASCII) + "=" + URLEncoder.encode(v, StandardCharsets.US_ASCII));
             }
         }
 
-        String queryUrl = query.toString();
-        String vnpSecureHash = hmacSHA512(hashSecret, hashData.toString());
+        String queryUrl = String.join("&", queryList);
+        String vnpSecureHash = hmacSHA512(hashSecret, String.join("&", hashList));
         queryUrl += "&vnp_SecureHash=" + vnpSecureHash;
 
         String paymentUrl = payUrl + "?" + queryUrl;
@@ -129,21 +158,16 @@ public class VNPayServiceImpl implements VNPayService {
             signableParams.remove("vnp_SecureHash");
             signableParams.remove("vnp_SecureHashType");
 
-            StringBuilder hashData = new StringBuilder();
-            Iterator<Map.Entry<String, String>> itr = signableParams.entrySet().iterator();
-            while (itr.hasNext()) {
-                Map.Entry<String, String> entry = itr.next();
+            List<String> hashList = new ArrayList<>();
+            for (Map.Entry<String, String> entry : signableParams.entrySet()) {
                 String k = entry.getKey();
                 String v = entry.getValue();
                 if (v != null && !v.isEmpty()) {
-                    hashData.append(k).append("=").append(URLEncoder.encode(v, StandardCharsets.US_ASCII));
-                    if (itr.hasNext()) {
-                        hashData.append("&");
-                    }
+                    hashList.add(k + "=" + URLEncoder.encode(v, StandardCharsets.US_ASCII));
                 }
             }
 
-            String calculatedHash = hmacSHA512(hashSecret, hashData.toString());
+            String calculatedHash = hmacSHA512(hashSecret, String.join("&", hashList));
             if (!calculatedHash.equalsIgnoreCase(vnpSecureHash)) {
                 response.put("RspCode", "97");
                 response.put("Message", "Invalid signature");
@@ -170,18 +194,17 @@ public class VNPayServiceImpl implements VNPayService {
                 return response;
             }
 
-            // Verify amount
-            String createDateStr = params.get("vnp_CreateDate");
-            LocalDateTime checkoutTime = LocalDateTime.now();
-            if (createDateStr != null && !createDateStr.isEmpty()) {
-                try {
-                    checkoutTime = LocalDateTime.parse(createDateStr, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-                } catch (Exception e) {
-                    log.warn("Failed to parse vnp_CreateDate: {}", createDateStr, e);
-                }
+            // Retrieve the pending payment record
+            Payment pendingPayment = paymentRepository.findBySessionIdAndStatus(sessionId, PaymentStatus.PENDING).orElse(null);
+            if (pendingPayment == null) {
+                response.put("RspCode", "01");
+                response.put("Message", "Pending payment not found");
+                return response;
             }
-            BigDecimal sessionAmount = sessionService.calculateSessionFee(sessionId, checkoutTime);
-            long expectedVnpAmount = sessionAmount.multiply(new BigDecimal("100")).longValue();
+
+            // Verify amount
+            BigDecimal expectedAmount = pendingPayment.getAmount().add(pendingPayment.getExtraFee());
+            long expectedVnpAmount = expectedAmount.multiply(new BigDecimal("100")).longValue();
             long actualVnpAmount = Long.parseLong(params.get("vnp_Amount"));
 
             if (actualVnpAmount != expectedVnpAmount) {
@@ -200,19 +223,17 @@ public class VNPayServiceImpl implements VNPayService {
                     slotRepository.save(slot);
                 }
 
-                session.setStatus(SessionStatus.COMPLETED);
-                session.setCheckOutTime(checkoutTime);
+                if (session.getStatus() == SessionStatus.ACTIVE) {
+                    session.setStatus(SessionStatus.COMPLETED);
+                }
+                session.setCheckOutTime(LocalDateTime.now());
                 sessionRepository.save(session);
 
-                Payment payment = Payment.builder()
-                        .session(session)
-                        .amount(sessionAmount)
-                        .extraFee(BigDecimal.ZERO)
-                        .method(PaymentMethod.VNPAY)
-                        .status(PaymentStatus.PAID)
-                        .paidAt(LocalDateTime.now())
-                        .build();
-                paymentRepository.save(payment);
+                pendingPayment.setStatus(PaymentStatus.PAID);
+                pendingPayment.setPaidAt(LocalDateTime.now());
+                paymentRepository.save(pendingPayment);
+            } else {
+                paymentRepository.delete(pendingPayment);
             }
 
             response.put("RspCode", "00");
@@ -225,6 +246,21 @@ public class VNPayServiceImpl implements VNPayService {
         }
 
         return response;
+    }
+
+    private BigDecimal getLostTicketFee(ParkingSession session) {
+        UUID buildingId = session.getSlot().getFloor().getBuilding().getId();
+        VehicleTypeEnum vehicleTypeEnum = session.getVehicleType();
+        BigDecimal defaultLostFee = new BigDecimal("200000"); // Default 200k VND
+
+        VehicleType vehicleType = vehicleTypeRepository.findByName(vehicleTypeEnum.name()).orElse(null);
+        if (vehicleType != null) {
+            Pricing pricing = pricingRepository.findByBuildingIdAndVehicleTypeId(buildingId, vehicleType.getId()).orElse(null);
+            if (pricing != null && pricing.getLostTicketFee() != null) {
+                return pricing.getLostTicketFee();
+            }
+        }
+        return defaultLostFee;
     }
 
     private String hmacSHA512(String key, String data) {

@@ -88,7 +88,7 @@ public class ReservationServiceImplTest {
         request.setReservedTo(LocalDateTime.now().plusHours(2));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));
+        when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
         when(slotRepository.countByBuildingIdAndVehicleType(building.getId(), VehicleTypeEnum.CAR)).thenReturn(10L);
         when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
                 eq(building.getId()), eq(VehicleTypeEnum.CAR), any(), any()
@@ -122,7 +122,7 @@ public class ReservationServiceImplTest {
         request.setReservedTo(LocalDateTime.now().plusHours(2));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));
+        when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
         when(slotRepository.countByBuildingIdAndVehicleType(building.getId(), VehicleTypeEnum.CAR)).thenReturn(2L);
         when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
                 eq(building.getId()), eq(VehicleTypeEnum.CAR), any(), any()
@@ -141,7 +141,7 @@ public class ReservationServiceImplTest {
         request.setReservedTo(LocalDateTime.now().plusHours(2));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));
+        when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
         when(slotRepository.findById(slot.getId())).thenReturn(Optional.of(slot));
         when(reservationRepository.findBySlotIdAndStatusIn(eq(slot.getId()), anyList())).thenReturn(Collections.emptyList());
 
@@ -221,7 +221,7 @@ public class ReservationServiceImplTest {
         request.setReservedTo(LocalDateTime.now().plusDays(1).plusHours(26));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));
+        when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
 
         assertThrows(BadRequestException.class, () ->
                 reservationService.createReservation(request, email));
@@ -237,7 +237,7 @@ public class ReservationServiceImplTest {
         request.setReservedTo(LocalDateTime.now().plusDays(8).plusHours(2));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));
+        when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
 
         assertThrows(BadRequestException.class, () ->
                 reservationService.createReservation(request, email));
@@ -253,7 +253,7 @@ public class ReservationServiceImplTest {
         request.setReservedTo(LocalDateTime.now().plusDays(1).plusHours(24).plusMinutes(5));
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
-        when(buildingRepository.findById(building.getId())).thenReturn(Optional.of(building));
+        when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
 
         assertThrows(BadRequestException.class, () ->
                 reservationService.createReservation(request, email));

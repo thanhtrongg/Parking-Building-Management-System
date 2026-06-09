@@ -123,6 +123,12 @@ public class FloorServiceImpl implements FloorService {
                         removedCount++;
                     }
                 }
+                if (removedCount < slotsToRemove) {
+                    throw new com.parking.exception.BadRequestException(
+                            String.format("Cannot reduce slot capacity from %d to %d. " +
+                                    "Only %d slots could be removed because the remaining slots are occupied or reserved.",
+                                    currentTotal, request.getTotalSlots(), removedCount));
+                }
             }
             floor.setTotalSlots(floor.getSlots().size());
         }

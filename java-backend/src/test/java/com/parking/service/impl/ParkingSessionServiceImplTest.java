@@ -438,4 +438,38 @@ public class ParkingSessionServiceImplTest {
         assertThrows(BadRequestException.class, () ->
                 sessionService.checkIn(request, email));
     }
+
+    @Test
+    @DisplayName("Calculate session fee - Lost ticket fee is added when session status is LOST_TICKET")
+    void testCalculateSessionFee_LostTicket() {
+        UUID sessionId = UUID.randomUUID();
+        
+        Pricing pricing = Pricing.builder()
+                .hourlyRate(new BigDecimal("10000"))
+                .basePrice(BigDecimal.ZERO)
+                .dailyRate(new BigDecimal("100000"))
+                .lostTicketFee(new BigDecimal("200000"))
+                .build();
+        
+        ParkingBuilding building = ParkingBuilding.builder().id(buildingId).name("Building A").build();
+        Floor floor = Floor.builder().building(building).build();
+        ParkingSlot slot = ParkingSlot.builder().floor(floor).build();
+        
+        ParkingSession lostSession = ParkingSession.builder()
+                .id(sessionId)
+                .slot(slot)
+                .status(SessionStatus.LOST_TICKET)
+                .vehicleType(VehicleTypeEnum.CAR)
+                .checkInTime(LocalDateTime.of(2026, 6, 9, 8, 0))
+                .build();
+                
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(lostSession));
+        when(pricingRepository.findByBuildingIdAndVehicleTypeId(eq(buildingId), any())).thenReturn(Optional.of(pricing));
+        
+        // Duration: 8 AM to 12 PM = 4 hours. Base fee = 4 * 10k = 40k. Lost ticket fee = 200k. Total = 240k.
+        BigDecimal fee = sessionService.calculateSessionFee(sessionId, LocalDateTime.of(2026, 6, 9, 12, 0));
+        
+        assertEquals(0, fee.compareTo(new BigDecimal("240000")));
+    }
 }
+

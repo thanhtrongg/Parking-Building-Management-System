@@ -160,8 +160,15 @@ public class VNPayServiceImplTest {
         session.setSlot(slot);
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(sessionService.calculateSessionFee(eq(sessionId), any(LocalDateTime.class)))
-                .thenReturn(new BigDecimal("50000"));
+        Payment pendingPayment = Payment.builder()
+                .session(session)
+                .amount(new BigDecimal("50000"))
+                .extraFee(BigDecimal.ZERO)
+                .status(PaymentStatus.PENDING)
+                .method(PaymentMethod.VNPAY)
+                .build();
+        when(paymentRepository.findBySessionIdAndStatus(sessionId, PaymentStatus.PENDING))
+                .thenReturn(Optional.of(pendingPayment));
 
         // Build valid request parameters matching what processIpn does
         Map<String, String> params = new HashMap<>();
@@ -235,8 +242,15 @@ public class VNPayServiceImplTest {
     @DisplayName("Process IPN - Invalid Amount")
     void testProcessIpn_InvalidAmount() {
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(sessionService.calculateSessionFee(eq(sessionId), any(LocalDateTime.class)))
-                .thenReturn(new BigDecimal("50000"));
+        Payment pendingPayment = Payment.builder()
+                .session(session)
+                .amount(new BigDecimal("50000"))
+                .extraFee(BigDecimal.ZERO)
+                .status(PaymentStatus.PENDING)
+                .method(PaymentMethod.VNPAY)
+                .build();
+        when(paymentRepository.findBySessionIdAndStatus(sessionId, PaymentStatus.PENDING))
+                .thenReturn(Optional.of(pendingPayment));
 
         Map<String, String> params = new HashMap<>();
         params.put("vnp_TxnRef", sessionId.toString());
