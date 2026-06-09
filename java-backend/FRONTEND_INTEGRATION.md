@@ -9,13 +9,17 @@ This guide is designed to help frontend developers connect their application (e.
 To run the backend locally, you do **not** need to install Java, Maven, or PostgreSQL. Everything is containerized with Docker Compose.
 
 ### Step 1: Start the services
-Run the following command in the `java-backend/` root directory:
+Run the following command in the `java-backend/` root directory to build the latest code and start the services:
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
-This spins up:
-- **Spring Boot App**: Available at `http://localhost:8080/api/v1`
-- **PostgreSQL**: Port `5432`
+
+> [!IMPORTANT]
+> To reset the database state and force a clean run of the database seeder (repopulating with clean English mock data), make sure to stop and wipe database volumes before restarting:
+> ```bash
+> docker compose down -v
+> docker compose up -d --build
+> ```
 
 ### Step 2: Verify health status
 Check that both containers are running and reported as healthy:

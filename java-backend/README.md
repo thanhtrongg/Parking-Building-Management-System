@@ -118,6 +118,10 @@ To stop the services:
 ```bash
 docker compose down
 ```
+To stop the services and reset database volumes (wiping the database to allow fresh seeding):
+```bash
+docker compose down -v
+```
 
 ---
 
