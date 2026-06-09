@@ -22,6 +22,14 @@ const statusStyles = {
   CLOSED: "bg-slate-100 text-slate-700 ring-slate-200",
 };
 
+const feedbackStatusFilters = [
+  { label: "All", value: "ALL" },
+  { label: "Open", value: "OPEN" },
+  { label: "In Progress", value: "IN_PROGRESS" },
+  { label: "Resolved", value: "RESOLVED" },
+  { label: "Closed", value: "CLOSED" },
+];
+
 function formatDateTime(value) {
   if (!value) return "N/A";
 
@@ -133,7 +141,12 @@ function Info({ label, value }) {
   );
 }
 
-function FeedbackHistory({ feedbacks, loading }) {
+function FeedbackHistory({
+  feedbacks,
+  loading,
+  statusFilter,
+  onStatusFilterChange,
+}) {
   if (loading) {
     return (
       <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -167,9 +180,34 @@ function FeedbackHistory({ feedbacks, loading }) {
         </span>
       </div>
 
+      <div className="mb-5 overflow-x-auto rounded-xl bg-slate-50 p-1 ring-1 ring-slate-100">
+        <div className="flex min-w-max gap-1">
+          {feedbackStatusFilters.map((filter) => {
+            const isActive = statusFilter === filter.value;
+
+            return (
+              <button
+                key={filter.value}
+                type="button"
+                onClick={() => onStatusFilterChange(filter.value)}
+                className={`h-9 rounded-lg px-3 text-xs font-black transition ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-white hover:text-slate-950"
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {feedbacks.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 px-5 py-10 text-center text-sm font-semibold text-slate-500">
-          You have not submitted feedback yet.
+          {statusFilter === "ALL"
+            ? "You have not submitted feedback yet."
+            : `No ${statusFilter.toLowerCase().replace("_", " ")} feedbacks found.`}
         </div>
       ) : (
         <div className="grid gap-4">
@@ -233,6 +271,7 @@ export default function UserFeedbackPage() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(true);
+  const [feedbackStatusFilter, setFeedbackStatusFilter] = useState("ALL");
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
   const [form, setForm] = useState({
@@ -244,19 +283,14 @@ export default function UserFeedbackPage() {
   useEffect(() => {
     let ignore = false;
 
-    async function loadPageData() {
+    async function loadBookings() {
       try {
         setLoadingBookings(true);
-        setLoadingFeedbacks(true);
-        const [bookingsResult, feedbacksResult] = await Promise.all([
-          apiRequest("/api/reservations"),
-          apiRequest("/api/user/feedbacks"),
-        ]);
+        const bookingsResult = await apiRequest("/api/reservations");
 
         if (!ignore) {
           const nextBookings = normalizeBookings(bookingsResult);
           setBookings(nextBookings);
-          setFeedbacks(normalizeFeedbacks(feedbacksResult));
           setForm((current) => ({
             ...current,
             bookingId: nextBookings[0] ? getReservationCode(nextBookings[0].id) : "",
@@ -266,23 +300,59 @@ export default function UserFeedbackPage() {
         if (!ignore) {
           setAlert({
             type: "error",
-            message: error.message || "Cannot load feedback data",
+            message: error.message || "Cannot load your bookings",
           });
         }
       } finally {
         if (!ignore) {
           setLoadingBookings(false);
-          setLoadingFeedbacks(false);
         }
       }
     }
 
-    loadPageData();
+    loadBookings();
 
     return () => {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadFeedbacks() {
+      try {
+        setLoadingFeedbacks(true);
+        const query =
+          feedbackStatusFilter === "ALL"
+            ? ""
+            : `?status=${feedbackStatusFilter}`;
+        const feedbacksResult = await apiRequest(`/api/user/feedbacks${query}`);
+
+        if (!ignore) {
+          setFeedbacks(normalizeFeedbacks(feedbacksResult));
+        }
+      } catch (error) {
+        if (!ignore) {
+          setAlert({
+            type: "error",
+            message: error.message || "Cannot load your feedbacks",
+          });
+          setFeedbacks([]);
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingFeedbacks(false);
+        }
+      }
+    }
+
+    loadFeedbacks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [feedbackStatusFilter]);
 
   const bookingOptions = useMemo(() => {
     return bookings.map((booking) => ({
@@ -328,10 +398,12 @@ export default function UserFeedbackPage() {
         }),
       });
 
-      setFeedbacks((currentFeedbacks) => [
-        result.data,
-        ...currentFeedbacks,
-      ]);
+      if (feedbackStatusFilter === "ALL" || feedbackStatusFilter === "OPEN") {
+        setFeedbacks((currentFeedbacks) => [
+          result.data,
+          ...currentFeedbacks,
+        ]);
+      }
       setForm((current) => ({
         ...current,
         subject: "",
@@ -444,7 +516,12 @@ export default function UserFeedbackPage() {
         <BookingPreview booking={selectedBooking} />
       </div>
 
-      <FeedbackHistory feedbacks={feedbacks} loading={loadingFeedbacks} />
+      <FeedbackHistory
+        feedbacks={feedbacks}
+        loading={loadingFeedbacks}
+        statusFilter={feedbackStatusFilter}
+        onStatusFilterChange={setFeedbackStatusFilter}
+      />
     </UserLayout>
   );
 }
