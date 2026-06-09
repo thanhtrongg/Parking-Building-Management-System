@@ -14,14 +14,6 @@ const statusStyles = {
   CANCELLED: "bg-red-50 text-red-700 ring-red-100",
 };
 
-const paymentStyles = {
-  PENDING: "bg-amber-50 text-amber-700 ring-amber-100",
-  SUCCESS: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  PAID: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  FAILED: "bg-red-50 text-red-700 ring-red-100",
-  REFUNDED: "bg-slate-100 text-slate-700 ring-slate-200",
-};
-
 function normalizeSessions(value) {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.data)) return value.data;
@@ -38,6 +30,13 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(amount || 0));
 }
 
 function Badge({ value, styles, fallback = "N/A" }) {
@@ -160,6 +159,9 @@ function Info({ label, value }) {
 }
 
 function SessionCard({ session }) {
+  const isActive = String(session.status || "").toUpperCase() === "ACTIVE";
+  const hasAssignedSlot = Boolean(session.assignedSlotName);
+
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -171,29 +173,49 @@ function SessionCard({ session }) {
             <Badge value={session.status} styles={statusStyles} />
           </div>
           <p className="mt-2 text-sm font-semibold text-slate-700">
-            {session.zoneName || "No zone"}
+            {isActive ? "Currently parked" : "Completed parking session"}
           </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end">
           <span className="text-xs font-black uppercase tracking-wider text-slate-400">
-            Payment
+            {isActive ? "Current fee" : "Final fee"}
           </span>
-          <Badge
-            value={session.paymentStatus}
-            styles={paymentStyles}
-            fallback="PENDING"
-          />
+          <span className="font-['Geist'] text-lg font-black text-slate-950">
+            {formatCurrency(session.totalFee)}
+          </span>
         </div>
       </div>
 
       <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
         <Info label="Vehicle Type" value={session.vehicleTypeName} />
         <Info label="License Plate" value={session.licensePlate} />
-        <Info label="Slot" value={session.slotName} />
+        <Info label="Actual Slot" value={session.slotName} />
         <Info label="Zone" value={session.zoneName} />
+        {hasAssignedSlot ? (
+          <Info
+            label="Reserved Slot"
+            value={`${session.reservedSlotName || "N/A"} - ${
+              session.reservedZoneName || "N/A"
+            }`}
+          />
+        ) : null}
         <Info label="Entry Time" value={formatDateTime(session.entryTime)} />
         <Info label="Exit Time" value={formatDateTime(session.exitTime)} />
+        <Info
+          label="Duration"
+          value={`${session.parkingHours || 0} hour(s)`}
+        />
+        <Info
+          label="Payment"
+          value={
+            isActive
+              ? "Pay on checkout"
+              : `${session.paymentStatus || "PENDING"}${
+                  session.paymentMethod ? ` - ${session.paymentMethod}` : ""
+                }`
+          }
+        />
       </div>
     </article>
   );
