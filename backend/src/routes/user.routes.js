@@ -7,11 +7,24 @@ import {
   updateUser,
   deleteUser,
   changePassword,
+  getProfile,
+  updateProfile,
 } from "../controllers/user.controller.js";
 
 import { verifyToken, requireRoles } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
+router.get(
+  "/profile",
+  verifyToken,
+  getProfile
+);
+
+router.put(
+  "/profile",
+  verifyToken,
+  updateProfile
+);
 router.patch(
   "/profile/password",
   verifyToken,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../../services/api";
 import UserLayout from "../../components/UserLayout";
 
@@ -119,7 +119,28 @@ export default function UserSettingsPage() {
       [name]: value,
     }));
   };
+  const fetchProfile = async () => {
+    try {
+      const response = await apiRequest(
+        "/api/users/profile"
+      );
 
+      setForm({
+        fullName: response.data.fullName || "",
+        email: response.data.email || "",
+        phone: response.data.phone || "",
+        username: response.data.username || "",
+      });
+    } catch (error) {
+      setAlert({
+        type: "error",
+        message: error.message,
+      });
+    }
+  };
+  useEffect(() => {
+    fetchProfile();
+  }, []);
   const handleChangePassword = async () => {
     try {
       setAlert({ type: "", message: "" });
@@ -185,18 +206,50 @@ export default function UserSettingsPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setSaving(true);
-    setAlert({ type: "", message: "" });
 
-    window.setTimeout(() => {
-      setSaving(false);
+    try {
+      setSaving(true);
+
+      const response = await apiRequest(
+        "/api/users/profile",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            fullName: form.fullName,
+            phone: form.phone,
+            email: form.email,
+          }),
+        }
+      );
+      localStorage.setItem(
+        "user",
+        JSON.stringify(response.data)
+      );
+      window.location.reload();
       setAlert({
         type: "success",
-        message: "Profile information saved successfully.",
+        message: response.message,
       });
-    }, 600);
-  };
 
+      await fetchProfile();
+    } catch (error) {
+      setAlert({
+        type: "error",
+        message: error.message,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+  if (!form.email && !form.username) {
+    return (
+      <UserLayout>
+        <div className="p-6">
+          Loading profile...
+        </div>
+      </UserLayout>
+    );
+  }
   return (
     <UserLayout>
       <PageHeader />
@@ -204,64 +257,64 @@ export default function UserSettingsPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-                <span className="material-symbols-outlined text-[24px]">person</span>
-              </div>
-              <div>
-                <h2 className="font-['Geist'] text-lg font-black text-slate-950">
-                  Profile Information
-                </h2>
-                <p className="text-sm text-slate-500">
-                  Basic information used for parking reservations.
-                </p>
-              </div>
+          <div className="mb-6 flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+              <span className="material-symbols-outlined text-[24px]">person</span>
+            </div>
+            <div>
+              <h2 className="font-['Geist'] text-lg font-black text-slate-950">
+                Profile Information
+              </h2>
+              <p className="text-sm text-slate-500">
+                Basic information used for parking reservations.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-5 md:grid-cols-2">
+              <Field
+                label="Full Name"
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+              />
+              <Field
+                label="Email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                type="email"
+              />
+              <Field
+                label="Phone"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                type="tel"
+              />
+              <Field
+                label="Username"
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                readOnly
+              />
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-5 md:grid-cols-2">
-                <Field
-                  label="Full Name"
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                />
-                <Field
-                  label="Email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  type="email"
-                />
-                <Field
-                  label="Phone"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  type="tel"
-                />
-                <Field
-                  label="Username"
-                  name="username"
-                  value={form.username}
-                  onChange={handleChange}
-                  readOnly
-                />
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {saving && (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                  )}
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </form>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white shadow-md shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {saving && (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                )}
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </form>
         </section>
 
         <div className="space-y-6">
