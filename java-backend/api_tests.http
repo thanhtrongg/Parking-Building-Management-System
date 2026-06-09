@@ -279,7 +279,7 @@ Content-Type: {{contentType}}
 }
 
 ### Cancel a reservation (Driver / Manager role)
-PATCH {{host}}/reservations/r1111111-1111-1111-1111-111111111111/cancel
+PATCH {{host}}/reservations/91111111-1111-1111-1111-111111111111/cancel
 Authorization: Bearer {{driverToken}}
 
 ### Get current driver's reservations

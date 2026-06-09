@@ -174,7 +174,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             log.info("Parking sessions and payments seeded successfully.");
 
             // 8. Seed Reservations
-            insertReservation("r1111111-1111-1111-1111-111111111111", driverId, slotA04, VehicleTypeEnum.CAR.name(),
+            insertReservation("91111111-1111-1111-1111-111111111111", driverId, slotA04, VehicleTypeEnum.CAR.name(),
                     LocalDateTime.of(2026, 6, 10, 10, 0, 0), LocalDateTime.of(2026, 6, 10, 12, 0, 0),
                     ReservationStatus.CONFIRMED.name(), LocalDateTime.of(2026, 6, 9, 15, 0, 0), buildingId);
 
