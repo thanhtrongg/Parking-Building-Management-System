@@ -399,7 +399,16 @@ export default function BookingHistoryPage() {
   };
 
   const handleCreatePayment = async (booking) => {
+    const reservationId = booking.id || booking.reservationId;
     const amount = Number(booking.estimatedFee || 0);
+
+    if (!reservationId) {
+      setAlert({
+        type: "error",
+        message: "Cannot create payment because this booking has no id.",
+      });
+      return;
+    }
 
     if (amount <= 0) {
       setAlert({
@@ -410,11 +419,11 @@ export default function BookingHistoryPage() {
     }
 
     try {
-      setPayingId(booking.id);
+      setPayingId(reservationId);
       setAlert({ type: "", message: "" });
 
       const result = await apiRequest(
-        `/api/payments/sepay/reservations/${booking.id}`,
+        `/api/payments/sepay/reservations/${encodeURIComponent(reservationId)}`,
         {
           method: "POST",
           body: JSON.stringify({

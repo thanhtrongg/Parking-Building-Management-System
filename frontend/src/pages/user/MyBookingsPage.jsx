@@ -332,6 +332,11 @@ export default function UserMyBookingsPage() {
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
+
+    if (field === "vehicleTypeId") {
+      setSelectedSlot(null);
+      setAvailableSlots([]);
+    }
   };
 
   const submitReservation = async (event) => {
@@ -342,6 +347,15 @@ export default function UserMyBookingsPage() {
         type: "error",
         message: "Please choose an available parking slot.",
       });
+      return;
+    }
+
+    if (selectedSlot.vehicleTypeId !== form.vehicleTypeId) {
+      setAlert({
+        type: "error",
+        message: "Selected slot does not match the selected vehicle type.",
+      });
+      setSelectedSlot(null);
       return;
     }
 

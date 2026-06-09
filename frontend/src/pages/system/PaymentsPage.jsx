@@ -35,15 +35,15 @@ const paymentMethodConfig = {
     icon: "payments",
     className: "text-green-600",
   },
-  BANKING: {
-    label: "Banking",
-    icon: "account_balance",
+  CARD: {
+    label: "Card",
+    icon: "credit_card",
     className: "text-blue-600",
   },
-  VNPAY: {
-    label: "VNPay",
+  SEPAY: {
+    label: "SePay",
     icon: "qr_code_2",
-    className: "text-purple-600",
+    className: "text-cyan-600",
   },
 };
 
@@ -96,8 +96,14 @@ function normalizePayment(payment) {
     paymentMethod: payment.paymentMethod,
     paymentTime: payment.paymentTime,
     status: payment.status,
+    sepayPaymentCode: payment.sepayPaymentCode,
 
-    ticketCode: session?.ticketCode || payment.ticketCode || "No ticket",
+    ticketCode:
+      session?.ticketCode ||
+      payment.ticketCode ||
+      (payment.reservationId
+        ? `RSV-${payment.reservationId.slice(0, 8)}`
+        : "No ticket"),
     licensePlate: session?.licensePlate || payment.licensePlate || "N/A",
 
     userFullName: session?.user?.fullName || payment.fullName || "Guest User",
@@ -111,7 +117,7 @@ function normalizePayment(payment) {
   };
 }
 
-function PageHeader() {
+function PageHeader({ onRefresh, refreshing }) {
   return (
     <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
       <div>
@@ -125,13 +131,21 @@ function PageHeader() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <button className="flex h-11 items-center gap-2 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]">
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="flex h-11 items-center gap-2 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc] disabled:cursor-not-allowed disabled:opacity-60"
+        >
           <span className="material-symbols-outlined text-xl">
-            calendar_today
+            refresh
           </span>
-          This Month
+          {refreshing ? "Refreshing..." : "Refresh"}
         </button>
-        <button className="flex h-11 items-center gap-2 rounded-xl bg-[#2563eb] px-5 font-['Inter'] text-sm font-semibold text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95">
+        <button
+          type="button"
+          className="flex h-11 items-center gap-2 rounded-xl bg-[#2563eb] px-5 font-['Inter'] text-sm font-semibold text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95"
+        >
           <span className="material-symbols-outlined text-xl">download</span>
           Export Data
         </button>
@@ -282,8 +296,8 @@ function FilterToolbar({
           >
             <option value="ALL">All Methods</option>
             <option value="CASH">Cash</option>
-            <option value="BANKING">Banking</option>
-            <option value="VNPAY">VNPay</option>
+            <option value="CARD">Card</option>
+            <option value="SEPAY">SePay</option>
           </select>
 
           <button
@@ -312,9 +326,13 @@ function FilterToolbar({
   );
 }
 
-function PaymentRow({ payment }) {
+function PaymentRow({ payment, onSimulateSepay, simulatingCode }) {
   const data = normalizePayment(payment);
   const methodMeta = getPaymentMethodMeta(data.paymentMethod);
+  const canSimulateSepay =
+    data.paymentMethod === "SEPAY" &&
+    data.status === "PENDING" &&
+    data.sepayPaymentCode;
 
   return (
     <tr className="transition hover:bg-[#fafbff]">
@@ -385,6 +403,19 @@ function PaymentRow({ payment }) {
 
       <td className="px-6 py-5 text-right">
         <div className="flex items-center justify-end gap-1">
+          {canSimulateSepay && (
+            <button
+              type="button"
+              onClick={() => onSimulateSepay(data.sepayPaymentCode)}
+              disabled={simulatingCode === data.sepayPaymentCode}
+              title="Simulate SePay sandbox success"
+              className="rounded-lg p-2 text-cyan-600 transition hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="material-symbols-outlined">
+                {simulatingCode === data.sepayPaymentCode ? "hourglass_top" : "science"}
+              </span>
+            </button>
+          )}
           <button className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f8]">
             <span className="material-symbols-outlined">visibility</span>
           </button>
@@ -400,7 +431,13 @@ function PaymentRow({ payment }) {
   );
 }
 
-function PaymentsTable({ payments, loading, error }) {
+function PaymentsTable({
+  payments,
+  loading,
+  error,
+  onSimulateSepay,
+  simulatingCode,
+}) {
   if (loading) {
     return (
       <div className="rounded-2xl border border-[#d7d9e4] bg-white p-10 text-center font-['Inter'] text-sm text-[#6b7280] shadow-sm">
@@ -457,7 +494,12 @@ function PaymentsTable({ payments, loading, error }) {
 
           <tbody className="divide-y divide-[#eceef5]">
             {payments.map((payment) => (
-              <PaymentRow key={payment.id} payment={payment} />
+              <PaymentRow
+                key={payment.id}
+                payment={payment}
+                onSimulateSepay={onSimulateSepay}
+                simulatingCode={simulatingCode}
+              />
             ))}
           </tbody>
         </table>
@@ -473,7 +515,7 @@ function PaymentsTable({ payments, loading, error }) {
 }
 
 function MethodBreakdown({ payments }) {
-  const methodData = ["CASH", "BANKING", "VNPAY"].map((method) => {
+  const methodData = ["CASH", "CARD", "SEPAY"].map((method) => {
     const total = payments
       .filter((payment) => payment.paymentMethod === method)
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -548,24 +590,43 @@ export default function PaymentsPage() {
   const [keyword, setKeyword] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedMethod, setSelectedMethod] = useState("ALL");
+  const [simulatingCode, setSimulatingCode] = useState("");
+  const [alert, setAlert] = useState("");
+
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const result = await apiRequest("/api/payments");
+      setPayments(result.data || []);
+    } catch (error) {
+      setError(error.message || "Cannot load payments");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const result = await apiRequest("/api/payments");
-        setPayments(result.data || []);
-      } catch (error) {
-        setError(error.message || "Cannot load payments");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPayments();
   }, []);
+
+  const handleSimulateSepay = async (paymentCode) => {
+    try {
+      setSimulatingCode(paymentCode);
+      setAlert("");
+      await apiRequest("/api/payments/sepay/sandbox/simulate", {
+        method: "POST",
+        body: JSON.stringify({ paymentCode }),
+      });
+      setAlert("SePay sandbox payment simulated successfully.");
+      await fetchPayments();
+    } catch (error) {
+      setAlert(error.message || "Cannot simulate SePay payment");
+    } finally {
+      setSimulatingCode("");
+    }
+  };
 
   const filteredPayments = useMemo(() => {
     return payments.filter((payment) => {
@@ -605,7 +666,12 @@ export default function PaymentsPage() {
       activeLabel="Payments"
       searchPlaceholder="Search transactions, tickets, plates..."
     >
-      <PageHeader />
+      <PageHeader onRefresh={fetchPayments} refreshing={loading} />
+      {alert && (
+        <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 font-['Inter'] text-sm font-semibold text-blue-700">
+          {alert}
+        </div>
+      )}
       <OverviewGrid payments={payments} />
 
       <FilterToolbar
@@ -623,6 +689,8 @@ export default function PaymentsPage() {
         payments={filteredPayments}
         loading={loading}
         error={error}
+        onSimulateSepay={handleSimulateSepay}
+        simulatingCode={simulatingCode}
       />
       <MethodBreakdown payments={payments} />
     </AdminLayout>

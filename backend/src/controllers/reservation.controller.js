@@ -370,10 +370,14 @@ export const createReservation = async (req, res) => {
       });
     }
 
-    if (
-      parkingSlot.zones?.vehicle_type_id &&
-      parkingSlot.zones.vehicle_type_id !== vehicleTypeId
-    ) {
+    if (!parkingSlot.zones?.vehicle_type_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Parking slot zone does not support reservations by vehicle type",
+      });
+    }
+
+    if (parkingSlot.zones.vehicle_type_id !== vehicleTypeId) {
       return res.status(400).json({
         success: false,
         message: "Vehicle type does not match parking slot zone",
@@ -552,10 +556,15 @@ export const updateReservation = async (req, res) => {
         });
       }
 
-      if (
-        parkingSlot.zones?.vehicle_type_id &&
-        parkingSlot.zones.vehicle_type_id !== nextVehicleTypeId
-      ) {
+      if (!parkingSlot.zones?.vehicle_type_id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Parking slot zone does not support reservations by vehicle type",
+        });
+      }
+
+      if (parkingSlot.zones.vehicle_type_id !== nextVehicleTypeId) {
         return res.status(400).json({
           success: false,
           message: "Vehicle type does not match parking slot zone",

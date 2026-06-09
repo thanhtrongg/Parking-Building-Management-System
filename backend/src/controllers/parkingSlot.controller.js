@@ -54,7 +54,9 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
         status: "AVAILABLE",
         ...(vehicleTypeId && {
           zones: {
-            vehicle_type_id: vehicleTypeId,
+            is: {
+              vehicle_type_id: vehicleTypeId,
+            },
           },
         }),
         ...(parsedStartTime &&
