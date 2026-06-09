@@ -207,6 +207,97 @@ export const getParkingSessions = async (req, res) => {
     }
 };
 
+export const getMyParkingSessions = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const status = req.query.status
+            ? String(req.query.status).trim().toUpperCase()
+            : "";
+        const allowedStatuses = ["ACTIVE", "COMPLETED"];
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Authenticated user not found",
+            });
+        }
+
+        if (status && !allowedStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Status filter must be ACTIVE or COMPLETED",
+            });
+        }
+
+        const sessions = await prisma.parking_sessions.findMany({
+            where: {
+                user_id: userId,
+                ...(status ? { status } : {}),
+            },
+            include: {
+                vehicle_types: {
+                    select: {
+                        type_name: true,
+                    },
+                },
+                parking_slots_parking_sessions_parking_slot_idToparking_slots: {
+                    select: {
+                        slot_name: true,
+                        zones: {
+                            select: {
+                                zone_name: true,
+                            },
+                        },
+                    },
+                },
+                payments: {
+                    orderBy: {
+                        payment_time: "desc",
+                    },
+                    take: 1,
+                    select: {
+                        status: true,
+                    },
+                },
+            },
+            orderBy: {
+                entry_time: "desc",
+            },
+        });
+
+        return res.json({
+            success: true,
+            message: "Get my parking sessions successfully",
+            data: sessions.map((session) => {
+                const parkingSlot =
+                    session.parking_slots_parking_sessions_parking_slot_idToparking_slots;
+                const latestPayment = session.payments[0];
+
+                return {
+                    id: session.id,
+                    ticketCode: session.ticket_code,
+                    vehicleTypeName: session.vehicle_types?.type_name || null,
+                    licensePlate: session.license_plate,
+                    slotName: parkingSlot?.slot_name || null,
+                    zoneName: parkingSlot?.zones?.zone_name || null,
+                    entryTime: session.entry_time,
+                    exitTime: session.exit_time,
+                    status: session.status,
+                    paymentStatus: latestPayment?.status || "PENDING",
+                };
+            }),
+        });
+    } catch (error) {
+        console.error("Get my parking sessions error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
+
 export const checkInVehicle = async (req, res) => {
     try {
         const {
