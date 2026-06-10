@@ -12,11 +12,13 @@ function getStoredUser() {
 }
 
 function getInitialForm(user) {
+  const emailVal = user?.email || "";
+  const derivedUsername = emailVal ? emailVal.split("@")[0] : "";
   return {
     fullName: user?.fullName || user?.full_name || user?.name || "Parking User",
-    email: user?.email || "user@parkmaster.local",
+    email: emailVal || "user@parkmaster.local",
     phone: user?.phone || "",
-    username: user?.username || "",
+    username: user?.username || derivedUsername,
   };
 }
 
@@ -125,11 +127,14 @@ export default function UserSettingsPage() {
         "/api/users/profile"
       );
 
+      const emailVal = response.data.email || "";
+      const derivedUsername = emailVal ? emailVal.split("@")[0] : "";
+
       setForm({
         fullName: response.data.fullName || "",
-        email: response.data.email || "",
+        email: emailVal,
         phone: response.data.phone || "",
-        username: response.data.username || "",
+        username: response.data.username || derivedUsername,
       });
     } catch (error) {
       setAlert({
@@ -138,6 +143,14 @@ export default function UserSettingsPage() {
       });
     }
   };
+  
+  const handleSignOutAll = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -231,6 +244,9 @@ export default function UserSettingsPage() {
       });
 
       await fetchProfile();
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
     } catch (error) {
       setAlert({
         type: "error",
@@ -358,6 +374,7 @@ export default function UserSettingsPage() {
 
                 <button
                   type="button"
+                  onClick={handleSignOutAll}
                   className="flex w-full items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-red-600 transition hover:bg-red-100"
                 >
                   <div className="flex items-center gap-3">
