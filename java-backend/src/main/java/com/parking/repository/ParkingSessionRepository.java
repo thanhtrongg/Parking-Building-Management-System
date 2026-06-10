@@ -60,13 +60,13 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
            "AND (:endDate IS NULL OR s.checkInTime <= :endDate) " +
            "AND (:buildingId IS NULL OR sl.floor.building.id = :buildingId) " +
            "AND (:status IS NULL OR s.status = :status) " +
-           "AND (:licensePlate IS NULL OR LOWER(s.licensePlate) LIKE LOWER(CONCAT('%', :licensePlate, '%')))",
+           "AND (CAST(:licensePlate AS string) IS NULL OR LOWER(s.licensePlate) LIKE LOWER(CONCAT('%', CAST(:licensePlate AS string), '%')))",
            countQuery = "SELECT COUNT(s) FROM ParkingSession s " +
            "WHERE (:startDate IS NULL OR s.checkInTime >= :startDate) " +
            "AND (:endDate IS NULL OR s.checkInTime <= :endDate) " +
            "AND (:buildingId IS NULL OR s.slot.floor.building.id = :buildingId) " +
            "AND (:status IS NULL OR s.status = :status) " +
-           "AND (:licensePlate IS NULL OR LOWER(s.licensePlate) LIKE LOWER(CONCAT('%', :licensePlate, '%')))")
+           "AND (CAST(:licensePlate AS string) IS NULL OR LOWER(s.licensePlate) LIKE LOWER(CONCAT('%', CAST(:licensePlate AS string), '%')))")
     Page<ParkingSession> searchSessions(
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate,

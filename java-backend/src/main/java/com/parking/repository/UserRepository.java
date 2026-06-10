@@ -21,9 +21,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT u FROM User u " +
            "WHERE (:role IS NULL OR u.role = :role) " +
            "AND (:isActive IS NULL OR u.isActive = :isActive) " +
-           "AND (:search IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR u.phone LIKE CONCAT('%', :search, '%'))")
+           "AND (CAST(:search AS string) IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) " +
+           "OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) " +
+           "OR u.phone LIKE CONCAT('%', CAST(:search AS string), '%'))")
     Page<User> searchUsers(
         @Param("role") UserRole role,
         @Param("isActive") Boolean isActive,
