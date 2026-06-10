@@ -89,13 +89,14 @@ function formatDateTime(value) {
 
 function normalizePayment(payment) {
   const session = payment.parkingSession;
+  const status = payment.status === "PAID" ? "SUCCESS" : payment.status;
 
   return {
     id: payment.id,
     amount: payment.amount,
-    paymentMethod: payment.paymentMethod,
-    paymentTime: payment.paymentTime,
-    status: payment.status,
+    paymentMethod: payment.paymentMethod || payment.method,
+    paymentTime: payment.paymentTime || payment.paidAt,
+    status: status,
     sepayPaymentCode: payment.sepayPaymentCode,
     sepayTransactionId: payment.sepayTransactionId,
     sepayReferenceCode: payment.sepayReferenceCode,
@@ -807,7 +808,13 @@ export default function PaymentsPage() {
       setError("");
 
       const result = await apiRequest("/api/payments");
-      setPayments(result.data || []);
+      const normalized = (result.data || []).map(p => ({
+        ...p,
+        paymentMethod: p.paymentMethod || p.method,
+        paymentTime: p.paymentTime || p.paidAt,
+        status: p.status === "PAID" ? "SUCCESS" : p.status,
+      }));
+      setPayments(normalized);
     } catch (error) {
       setError(error.message || "Cannot load payments");
     } finally {

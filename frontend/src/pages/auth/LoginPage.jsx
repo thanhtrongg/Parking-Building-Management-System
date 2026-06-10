@@ -193,13 +193,6 @@ export default function LoginPage() {
                   <label className="block text-sm font-semibold text-slate-700">
                     Password
                   </label>
-
-                  <button
-                    type="button"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    Forgot password?
-                  </button>
                 </div>
 
                 <div className="relative">
@@ -239,6 +232,13 @@ export default function LoginPage() {
                   />
                   Remember me
                 </label>
+
+                <button
+                  type="button"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Forgot password?
+                </button>
               </div>
 
               <button
@@ -261,15 +261,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-800">
-                Test account
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                admin@gmail.com / 123456
-              </p>
-            </div>
 
             <p className="mt-6 text-center text-sm text-slate-500">
               Do not have an account?{" "}

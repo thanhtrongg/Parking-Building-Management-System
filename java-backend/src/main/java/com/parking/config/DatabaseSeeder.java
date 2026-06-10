@@ -46,18 +46,16 @@ public class DatabaseSeeder implements CommandLineRunner {
         log.info("Seeding database with development mock data...");
 
         try {
-            // 1. Seed Users
-            String adminId = "d8b5c92c-6fa4-46ab-8cb3-c3f2b45a49dc";
-            String managerId = "c7e5a013-149b-44bb-8b74-0f2c417b12d5";
-            String staffId = "3d6b38c2-28df-4a67-9cfb-816223cf5311";
-            String driverId = "6b88b2a3-83cf-424a-b9c1-512c0199e52c";
-            String driver2Id = "7b98b2a3-83cf-424a-b9c1-512c0199e52d";
+            // 1. Seed Users (Gmail accounts to match typical frontend defaults)
+            String adminId = "1a8b5c9d-6fa4-46ab-8cb3-c3f2b45a49dc";
+            String managerId = "2b8b5c9d-6fa4-46ab-8cb3-c3f2b45a49dc";
+            String staffId = "3c8b5c9d-6fa4-46ab-8cb3-c3f2b45a49dc";
+            String driverId = "4d8b5c9d-6fa4-46ab-8cb3-c3f2b45a49dc";
 
-            insertUser(adminId, "admin@parking.com", "admin123", "Administrator", "0901234567", UserRole.ADMIN.name());
-            insertUser(managerId, "manager@parking.com", "manager123", "Parking Manager", "0907654321", UserRole.MANAGER.name());
-            insertUser(staffId, "staff@parking.com", "staff123", "Parking Staff", "0908888888", UserRole.STAFF.name());
-            insertUser(driverId, "driver@parking.com", "driver123", "Regular Driver", "0909999999", UserRole.DRIVER.name());
-            insertUser(driver2Id, "driver2@parking.com", "driver123", "Secondary Driver", "0909999998", UserRole.DRIVER.name());
+            insertUser(adminId, "admin@gmail.com", "123456", "Admin Gmail", "0911234567", UserRole.ADMIN.name());
+            insertUser(managerId, "manager@gmail.com", "123456", "Manager Gmail", "0917654321", UserRole.MANAGER.name());
+            insertUser(staffId, "staff@gmail.com", "123456", "Staff Gmail", "0918888888", UserRole.STAFF.name());
+            insertUser(driverId, "driver@gmail.com", "123456", "Driver Gmail", "0919999999", UserRole.DRIVER.name());
 
             log.info("Users seeded successfully.");
 
@@ -108,27 +106,36 @@ public class DatabaseSeeder implements CommandLineRunner {
             String slotA02 = "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a02";
             String slotA03 = "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a03";
             String slotA04 = "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a04";
+            String slotA05 = "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a05";
 
             insertSlot(slotA01, floor1Id, "1A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
-            insertSlot(slotA02, floor1Id, "1A-02", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(slotA02, floor1Id, "1A-02", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.CAR.name(), "A");
             insertSlot(slotA03, floor1Id, "1A-03", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.CAR.name(), "A");
             insertSlot(slotA04, floor1Id, "1A-04", SlotStatus.RESERVED.name(), VehicleTypeEnum.CAR.name(), "A");
-            insertSlot(UUID.randomUUID().toString(), floor1Id, "1A-05", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(slotA05, floor1Id, "1A-05", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.CAR.name(), "A");
             for (int i = 1; i <= 5; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor1Id, "1B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "B");
+                String status = SlotStatus.AVAILABLE.name();
+                if (i == 4) status = SlotStatus.MAINTENANCE.name();
+                if (i == 5) status = SlotStatus.LOCKED.name();
+                insertSlot(UUID.randomUUID().toString(), floor1Id, "1B-0" + i, status, VehicleTypeEnum.CAR.name(), "B");
             }
 
             // MOTORBIKE Slots (Floor 2)
             String slotB01 = "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b01";
             String slotB02 = "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b02";
+            String slotB03 = "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b03";
 
-            insertSlot(slotB01, floor2Id, "2A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
+            insertSlot(slotB01, floor2Id, "2A-01", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
             insertSlot(slotB02, floor2Id, "2A-02", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
-            for (int i = 3; i <= 7; i++) {
+            insertSlot(slotB03, floor2Id, "2A-03", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
+            for (int i = 4; i <= 7; i++) {
                 insertSlot(UUID.randomUUID().toString(), floor2Id, "2A-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
             }
             for (int i = 1; i <= 8; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor2Id, "2B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "B");
+                String status = SlotStatus.AVAILABLE.name();
+                if (i == 7) status = SlotStatus.MAINTENANCE.name();
+                if (i == 8) status = SlotStatus.LOCKED.name();
+                insertSlot(UUID.randomUUID().toString(), floor2Id, "2B-0" + i, status, VehicleTypeEnum.MOTORBIKE.name(), "B");
             }
 
             // BICYCLE Slots (Floor 3)
@@ -141,7 +148,9 @@ public class DatabaseSeeder implements CommandLineRunner {
                 insertSlot(UUID.randomUUID().toString(), floor3Id, "3A-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "A");
             }
             for (int i = 1; i <= 5; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor3Id, "3B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "B");
+                String status = SlotStatus.AVAILABLE.name();
+                if (i == 5) status = SlotStatus.MAINTENANCE.name();
+                insertSlot(UUID.randomUUID().toString(), floor3Id, "3B-0" + i, status, VehicleTypeEnum.BICYCLE.name(), "B");
             }
 
             log.info("Parking slots seeded successfully.");
@@ -151,6 +160,19 @@ public class DatabaseSeeder implements CommandLineRunner {
             String session2Id = "a2222222-2222-2222-2222-222222222222";
             String session3Id = "a3333333-3333-3333-3333-333333333333";
             String session4Id = "a4444444-4444-4444-4444-444444444444";
+            String session5Id = "a5555555-5555-5555-5555-555555555555";
+            String session6Id = "a6666666-6666-6666-6666-666666666666";
+            String session7Id = "a7777777-7777-7777-7777-777777777777";
+            String session8Id = "a8888888-8888-8888-8888-888888888888";
+            String session9Id = "a9999999-9999-9999-9999-999999999999";
+            String session10Id = "a1010101-1010-1010-1010-101010101010";
+            String session11Id = "a1111111-2222-3333-4444-555555555555";
+            String session12Id = "a1212121-1212-1212-1212-121212121212";
+            String session13Id = "a1313131-1313-1313-1313-131313131313";
+            String session14Id = "a1414141-1414-1414-1414-141414141414";
+            String session15Id = "a1515151-1515-1515-1515-151515151515";
+            String session16Id = "a1616161-1616-1616-1616-161616161616";
+            String session17Id = "a1717171-1717-1717-1717-171717171717";
 
             // Session 1: Completed CAR (Cash payment)
             insertSession(session1Id, slotA01, driverId, staffId, staffId, "29A-12345", VehicleTypeEnum.CAR.name(), "TKT-CAR-001",
@@ -159,7 +181,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             insertPayment(UUID.randomUUID().toString(), session1Id, new BigDecimal("60000.00"), BigDecimal.ZERO, PaymentMethod.CASH.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 8, 12, 0, 0));
 
             // Session 2: Completed MOTORBIKE (VNPay payment)
-            insertSession(session2Id, slotB01, driver2Id, staffId, staffId, "29B-54321", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-002",
+            insertSession(session2Id, slotB01, driverId, staffId, staffId, "29B-54321", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-002",
                     LocalDateTime.of(2026, 6, 9, 10, 0, 0), LocalDateTime.of(2026, 6, 9, 13, 0, 0),
                     LocalDateTime.of(2026, 6, 9, 10, 2, 0), SessionStatus.COMPLETED.name(), "Gate 2", "Gate 2");
             insertPayment(UUID.randomUUID().toString(), session2Id, new BigDecimal("14000.00"), BigDecimal.ZERO, PaymentMethod.VNPAY.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 9, 13, 0, 0));
@@ -170,16 +192,120 @@ public class DatabaseSeeder implements CommandLineRunner {
                     LocalDateTime.of(2026, 6, 10, 1, 10, 0), SessionStatus.ACTIVE.name(), "Gate 1", null);
 
             // Session 4: Lost Ticket MOTORBIKE
-            insertSession(session4Id, slotB02, driver2Id, staffId, null, "29C-88888", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-004",
+            insertSession(session4Id, slotB02, driverId, staffId, null, "29C-88888", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-004",
                     LocalDateTime.of(2026, 6, 9, 18, 0, 0), null,
                     LocalDateTime.of(2026, 6, 9, 18, 15, 0), SessionStatus.LOST_TICKET.name(), "Gate 2", null);
+
+            // Session 5: Active MOTORBIKE (Driver)
+            insertSession(session5Id, slotB01, driverId, staffId, null, "59G-99999", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-005",
+                    LocalDateTime.of(2026, 6, 10, 8, 30, 0), null,
+                    LocalDateTime.of(2026, 6, 10, 8, 35, 0), SessionStatus.ACTIVE.name(), "Gate 2", null);
+
+            // Session 6: Completed BICYCLE (Guest/Walk-in, EWALLET payment)
+            insertSession(session6Id, slotC01, null, staffId, staffId, "GUEST-BIKE-1", VehicleTypeEnum.BICYCLE.name(), "TKT-BIKE-006",
+                    LocalDateTime.of(2026, 6, 9, 7, 0, 0), LocalDateTime.of(2026, 6, 9, 17, 0, 0),
+                    LocalDateTime.of(2026, 6, 9, 7, 5, 0), SessionStatus.COMPLETED.name(), "Gate 1", "Gate 1");
+            insertPayment(UUID.randomUUID().toString(), session6Id, new BigDecimal("10000.00"), BigDecimal.ZERO, PaymentMethod.EWALLET.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 9, 17, 0, 0));
+
+            // Session 7: Active CAR from reservation (Driver)
+            insertSession(session7Id, slotA02, driverId, staffId, null, "51F-11111", VehicleTypeEnum.CAR.name(), "TKT-CAR-007",
+                    LocalDateTime.of(2026, 6, 10, 9, 0, 0), null,
+                    LocalDateTime.of(2026, 6, 10, 9, 5, 0), SessionStatus.ACTIVE.name(), "Gate 1", null);
+
+            // Session 8: Completed CAR (Transfer payment)
+            insertSession(session8Id, slotA01, null, staffId, staffId, "51A-99999", VehicleTypeEnum.CAR.name(), "TKT-CAR-008",
+                    LocalDateTime.of(2026, 6, 8, 14, 0, 0), LocalDateTime.of(2026, 6, 8, 19, 30, 0),
+                    LocalDateTime.of(2026, 6, 8, 14, 5, 0), SessionStatus.COMPLETED.name(), "Gate 1", "Gate 1");
+            insertPayment(UUID.randomUUID().toString(), session8Id, new BigDecimal("75000.00"), BigDecimal.ZERO, PaymentMethod.TRANSFER.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 8, 19, 30, 0));
+
+            // Session 9: Completed MOTORBIKE (EWALLET payment)
+            insertSession(session9Id, slotB02, driverId, staffId, staffId, "59D-33333", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-009",
+                    LocalDateTime.of(2026, 6, 8, 7, 30, 0), LocalDateTime.of(2026, 6, 8, 10, 0, 0),
+                    LocalDateTime.of(2026, 6, 8, 7, 32, 0), SessionStatus.COMPLETED.name(), "Gate 2", "Gate 2");
+            insertPayment(UUID.randomUUID().toString(), session9Id, new BigDecimal("10000.00"), BigDecimal.ZERO, PaymentMethod.EWALLET.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 8, 10, 0, 0));
+
+            // Session 10: Completed CAR (VNPay payment)
+            insertSession(session10Id, slotA02, driverId, staffId, staffId, "30A-44444", VehicleTypeEnum.CAR.name(), "TKT-CAR-010",
+                    LocalDateTime.of(2026, 6, 7, 8, 0, 0), LocalDateTime.of(2026, 6, 7, 18, 0, 0),
+                    LocalDateTime.of(2026, 6, 7, 8, 5, 0), SessionStatus.COMPLETED.name(), "Gate 1", "Gate 1");
+            insertPayment(UUID.randomUUID().toString(), session10Id, new BigDecimal("150000.00"), BigDecimal.ZERO, PaymentMethod.VNPAY.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 7, 18, 0, 0));
+
+            // Session 11: Completed BICYCLE (Cash payment)
+            insertSession(session11Id, slotC02, null, staffId, staffId, "GUEST-BIKE-2", VehicleTypeEnum.BICYCLE.name(), "TKT-BIKE-011",
+                    LocalDateTime.of(2026, 6, 10, 9, 0, 0), LocalDateTime.of(2026, 6, 10, 13, 0, 0),
+                    LocalDateTime.of(2026, 6, 10, 9, 2, 0), SessionStatus.COMPLETED.name(), "Gate 1", "Gate 1");
+            insertPayment(UUID.randomUUID().toString(), session11Id, new BigDecimal("4000.00"), BigDecimal.ZERO, PaymentMethod.CASH.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 10, 13, 0, 0));
+
+            // Session 12: Completed CAR (Transfer payment)
+            insertSession(session12Id, slotA03, null, staffId, staffId, "43A-55555", VehicleTypeEnum.CAR.name(), "TKT-CAR-012",
+                    LocalDateTime.of(2026, 6, 6, 10, 0, 0), LocalDateTime.of(2026, 6, 6, 15, 0, 0),
+                    LocalDateTime.of(2026, 6, 6, 10, 5, 0), SessionStatus.COMPLETED.name(), "Gate 3", "Gate 3");
+            insertPayment(UUID.randomUUID().toString(), session12Id, new BigDecimal("75000.00"), BigDecimal.ZERO, PaymentMethod.TRANSFER.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 6, 15, 0, 0));
+
+            // Session 13: Completed MOTORBIKE (EWALLET payment)
+            insertSession(session13Id, slotB01, driverId, staffId, staffId, "92A-66666", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-013",
+                    LocalDateTime.of(2026, 6, 6, 8, 0, 0), LocalDateTime.of(2026, 6, 6, 12, 0, 0),
+                    LocalDateTime.of(2026, 6, 6, 8, 2, 0), SessionStatus.COMPLETED.name(), "Gate 2", "Gate 2");
+            insertPayment(UUID.randomUUID().toString(), session13Id, new BigDecimal("15000.00"), BigDecimal.ZERO, PaymentMethod.EWALLET.name(), PaymentStatus.PAID.name(), LocalDateTime.of(2026, 6, 6, 12, 0, 0));
+
+            // Session 14: Active CAR (Guest entry)
+            insertSession(session14Id, slotA05, null, staffId, null, "59A-12345", VehicleTypeEnum.CAR.name(), "TKT-CAR-014",
+                    LocalDateTime.of(2026, 6, 10, 16, 30, 0), null,
+                    LocalDateTime.of(2026, 6, 10, 16, 35, 0), SessionStatus.ACTIVE.name(), "Gate 1", null);
+
+            // Session 15: Active MOTORBIKE (Guest entry)
+            insertSession(session15Id, slotB03, null, staffId, null, "59C-77777", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-015",
+                    LocalDateTime.of(2026, 6, 10, 17, 0, 0), null,
+                    LocalDateTime.of(2026, 6, 10, 17, 2, 0), SessionStatus.ACTIVE.name(), "Gate 2", null);
+
+            // Session 16: Exception CAR (Refunded payment)
+            insertSession(session16Id, slotA03, driverId, staffId, staffId, "30F-55555", VehicleTypeEnum.CAR.name(), "TKT-CAR-016",
+                    LocalDateTime.of(2026, 6, 5, 9, 0, 0), LocalDateTime.of(2026, 6, 5, 11, 0, 0),
+                    LocalDateTime.of(2026, 6, 5, 9, 5, 0), SessionStatus.EXCEPTION.name(), "Gate 1", "Gate 1");
+            insertPayment(UUID.randomUUID().toString(), session16Id, new BigDecimal("30000.00"), BigDecimal.ZERO, PaymentMethod.TRANSFER.name(), PaymentStatus.REFUNDED.name(), LocalDateTime.of(2026, 6, 5, 11, 10, 0));
+
+            // Session 17: Active BICYCLE (Guest)
+            insertSession(session17Id, slotC02, null, staffId, null, "GUEST-BIKE-3", VehicleTypeEnum.BICYCLE.name(), "TKT-BIKE-017",
+                    LocalDateTime.of(2026, 6, 10, 15, 0, 0), null,
+                    LocalDateTime.of(2026, 6, 10, 15, 2, 0), SessionStatus.ACTIVE.name(), "Gate 1", null);
 
             log.info("Parking sessions and payments seeded successfully.");
 
             // 8. Seed Reservations
+            // Confirmed Reservation 1
             insertReservation("91111111-1111-1111-1111-111111111111", driverId, slotA04, VehicleTypeEnum.CAR.name(),
                     LocalDateTime.of(2026, 6, 10, 10, 0, 0), LocalDateTime.of(2026, 6, 10, 12, 0, 0),
                     ReservationStatus.CONFIRMED.name(), LocalDateTime.of(2026, 6, 9, 15, 0, 0), buildingId);
+
+            // Checked-in Reservation 2 (corresponds to Session 7)
+            insertReservation("92222222-2222-2222-2222-222222222222", driverId, slotA02, VehicleTypeEnum.CAR.name(),
+                    LocalDateTime.of(2026, 6, 10, 8, 30, 0), LocalDateTime.of(2026, 6, 10, 18, 30, 0),
+                    ReservationStatus.USED.name(), LocalDateTime.of(2026, 6, 9, 20, 0, 0), buildingId);
+
+            // Completed Reservation 3
+            insertReservation("93333333-3333-3333-3333-333333333333", driverId, slotA01, VehicleTypeEnum.CAR.name(),
+                    LocalDateTime.of(2026, 6, 8, 8, 0, 0), LocalDateTime.of(2026, 6, 8, 12, 0, 0),
+                    ReservationStatus.USED.name(), LocalDateTime.of(2026, 6, 7, 12, 0, 0), buildingId);
+
+            // Cancelled Reservation 4
+            insertReservation("94444444-4444-4444-4444-444444444444", driverId, slotA02, VehicleTypeEnum.CAR.name(),
+                    LocalDateTime.of(2026, 6, 9, 14, 0, 0), LocalDateTime.of(2026, 6, 9, 16, 0, 0),
+                    ReservationStatus.CANCELLED.name(), LocalDateTime.of(2026, 6, 8, 10, 0, 0), buildingId);
+
+            // Confirmed Reservation 5 (Future reservation for driver@gmail.com)
+            insertReservation("95555555-5555-5555-5555-555555555555", driverId, slotA01, VehicleTypeEnum.CAR.name(),
+                    LocalDateTime.of(2026, 6, 12, 9, 0, 0), LocalDateTime.of(2026, 6, 12, 18, 0, 0),
+                    ReservationStatus.CONFIRMED.name(), LocalDateTime.of(2026, 6, 10, 14, 0, 0), buildingId);
+
+            // Expired Reservation 6
+            insertReservation("96666666-6666-6666-6666-666666666666", driverId, slotA01, VehicleTypeEnum.CAR.name(),
+                    LocalDateTime.of(2026, 6, 5, 10, 0, 0), LocalDateTime.of(2026, 6, 5, 12, 0, 0),
+                    ReservationStatus.EXPIRED.name(), LocalDateTime.of(2026, 6, 4, 10, 0, 0), buildingId);
+
+            // Pending Reservation 7
+            insertReservation("97777777-7777-7777-7777-777777777777", driverId, slotA01, VehicleTypeEnum.CAR.name(),
+                    LocalDateTime.of(2026, 6, 13, 10, 0, 0), LocalDateTime.of(2026, 6, 13, 12, 0, 0),
+                    ReservationStatus.PENDING.name(), LocalDateTime.of(2026, 6, 10, 15, 0, 0), buildingId);
 
             log.info("Reservations seeded successfully.");
 
@@ -187,11 +313,17 @@ public class DatabaseSeeder implements CommandLineRunner {
             insertZone("11111111-2222-3333-4444-55555555555a", "Zone A", carTypeId, 10);
             insertZone("11111111-2222-3333-4444-55555555555b", "Zone B", motoTypeId, 15);
             insertZone("11111111-2222-3333-4444-55555555555c", "Zone C", bikeTypeId, 10);
+            insertZone("11111111-2222-3333-4444-55555555555d", "Zone D", electricTypeId, 5);
+            insertZone("11111111-2222-3333-4444-55555555555e", "Zone E", truckTypeId, 5);
 
             log.info("Zones seeded successfully.");
 
             // 9. Seed Feedbacks
             insertFeedback("f1111111-1111-1111-1111-111111111111", driverId, session1Id, "Service", "Friendly staff, clean and safe parking space.", FeedbackStatus.OPEN.name(), LocalDateTime.of(2026, 6, 8, 12, 30, 0));
+            insertFeedback("f2222222-2222-2222-2222-222222222222", driverId, session2Id, "Payment", "VNPay payment failed first time, but succeeded on second try.", FeedbackStatus.RESOLVED.name(), LocalDateTime.of(2026, 6, 9, 13, 15, 0));
+            insertFeedback("f3333333-3333-3333-3333-333333333333", driverId, session5Id, "Parking Slot", "Floor 2 slot 2A-01 is a bit tight for larger motorbikes.", FeedbackStatus.IN_PROGRESS.name(), LocalDateTime.of(2026, 6, 10, 9, 0, 0));
+            insertFeedback("f4444444-4444-4444-4444-444444444444", driverId, session8Id, "Safety", "Excellent lighting in Floor 1 at night. Feel very safe.", FeedbackStatus.OPEN.name(), LocalDateTime.of(2026, 6, 8, 20, 0, 0));
+            insertFeedback("f5555555-5555-5555-5555-555555555555", driverId, session10Id, "System Bug", "The app showed reservation failed but my card was charged.", FeedbackStatus.RESOLVED.name(), LocalDateTime.of(2026, 6, 7, 18, 30, 0));
 
             log.info("Feedbacks seeded successfully.");
             log.info("Development mock data seeding complete!");

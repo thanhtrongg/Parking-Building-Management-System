@@ -439,13 +439,27 @@ export default function FeedbacksPage() {
   const [updatingId, setUpdatingId] = useState("");
   const [replyingId, setReplyingId] = useState("");
 
+  const normalizeFeedback = (fb) => {
+    if (!fb) return null;
+    return {
+      ...fb,
+      customerName: fb.driverName || "Unknown user",
+      user: {
+        email: fb.driverEmail || "No email",
+        phone: fb.driverPhone || "N/A"
+      },
+      subject: fb.category || "No category",
+      message: fb.content || ""
+    };
+  };
+
   useEffect(() => {
     const fetchFeedbacks = async () => {
       try {
         setLoading(true);
         setError("");
         const result = await apiRequest("/api/feedbacks");
-        const nextFeedbacks = result.data || [];
+        const nextFeedbacks = (result.data || []).map(normalizeFeedback);
         setFeedbacks(nextFeedbacks);
       } catch (fetchError) {
         setError(fetchError.message);
@@ -491,13 +505,14 @@ export default function FeedbacksPage() {
         body: JSON.stringify({ status }),
       });
 
+      const normalized = normalizeFeedback(result.data);
       setFeedbacks((currentFeedbacks) =>
         currentFeedbacks.map((currentFeedback) =>
-          currentFeedback.id === feedback.id ? result.data : currentFeedback,
+          currentFeedback.id === feedback.id ? normalized : currentFeedback,
         ),
       );
       setDetailFeedback((currentFeedback) =>
-        currentFeedback?.id === feedback.id ? result.data : currentFeedback,
+        currentFeedback?.id === feedback.id ? normalized : currentFeedback,
       );
     } catch (updateError) {
       alert(updateError.message);
@@ -536,12 +551,13 @@ export default function FeedbacksPage() {
         body: JSON.stringify({ reply: message }),
       });
 
+      const normalized = normalizeFeedback(result.data);
       setFeedbacks((currentFeedbacks) =>
         currentFeedbacks.map((feedback) =>
-          feedback.id === detailFeedback.id ? result.data : feedback,
+          feedback.id === detailFeedback.id ? normalized : feedback,
         ),
       );
-      setDetailFeedback(result.data);
+      setDetailFeedback(normalized);
       setReplies((currentReplies) => ({
         ...currentReplies,
         [detailFeedback.id]: {

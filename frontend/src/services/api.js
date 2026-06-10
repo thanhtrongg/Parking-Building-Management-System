@@ -273,6 +273,8 @@ export const apiRequest = async (path, options = {}) => {
     cleanPath = isDriver ? "reservations/my" : "reservations";
   } else if (cleanPath === "parking-sessions") {
     cleanPath = isDriver ? "sessions/my" : "sessions/active";
+  } else if (cleanPath.startsWith("parking-sessions/")) {
+    cleanPath = `sessions/${cleanPath.slice(17)}`;
   } else if (cleanPath === "user/parking-sessions") {
     cleanPath = "sessions/my";
   }

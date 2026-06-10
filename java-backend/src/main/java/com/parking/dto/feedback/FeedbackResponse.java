@@ -22,6 +22,8 @@ public class FeedbackResponse {
     private LocalDateTime createdAt;
     private UUID driverId;
     private String driverName;
+    private String driverEmail;
+    private String driverPhone;
     private UUID sessionId;
     private String ticketCode;
 }

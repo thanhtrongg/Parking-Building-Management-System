@@ -339,7 +339,10 @@ function normalizeReservation(reservation) {
     reservation.vehicle_type_name ||
     "N/A";
 
-  const status = reservation.status || "UNKNOWN";
+  let status = reservation.status || "UNKNOWN";
+  if (status === "USED") {
+    status = "CHECKED_IN";
+  }
   const durationHours = getDurationHours(expectedStartTime, expectedEndTime);
 
   return {

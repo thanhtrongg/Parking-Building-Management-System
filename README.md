@@ -158,6 +158,29 @@ Starts only the database in Docker and runs the application locally for faster i
    cd frontend && npm install && npm run dev
    ```
 
+### Test Accounts (Local Development)
+
+When starting the application with the `dev` profile, the database is automatically seeded with the following test accounts (all passwords are `123456`):
+
+| Role | Email | Full Name | Phone |
+|------|-------|-----------|-------|
+| **Admin** | `admin@gmail.com` | Admin Gmail | `0911234567` |
+| **Manager** | `manager@gmail.com` | Manager Gmail | `0917654321` |
+| **Staff** | `staff@gmail.com` | Staff Gmail | `0918888888` |
+| **Driver** | `driver@gmail.com` | Driver Gmail | `0919999999` |
+
+### Seeding & Mock Data Diversity
+
+The seeder initializes a rich dataset simulating real-world parking operations:
+* **Slot States**: Generates 35+ slots across floors, including `MAINTENANCE` and `LOCKED` slot statuses alongside `AVAILABLE`, `OCCUPIED`, and `RESERVED`.
+* **Operations**: Seeds 17 diverse parking sessions including:
+  * Active & Completed sessions for cars, motorbikes, and bicycles.
+  * Lost ticket sessions.
+  * Exception sessions containing `REFUNDED` payments.
+* **Reservations**: Covers all reservation statuses (`PENDING`, `CONFIRMED`, `CANCELLED`, `EXPIRED`, `USED`).
+* **Feedbacks**: Includes multiple driver feedback categories (`Service`, `Payment`, `Parking Slot`, `Safety`, `System Bug`) with different statuses (`OPEN`, `IN_PROGRESS`, `RESOLVED`).
+* **Payments**: Normalizes status mappings (e.g. `PAID` / `SUCCESS`) and supports methods like `CASH`, `TRANSFER`, and `EWALLET`.
+
 ## Available Scripts
 
 | Service | Command | Description |

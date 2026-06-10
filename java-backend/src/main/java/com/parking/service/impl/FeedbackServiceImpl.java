@@ -95,6 +95,8 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .createdAt(feedback.getCreatedAt())
                 .driverId(feedback.getDriver().getId())
                 .driverName(feedback.getDriver().getFullName())
+                .driverEmail(feedback.getDriver().getEmail())
+                .driverPhone(feedback.getDriver().getPhone())
                 .sessionId(feedback.getSession() != null ? feedback.getSession().getId() : null)
                 .ticketCode(feedback.getSession() != null ? feedback.getSession().getTicketCode() : null)
                 .build();

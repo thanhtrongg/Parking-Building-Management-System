@@ -588,9 +588,12 @@ export default function DashboardPage() {
       return status.includes("available") || status.includes("empty");
     }).length;
 
-    const todayPayments = payments.filter((payment) =>
-      isToday(payment.createdAt || payment.created_at || payment.paymentDate),
-    );
+    const todayPayments = payments.filter((payment) => {
+      const status = String(payment.status || "").toUpperCase();
+      const isSuccess = status === "SUCCESS" || status === "PAID";
+      const paymentDate = payment.paidAt || payment.paymentTime || payment.createdAt || payment.created_at || payment.paymentDate;
+      return isSuccess && isToday(paymentDate);
+    });
 
     const todayRevenue = todayPayments.reduce((total, payment) => {
       return (
