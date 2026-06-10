@@ -99,6 +99,7 @@ Parking-Building-Management-System/
 |   |   `-- service/
 |   |-- src/main/resources/
 |   |   `-- db/migration/
+|   |-- Dockerfile
 |   `-- pom.xml
 |-- frontend/
 |   |-- src/
@@ -106,7 +107,10 @@ Parking-Building-Management-System/
 |   |   |-- pages/
 |   |   |-- routes/
 |   |   `-- services/
+|   |-- Dockerfile
+|   |-- nginx.conf
 |   `-- package.json
+|-- docker-compose.yml
 |-- LICENSE
 `-- README.md
 ```
@@ -136,13 +140,19 @@ VITE_API_URL=http://localhost:8080/api/v1
 
 ### Setup & Run
 
-#### Option 1: Full Docker Deployment (Production-like)
+#### Option 1: Full Docker Deployment (Root Orchestrator)
+Starts the database, Spring Boot backend, and React frontend all together in Docker.
+```bash
+docker compose up --build -d
+```
+
+#### Option 2: Backend & DB Docker Deployment
 Starts both the database and the backend application in Docker.
 ```bash
 cd java-backend && docker compose up -d
 ```
 
-#### Option 2: Local Development (Hybrid)
+#### Option 3: Local Development (Hybrid)
 Starts only the database in Docker and runs the application locally for faster iteration.
 1. **Start Database**:
    ```bash
