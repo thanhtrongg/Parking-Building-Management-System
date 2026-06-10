@@ -109,39 +109,39 @@ public class DatabaseSeeder implements CommandLineRunner {
             String slotA03 = "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a03";
             String slotA04 = "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a04";
 
-            insertSlot(slotA01, floor1Id, "A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
-            insertSlot(slotA02, floor1Id, "A-02", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
-            insertSlot(slotA03, floor1Id, "A-03", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.CAR.name(), "A");
-            insertSlot(slotA04, floor1Id, "A-04", SlotStatus.RESERVED.name(), VehicleTypeEnum.CAR.name(), "A");
-            insertSlot(UUID.randomUUID().toString(), floor1Id, "A-05", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(slotA01, floor1Id, "1A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(slotA02, floor1Id, "1A-02", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(slotA03, floor1Id, "1A-03", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(slotA04, floor1Id, "1A-04", SlotStatus.RESERVED.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(UUID.randomUUID().toString(), floor1Id, "1A-05", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
             for (int i = 1; i <= 5; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor1Id, "B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "B");
+                insertSlot(UUID.randomUUID().toString(), floor1Id, "1B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "B");
             }
 
             // MOTORBIKE Slots (Floor 2)
             String slotB01 = "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b01";
             String slotB02 = "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b02";
 
-            insertSlot(slotB01, floor2Id, "A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
-            insertSlot(slotB02, floor2Id, "A-02", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
+            insertSlot(slotB01, floor2Id, "2A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
+            insertSlot(slotB02, floor2Id, "2A-02", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
             for (int i = 3; i <= 7; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor2Id, "A-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
+                insertSlot(UUID.randomUUID().toString(), floor2Id, "2A-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "A");
             }
             for (int i = 1; i <= 8; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor2Id, "B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "B");
+                insertSlot(UUID.randomUUID().toString(), floor2Id, "2B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.MOTORBIKE.name(), "B");
             }
 
             // BICYCLE Slots (Floor 3)
             String slotC01 = "3c3c3c3c-3c3c-3c3c-3c3c-3c3c3c3c3c01";
             String slotC02 = "3c3c3c3c-3c3c-3c3c-3c3c-3c3c3c3c3c02";
 
-            insertSlot(slotC01, floor3Id, "A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "A");
-            insertSlot(slotC02, floor3Id, "A-02", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.BICYCLE.name(), "A");
+            insertSlot(slotC01, floor3Id, "3A-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "A");
+            insertSlot(slotC02, floor3Id, "3A-02", SlotStatus.OCCUPIED.name(), VehicleTypeEnum.BICYCLE.name(), "A");
             for (int i = 3; i <= 5; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor3Id, "A-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "A");
+                insertSlot(UUID.randomUUID().toString(), floor3Id, "3A-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "A");
             }
             for (int i = 1; i <= 5; i++) {
-                insertSlot(UUID.randomUUID().toString(), floor3Id, "B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "B");
+                insertSlot(UUID.randomUUID().toString(), floor3Id, "3B-0" + i, SlotStatus.AVAILABLE.name(), VehicleTypeEnum.BICYCLE.name(), "B");
             }
 
             log.info("Parking slots seeded successfully.");

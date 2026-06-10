@@ -149,7 +149,7 @@ Content-Type: {{contentType}}
   "vehicleType": "CAR"
 }
 
-### Update slot A-01 status to MAINTENANCE (Requires Manager/Staff)
+### Update slot 1A-01 status to MAINTENANCE (Requires Manager/Staff)
 PATCH {{host}}/slots/1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a01/status
 Authorization: Bearer {{staffToken}}
 Content-Type: {{contentType}}
