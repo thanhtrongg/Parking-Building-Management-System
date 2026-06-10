@@ -8,8 +8,8 @@
   <p>
     <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111827" alt="React" />
     <img src="https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-    <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js Express" />
-    <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
+    <img src="https://img.shields.io/badge/Java-17-007396?style=for-the-badge&logo=java&logoColor=white" alt="Java" />
+    <img src="https://img.shields.io/badge/Spring_Boot-3.4.1-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" alt="Spring Boot" />
     <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
   </p>
   <p>
@@ -19,7 +19,9 @@
     &nbsp;•&nbsp;
     <a href="#main-api-groups">API</a>
     &nbsp;•&nbsp;
-    <a href="#project-structure">Structure</a>
+    <a href="#setup--run">Setup</a>
+    &nbsp;•&nbsp;
+    <a href="#available-scripts">Scripts</a>
   </p>
 </div>
 
@@ -38,37 +40,10 @@ The latest parking flow uses confirmed reservations by default. Payment is handl
 
 - JWT-based login and protected API access
 - User registration
-- Role-based route protection
+- Role-based route protection (Admin, Manager, Staff, Driver)
 - Separate user and system layouts
-- Admin, manager, staff, and user workflows
 
-### User Features
-
-- Book parking slots by vehicle type and time range
-- Reservations are automatically confirmed
-- View booking history
-- Track active parking sessions after staff check-in
-- View completed parking sessions after checkout and payment
-- See actual assigned slot if staff moves the vehicle to another available slot
-- Submit feedback for bookings/sessions
-- Manage account settings
-
-### System Features
-
-- Dashboard overview for parking activity
-- Reservation management
-- Real check-in flow that creates parking sessions
-- Checkout flow that calculates parking fees and records payment
-- Parking slot management
-- Parking session management
-- Payment management with detail modal and printable receipts
-- Vehicle type management
-- Zone management
-- Pricing policy management
-- User management
-- Feedback review and reply workflow
-
-## Parking Session Flow
+### Parking Session Flow
 
 1. User books a parking slot.
 2. Reservation is created as `CONFIRMED`.
@@ -77,263 +52,145 @@ The latest parking flow uses confirmed reservations by default. Payment is handl
 5. If the reserved slot is occupied, staff can assign another available slot.
 6. Parking fee is calculated from actual check-in time to checkout time.
 7. Staff checks out the vehicle and records payment.
-8. Parking session becomes `COMPLETED`.
-9. Related reservation becomes `COMPLETED`.
-10. The occupied slot becomes `AVAILABLE` again.
+8. Parking session and related reservation become `COMPLETED`.
+9. The occupied slot becomes `AVAILABLE` again.
 
 ## Languages and Tools
 
 :hammer_and_wrench: Languages and tools used in this project:
 <div>
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" title="JavaScript" alt="JavaScript" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg" title="HTML5" alt="HTML5" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg" title="CSS3" alt="CSS3" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original-wordmark.svg" title="Node.js" alt="Node.js" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original.svg" title="Express.js" alt="Express.js" width="44" height="44"/>&nbsp;
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg" title="Java" alt="Java" width="44" height="44"/>&nbsp;
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/spring/spring-original.svg" title="Spring Boot" alt="Spring Boot" width="44" height="44"/>&nbsp;
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original.svg" title="PostgreSQL" alt="PostgreSQL" width="44" height="44"/>&nbsp;
 <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/react/react-original.svg" title="React" alt="React" width="44" height="44"/>&nbsp;
 <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/vitejs/vitejs-original.svg" title="Vite" alt="Vite" width="44" height="44"/>&nbsp;
 <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/tailwindcss/tailwindcss-original.svg" title="Tailwind CSS" alt="Tailwind CSS" width="44" height="44"/>&nbsp;
 <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/threejs/threejs-original.svg" title="Three.js" alt="Three.js" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/prisma/prisma-original.svg" title="Prisma" alt="Prisma" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original.svg" title="PostgreSQL" alt="PostgreSQL" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/npm/npm-original-wordmark.svg" title="npm" alt="npm" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/git/git-original.svg" title="Git" alt="Git" width="44" height="44"/>
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original.svg" title="Docker" alt="Docker" width="44" height="44"/>&nbsp;
+<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/maven/maven-original.svg" title="Maven" alt="Maven" width="44" height="44"/>
 </div>
 
 ## Tech Stack
 
-### Frontend
-
-- React
-- Vite
-- Tailwind CSS
-- React Router DOM
-- Framer Motion
-- Three.js / React Three Fiber
-
 ### Backend
-
-- Node.js
-- Express.js
-- Prisma ORM
+- Java 17, Spring Boot 3.4.1
+- Spring Data JPA, Hibernate
+- Spring Security, JWT
 - PostgreSQL
-- JWT
-- bcryptjs
-- CORS
-- dotenv
+- Flyway (Database Migrations)
+- SpringDoc OpenAPI (Swagger)
 
-### Database Models
-
-- `users`
-- `vehicle_types`
-- `zones`
-- `parking_slots`
-- `reservations`
-- `parking_sessions`
-- `payments`
-- `feedbacks`
-- `pricing_policies`
-- `system_configs`
+### Frontend
+- React 19, Vite 5
+- Tailwind CSS
+- Framer Motion, Three.js
 
 ## Project Structure
 
 ```text
 Parking-Building-Management-System/
-|-- backend/
-|   |-- prisma/
-|   |   |-- schema.prisma
-|   |   `-- migrations/
-|   |-- src/
+|-- java-backend/
+|   |-- src/main/java/com/parking/
 |   |   |-- config/
-|   |   |-- controllers/
-|   |   |-- middlewares/
-|   |   |-- routes/
-|   |   |-- services/
-|   |   `-- server.js
-|   |-- package.json
-|   `-- package-lock.json
+|   |   |-- controller/
+|   |   |-- dto/
+|   |   |-- entity/
+|   |   |-- repository/
+|   |   `-- service/
+|   |-- src/main/resources/
+|   |   `-- db/migration/
+|   `-- pom.xml
 |-- frontend/
-|   |-- public/
 |   |-- src/
 |   |   |-- components/
 |   |   |-- pages/
-|   |   |   |-- auth/
-|   |   |   |-- public/
-|   |   |   |-- system/
-|   |   |   `-- user/
 |   |   |-- routes/
-|   |   |-- services/
-|   |   |-- App.jsx
-|   |   `-- main.jsx
-|   |-- package.json
-|   `-- package-lock.json
+|   |   `-- services/
+|   `-- package.json
 |-- LICENSE
 `-- README.md
-```
-
-## Environment Variables
-
-Create `backend/.env`:
-
-```env
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/parking_management"
-JWT_SECRET="change_this_secret"
-JWT_EXPIRES_IN="1d"
-PORT=5000
-
-SEPAY_BANK_CODE=""
-SEPAY_ACCOUNT_NUMBER=""
-SEPAY_ACCOUNT_NAME=""
-SEPAY_WEBHOOK_API_KEY=""
-```
-
-Create `frontend/.env`:
-
-```env
-VITE_API_URL=http://localhost:5000
 ```
 
 ## Getting Started
 
 ### Prerequisites
+- **Java 17+**
+- **Node.js 18+**
+- **Docker & Docker Compose**
+- **Maven/mvnd**
 
-- Node.js
-- npm
-- PostgreSQL
-- Git
+### Environment Variables
 
-### Backend Setup
+**Backend (`java-backend`):**
+| Variable | Description | Default / Example |
+|----------|-------------|-------------------|
+| `DB_URL` | PostgreSQL URL | `jdbc:postgresql://localhost:5432/parking_db` |
+| `JWT_SECRET` | JWT Secret | (Required) |
+| `VNPAY_TMN_CODE`| VNPay Code | `2QRY7YW8` |
 
+**Frontend (`frontend`):**
+Create `.env` in `frontend/`:
+```env
+VITE_API_URL=http://localhost:8080/api/v1
+```
+
+### Setup & Run
+
+#### Option 1: Full Docker Deployment (Production-like)
+Starts both the database and the backend application in Docker.
 ```bash
-cd backend
-npm install
-npx prisma generate
-npx prisma migrate dev
-npm run dev
+cd java-backend && docker compose up -d
 ```
 
-Backend default URL:
+#### Option 2: Local Development (Hybrid)
+Starts only the database in Docker and runs the application locally for faster iteration.
+1. **Start Database**:
+   ```bash
+   cd java-backend && docker compose up -d db
+   ```
+2. **Run Backend**:
+   ```bash
+   cd java-backend && mvnd spring-boot:run
+   ```
 
-```text
-http://localhost:5000
-```
+3. **Run Frontend**:
+   ```bash
+   cd frontend && npm install && npm run dev
+   ```
 
-### Frontend Setup
+## Available Scripts
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+| Service | Command | Description |
+|---------|---------|-------------|
+| Backend | `mvnd clean package` | Build JAR |
+| Backend | `mvnd test` | Run tests |
+| Frontend | `npm run build` | Production build |
+| Frontend | `npm run lint` | Lint code |
 
-Frontend default URL:
-
-```text
-http://localhost:5173
-```
-
-### Production Build
-
-```bash
-cd frontend
-npm run build
-```
 
 ## Main API Groups
 
+API documentation is available via Swagger at `http://localhost:8080/api/v1/swagger-ui.html` when the backend is running.
+
 ### Auth
-
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `POST` | `/api/auth/register` | Register a new user |
-| `POST` | `/api/auth/login` | Login and receive JWT |
-| `GET` | `/api/auth/me` | Get current authenticated user |
-| `POST` | `/api/auth/logout` | Logout current user |
+| `POST` | `/api/v1/auth/register` | Register a new user |
+| `POST` | `/api/v1/auth/login` | Login and receive JWT |
+| `GET` | `/api/v1/auth/me` | Get current authenticated user |
 
-### Reservations
+### System Management
+- `/api/v1/admin/users`: User management
+- `/api/v1/slots`: Parking slot management
+- `/api/v1/zones`: Zone management
+- `/api/v1/pricing`: Pricing policy management
+- `/api/v1/reservations`: Global reservation management
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/reservations` | List reservations |
-| `GET` | `/api/reservations/:id` | Get reservation detail |
-| `POST` | `/api/reservations` | Create confirmed reservation |
-| `PUT` | `/api/reservations/:id` | Update reservation |
-| `DELETE` | `/api/reservations/:id` | Cancel reservation |
-
-### Parking Sessions
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/parking-sessions` | List parking sessions |
-| `GET` | `/api/parking-sessions/:id` | Get session detail |
-| `POST` | `/api/parking-sessions/check-in` | Check in vehicle and start session |
-| `PUT` | `/api/parking-sessions/:id/checkout` | Checkout vehicle and create payment |
-
-### User Parking Sessions
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/user/parking-sessions` | List current user's active/completed sessions |
-
-### Payments
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/payments` | List payments |
-| `POST` | `/api/payments/sepay/webhook` | Receive SePay webhook |
-| `GET` | `/api/payments/sepay/:paymentCode/status` | Get SePay payment status |
-| `POST` | `/api/payments/sepay/sandbox/simulate` | Simulate SePay payment in local testing |
-
-### Other API Groups
-
-- `/api/parking-slots`
-- `/api/vehicle-types`
-- `/api/zones`
-- `/api/pricing-policies`
-- `/api/users`
-- `/api/feedbacks`
-- `/api/user/feedbacks`
-
-## Frontend Pages
-
-### Public and Auth
-
-- Landing page
-- Login page
-- Sign up page
-
-### User
-
-- Dashboard
-- Book slot
-- Booking history
-- Parking sessions
-- Feedback
-- Settings
-
-### System
-
-- Dashboard
-- Parking slots
-- Parking sessions
-- Reservations
-- Payments
-- Vehicles
-- Zones
-- Pricing policies
-- Users
-- Feedbacks
-
-## Development Notes
-
-- Reservation status now starts as `CONFIRMED`.
-- Payment status can still use `PENDING`, because payment and reservation states are separate.
-- Parking fee is calculated from actual `entry_time` to `exit_time`.
-- `assigned_slot_id` is used when staff assigns a different real slot from the originally reserved slot.
-- Frontend API calls are centralized in `frontend/src/services/api.js`.
-- Backend route registration starts in `backend/src/server.js`.
-- Prisma models are defined in `backend/prisma/schema.prisma`.
+### Parking Operations
+- `/api/v1/sessions/check-in`: Start parking session
+- `/api/v1/sessions/checkout`: Complete session and pay
+- `/api/v1/sessions/active`: Monitor active vehicles
 
 ## License
-
 This project is licensed under the terms included in the `LICENSE` file.
+
