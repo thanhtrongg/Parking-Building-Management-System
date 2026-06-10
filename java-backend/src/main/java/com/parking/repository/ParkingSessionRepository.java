@@ -40,6 +40,8 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
 
     List<ParkingSession> findBySlotIdAndStatus(UUID slotId, SessionStatus status);
 
+    boolean existsBySlotId(UUID slotId);
+
     @Query("SELECT s FROM ParkingSession s LEFT JOIN FETCH s.slot sl LEFT JOIN FETCH sl.floor f LEFT JOIN FETCH f.building b " +
            "WHERE s.checkInTime >= :startDate AND s.checkInTime <= :endDate " +
            "AND (:buildingId IS NULL OR b.id = :buildingId)")

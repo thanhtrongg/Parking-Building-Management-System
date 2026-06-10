@@ -12,9 +12,15 @@ import com.parking.enums.SlotStatus;
 import com.parking.enums.VehicleTypeEnum;
 import com.parking.exception.BadRequestException;
 import com.parking.exception.ResourceNotFoundException;
+import com.parking.dto.slot.SlotRequest;
+import com.parking.entity.Zone;
+import com.parking.entity.VehicleType;
 import com.parking.repository.FloorRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.ReservationRepository;
+import com.parking.repository.ZoneRepository;
+import com.parking.repository.VehicleTypeRepository;
+import com.parking.repository.ParkingSessionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +49,15 @@ public class SlotServiceImplTest {
 
     @Mock
     private ReservationRepository reservationRepository;
+
+    @Mock
+    private ZoneRepository zoneRepository;
+
+    @Mock
+    private VehicleTypeRepository vehicleTypeRepository;
+
+    @Mock
+    private ParkingSessionRepository parkingSessionRepository;
 
     @InjectMocks
     private SlotServiceImpl slotService;
@@ -84,6 +99,25 @@ public class SlotServiceImplTest {
         when(floorRepository.existsById(floorId)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class, () -> slotService.getSlotsByFloor(floorId));
+    }
+
+    @Test
+    void testGetAllSlots_Success() {
+        Floor floor = Floor.builder().id(floorId).floorName("Floor 1").build();
+        ParkingSlot slot = ParkingSlot.builder()
+                .id(slotId)
+                .slotCode("A1")
+                .status(SlotStatus.AVAILABLE)
+                .floor(floor)
+                .build();
+
+        when(slotRepository.findAll()).thenReturn(List.of(slot));
+
+        List<SlotResponse> response = slotService.getAllSlots();
+
+        assertNotNull(response);
+        assertEquals(1, response.size());
+        assertEquals("A1", response.get(0).getSlotCode());
     }
 
     @Test
@@ -185,5 +219,137 @@ public class SlotServiceImplTest {
 
         SlotRecommendRequest request = new SlotRecommendRequest(buildingId, VehicleTypeEnum.CAR);
         assertThrows(BadRequestException.class, () -> slotService.recommendSlot(request));
+    }
+
+    @Test
+    void testCreateSlot_Success() {
+        UUID zoneId = UUID.randomUUID();
+        Zone zone = Zone.builder().id(zoneId).zoneName("Zone A").vehicleTypeId(UUID.randomUUID()).build();
+        VehicleType vt = VehicleType.builder().name("CAR").build();
+        Floor floor = Floor.builder().id(floorId).floorNumber(1).floorName("Floor 1").build();
+
+        when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(zone));
+        when(vehicleTypeRepository.findById(zone.getVehicleTypeId())).thenReturn(Optional.of(vt));
+        when(floorRepository.findAll()).thenReturn(List.of(floor));
+        when(slotRepository.findAll()).thenReturn(Collections.emptyList());
+        when(slotRepository.save(any(ParkingSlot.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SlotRequest request = SlotRequest.builder()
+                .slotCode("1A-01")
+                .zoneId(zoneId.toString())
+                .status(SlotStatus.AVAILABLE)
+                .build();
+
+        SlotResponse response = slotService.createSlot(request);
+
+        assertNotNull(response);
+        assertEquals("1A-01", response.getSlotCode());
+        assertEquals("Zone A", response.getZone());
+        assertEquals(VehicleTypeEnum.CAR, response.getVehicleType());
+    }
+
+    @Test
+    void testCreateSlot_DuplicateCode_ThrowsBadRequestException() {
+        UUID zoneId = UUID.randomUUID();
+        Zone zone = Zone.builder().id(zoneId).zoneName("Zone A").vehicleTypeId(UUID.randomUUID()).build();
+        VehicleType vt = VehicleType.builder().name("CAR").build();
+        Floor floor = Floor.builder().id(floorId).floorNumber(1).floorName("Floor 1").build();
+        ParkingSlot existingSlot = ParkingSlot.builder().id(UUID.randomUUID()).slotCode("1A-01").floor(floor).build();
+
+        when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(zone));
+        when(vehicleTypeRepository.findById(zone.getVehicleTypeId())).thenReturn(Optional.of(vt));
+        when(floorRepository.findAll()).thenReturn(List.of(floor));
+        when(slotRepository.findAll()).thenReturn(List.of(existingSlot));
+
+        SlotRequest request = SlotRequest.builder()
+                .slotCode("1A-01")
+                .zoneId(zoneId.toString())
+                .status(SlotStatus.AVAILABLE)
+                .build();
+
+        assertThrows(BadRequestException.class, () -> slotService.createSlot(request));
+    }
+
+    @Test
+    void testGetSlotById_Success() {
+        Floor floor = Floor.builder().id(floorId).floorName("Floor 1").build();
+        ParkingSlot slot = ParkingSlot.builder()
+                .id(slotId)
+                .slotCode("A1")
+                .status(SlotStatus.AVAILABLE)
+                .floor(floor)
+                .build();
+
+        when(slotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+
+        SlotResponse response = slotService.getSlotById(slotId);
+
+        assertNotNull(response);
+        assertEquals("A1", response.getSlotCode());
+    }
+
+    @Test
+    void testGetSlotById_NotFound_ThrowsResourceNotFoundException() {
+        when(slotRepository.findById(slotId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> slotService.getSlotById(slotId));
+    }
+
+    @Test
+    void testUpdateSlot_Success() {
+        Floor floor = Floor.builder().id(floorId).floorName("Floor 1").build();
+        ParkingSlot slot = ParkingSlot.builder()
+                .id(slotId)
+                .slotCode("A1")
+                .status(SlotStatus.AVAILABLE)
+                .floor(floor)
+                .build();
+
+        when(slotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(slotRepository.save(any(ParkingSlot.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SlotRequest request = SlotRequest.builder()
+                .slotCode("A2")
+                .status(SlotStatus.OCCUPIED)
+                .build();
+
+        SlotResponse response = slotService.updateSlot(slotId, request);
+
+        assertNotNull(response);
+        assertEquals("A2", response.getSlotCode());
+        assertEquals(SlotStatus.OCCUPIED, response.getStatus());
+    }
+
+    @Test
+    void testDeleteSlot_Success() {
+        ParkingSlot slot = ParkingSlot.builder().id(slotId).build();
+
+        when(slotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(parkingSessionRepository.existsBySlotId(slotId)).thenReturn(false);
+        when(reservationRepository.existsBySlotId(slotId)).thenReturn(false);
+
+        assertDoesNotThrow(() -> slotService.deleteSlot(slotId));
+        verify(slotRepository, times(1)).delete(slot);
+    }
+
+    @Test
+    void testDeleteSlot_InUseBySession_ThrowsBadRequestException() {
+        ParkingSlot slot = ParkingSlot.builder().id(slotId).build();
+
+        when(slotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(parkingSessionRepository.existsBySlotId(slotId)).thenReturn(true);
+
+        assertThrows(BadRequestException.class, () -> slotService.deleteSlot(slotId));
+    }
+
+    @Test
+    void testDeleteSlot_InUseByReservation_ThrowsBadRequestException() {
+        ParkingSlot slot = ParkingSlot.builder().id(slotId).build();
+
+        when(slotRepository.findById(slotId)).thenReturn(Optional.of(slot));
+        when(parkingSessionRepository.existsBySlotId(slotId)).thenReturn(false);
+        when(reservationRepository.existsBySlotId(slotId)).thenReturn(true);
+
+        assertThrows(BadRequestException.class, () -> slotService.deleteSlot(slotId));
     }
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
 async function readResponse(response) {
   const contentType = response.headers.get("content-type") || "";
@@ -14,7 +14,7 @@ export default function SignUpPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
-    username: "",
+    phone: "",
     fullName: "",
     email: "",
     password: "",
@@ -41,14 +41,14 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: form.username.trim(),
           fullName: form.fullName.trim(),
           email: form.email.trim(),
           password: form.password,
+          phone: form.phone.trim(),
         }),
       });
 
@@ -112,7 +112,7 @@ export default function SignUpPage() {
                 Create your account
               </h2>
               <p className="mt-3 text-sm text-slate-500">
-                Use a username, email, and password to register.
+                Use a phone number, email, and password to register.
               </p>
             </div>
 
@@ -129,11 +129,11 @@ export default function SignUpPage() {
               )}
 
               <Field
-                icon="person"
-                label="Username"
-                value={form.username}
-                onChange={(value) => updateField("username", value)}
-                placeholder="customer01"
+                icon="call"
+                label="Phone number"
+                value={form.phone}
+                onChange={(value) => updateField("phone", value)}
+                placeholder="0912345678"
                 required
               />
 

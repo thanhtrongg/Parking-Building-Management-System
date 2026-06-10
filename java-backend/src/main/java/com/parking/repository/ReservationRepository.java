@@ -19,6 +19,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     List<Reservation> findBySlotIdAndStatus(UUID slotId, ReservationStatus status);
 
+    boolean existsBySlotId(UUID slotId);
+
     List<Reservation> findBySlotIdAndStatusIn(UUID slotId, List<ReservationStatus> statuses);
 
     @Query("SELECT r FROM Reservation r WHERE r.slot.id IN :slotIds " +

@@ -1,4 +1,6 @@
 node_modules/
+.agent
+CLAUDE.md
 .env
 .env.local
 .env.*.local

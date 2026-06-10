@@ -2,6 +2,7 @@ package com.parking.service;
 
 import com.parking.dto.slot.SlotRecommendRequest;
 import com.parking.dto.slot.SlotRecommendResponse;
+import com.parking.dto.slot.SlotRequest;
 import com.parking.dto.slot.SlotResponse;
 import com.parking.dto.slot.SlotStatusUpdateRequest;
 
@@ -14,7 +15,17 @@ public interface SlotService {
 
     List<SlotResponse> getAvailableSlotsByFloor(UUID floorId);
 
+    List<SlotResponse> getAllSlots();
+
     SlotResponse updateSlotStatus(UUID id, SlotStatusUpdateRequest request);
 
     SlotRecommendResponse recommendSlot(SlotRecommendRequest request);
+
+    SlotResponse createSlot(SlotRequest request);
+
+    SlotResponse getSlotById(UUID id);
+
+    SlotResponse updateSlot(UUID id, SlotRequest request);
+
+    void deleteSlot(UUID id);
 }

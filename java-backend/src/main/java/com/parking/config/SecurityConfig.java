@@ -29,8 +29,16 @@ public class SecurityConfig {
     private final RateLimitFilter rateLimitFilter;
 
     @Bean
+    public org.springframework.security.access.hierarchicalroles.RoleHierarchy roleHierarchy() {
+        return org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl.fromHierarchy(
+                "ROLE_ADMIN > ROLE_MANAGER\nROLE_MANAGER > ROLE_STAFF\nROLE_STAFF > ROLE_DRIVER"
+        );
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(org.springframework.security.config.Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

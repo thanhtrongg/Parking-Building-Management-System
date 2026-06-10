@@ -53,7 +53,7 @@ public class FeedbackController {
 
     @Operation(summary = "Get all feedback (manager)")
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<FeedbackResponse>>> getAllFeedback() {
         List<FeedbackResponse> response = feedbackService.getAllFeedback();
         return ResponseEntity.ok(ApiResponse.success("All feedback retrieved successfully", response));
@@ -61,7 +61,7 @@ public class FeedbackController {
 
     @Operation(summary = "Update feedback status")
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<FeedbackResponse>> updateFeedbackStatus(
             @PathVariable UUID id,
             @Valid @RequestBody FeedbackStatusUpdateRequest request) {

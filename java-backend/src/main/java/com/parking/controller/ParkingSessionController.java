@@ -33,7 +33,7 @@ public class ParkingSessionController {
 
     @Operation(summary = "Check in a vehicle")
     @PostMapping("/check-in")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<SessionResponse>> checkIn(
             @Valid @RequestBody CheckInRequest request,
             Principal principal) {
@@ -44,7 +44,7 @@ public class ParkingSessionController {
 
     @Operation(summary = "Check out a vehicle")
     @PostMapping("/{id}/check-out")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<CheckOutResponse>> checkOut(
             @PathVariable UUID id,
             @RequestParam(required = false) String gateOut,
@@ -55,7 +55,7 @@ public class ParkingSessionController {
 
     @Operation(summary = "Get all active parking sessions")
     @GetMapping("/active")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<SessionResponse>>> getActiveSessions() {
         List<SessionResponse> response = sessionService.getActiveSessions();
         return ResponseEntity.ok(ApiResponse.success("Active sessions retrieved successfully", response));
@@ -73,7 +73,7 @@ public class ParkingSessionController {
 
     @Operation(summary = "Process a lost ticket")
     @PostMapping("/{id}/lost-ticket")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<CheckOutResponse>> lostTicket(
             @PathVariable UUID id,
             Principal principal) {

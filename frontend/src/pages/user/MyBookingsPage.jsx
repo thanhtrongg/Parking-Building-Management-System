@@ -159,10 +159,10 @@ function SlotCard({ slot, selected, onSelect }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-['Geist'] text-lg font-black text-slate-950">
-            {slot.slotName || slot.slotNumber}
+            {slot.slotCode || slot.slotName || slot.slotNumber}
           </p>
           <p className="mt-1 text-sm font-semibold text-slate-500">
-            {slot.zoneName || "No zone"}
+            {slot.zone || slot.zoneName || "No zone"}
           </p>
         </div>
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
@@ -177,7 +177,7 @@ function SlotCard({ slot, selected, onSelect }) {
           {slot.status || "AVAILABLE"}
         </span>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-          {slot.vehicleTypeName || "Vehicle"}
+          {slot.vehicleType || slot.vehicleTypeName || "Vehicle"}
         </span>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
           {slot.distanceToGate ?? 0}m to gate

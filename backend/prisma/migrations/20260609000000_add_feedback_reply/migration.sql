@@ -1,3 +1,0 @@
-ALTER TABLE "feedbacks"
-ADD COLUMN IF NOT EXISTS "reply" TEXT,
-ADD COLUMN IF NOT EXISTS "reply_created_at" TIMESTAMPTZ(6);

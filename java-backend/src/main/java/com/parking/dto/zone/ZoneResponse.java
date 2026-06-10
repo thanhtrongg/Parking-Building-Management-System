@@ -1,4 +1,4 @@
-package com.parking.dto.vehicletype;
+package com.parking.dto.zone;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,13 +11,10 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VehicleTypeResponse {
+public class ZoneResponse {
 
     private UUID id;
-    private String name;
-    private String description;
-
-    public String getTypeName() {
-        return name;
-    }
+    private String zoneName;
+    private UUID vehicleTypeId;
+    private int totalCapacity;
 }

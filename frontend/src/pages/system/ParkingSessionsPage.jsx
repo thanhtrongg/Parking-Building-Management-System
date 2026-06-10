@@ -534,16 +534,33 @@ export default function ParkingSessionsPage() {
         if (!checkoutSession) return;
         setProcessing(true);
         try {
-            // Lưu ý: Điều chỉnh endpoint và payload theo đúng backend của bạn
-            // Ví dụ: PUT /api/parking-sessions/:id/checkout hoặc PUT /api/parking-sessions/:id với { status: "COMPLETED", endTime: new Date().toISOString() }
-            await apiRequest(`/api/parking-sessions/${checkoutSession.id}/checkout`, {
-                method: "PUT",
+            // Step 1: Initiate check-out to calculate fee
+            const checkoutResult = await apiRequest(`/api/sessions/${checkoutSession.id}/check-out?gateOut=Gate 1`, {
+                method: "POST",
+            });
+
+            const totalAmount = checkoutResult.data.totalAmount;
+
+            // Map frontend checkout payment methods to Spring Boot PaymentMethod enum
+            let mappedMethod = checkoutPaymentMethod;
+            if (mappedMethod === "CARD" || mappedMethod === "BANK") {
+                mappedMethod = "TRANSFER";
+            } else if (mappedMethod === "SEPAY" || mappedMethod === "EWALLET") {
+                mappedMethod = "VNPAY";
+            }
+
+            // Step 2: Process payment to release slot and complete session
+            await apiRequest("/api/payments", {
+                method: "POST",
                 body: JSON.stringify({
-                    paymentMethod: checkoutPaymentMethod,
+                    sessionId: checkoutSession.id,
+                    amount: totalAmount,
+                    extraFee: 0,
+                    method: mappedMethod,
                 }),
             });
 
-            setAlert({ type: "success", message: "Session completed successfully!" });
+            setAlert({ type: "success", message: "Session completed and payment processed successfully!" });
             setCheckoutSession(null);
             fetchSessions();
         } catch (err) {

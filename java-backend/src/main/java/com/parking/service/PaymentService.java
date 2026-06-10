@@ -11,4 +11,6 @@ public interface PaymentService {
     PaymentResponse processPayment(PaymentRequest request);
 
     List<PaymentResponse> getPaymentsBySession(UUID sessionId);
+
+    List<PaymentResponse> getAllPayments();
 }

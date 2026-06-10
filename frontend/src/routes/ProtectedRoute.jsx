@@ -10,9 +10,10 @@ function getStoredUser() {
 }
 
 function normalizeRole(role) {
-  return String(role || "")
+  const norm = String(role || "")
     .trim()
     .toUpperCase();
+  return norm === "DRIVER" ? "USER" : norm;
 }
 
 function getRedirectPathByRole(role) {

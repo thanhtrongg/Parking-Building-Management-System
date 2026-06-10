@@ -10,4 +10,8 @@ public class VehicleTypeRequest {
     private String name;
 
     private String description;
+
+    public void setTypeName(String typeName) {
+        this.name = typeName;
+    }
 }

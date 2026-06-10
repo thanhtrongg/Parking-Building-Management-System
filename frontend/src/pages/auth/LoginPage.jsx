@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -26,7 +26,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -45,15 +45,20 @@ export default function LoginPage() {
         return;
       }
 
+      const user = result.data.user;
+      if (user && user.role === "DRIVER") {
+        user.role = "USER";
+      }
+
       localStorage.setItem("accessToken", result.data.accessToken);
-      localStorage.setItem("user", JSON.stringify(result.data.user));
+      localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("rememberMe", String(rememberMe));
       localStorage.setItem(
         "authExpiresAt",
         String(getExpiryTimestamp(rememberMe)),
       );
 
-      const role = result.data.user.role;
+      const role = user ? user.role : "";
 
       if (role === "ADMIN" || role === "MANAGER" || role === "STAFF") {
         window.location.href = "/dashboard";

@@ -32,11 +32,18 @@ const statusConfig = {
 };
 
 function getSlotNumber(slot) {
-  return slot?.slotNumber || slot?.slotName || slot?.slot_name || "";
+  return slot?.slotCode || slot?.slotNumber || slot?.slotName || slot?.slot_name || "";
 }
 
-function getZoneId(slot) {
-  return slot?.zoneId || slot?.zone_id || "";
+function getZoneId(slot, zones = []) {
+  if (slot?.zoneId || slot?.zone_id) {
+    return slot.zoneId || slot.zone_id;
+  }
+  if (slot?.zone && zones.length > 0) {
+    const found = zones.find(z => (z.zoneName || z.zone_name) === slot.zone);
+    if (found) return found.id;
+  }
+  return "";
 }
 
 function getDistance(slot) {
@@ -141,8 +148,8 @@ function EmptyState({ canManage, onCreate }) {
 
 function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
   const [form, setForm] = useState({
-    slotNumber: getSlotNumber(slot),
-    zoneId: getZoneId(slot),
+    slotCode: slot?.slotCode || "",
+    zoneId: getZoneId(slot, zones),
     status: slot?.status || "AVAILABLE",
     distanceToGate: getDistance(slot),
   });
@@ -160,7 +167,7 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
     event.preventDefault();
 
     onSubmit({
-      slotNumber: form.slotNumber.trim(),
+      slotCode: form.slotCode.trim(),
       zoneId: form.zoneId,
       status: form.status,
       distanceToGate: Number(form.distanceToGate || 0),
@@ -199,12 +206,12 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
         <form className="space-y-5 p-6" onSubmit={handleSubmit}>
           <div>
             <label className="mb-2 block text-sm font-bold text-slate-700">
-              Slot Number
+              Slot Code
             </label>
             <input
-              value={form.slotNumber}
+              value={form.slotCode}
               onChange={(event) =>
-                updateField("slotNumber", event.target.value)
+                updateField("slotCode", event.target.value)
               }
               placeholder="Example: A-D1-001"
               className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
@@ -367,13 +374,6 @@ export default function ParkingSlotsPage() {
     }
   };
 
-  const zoneMap = useMemo(() => {
-    return zones.reduce((map, zone) => {
-      map[zone.id] = zone.zoneName || zone.zone_name;
-      return map;
-    }, {});
-  }, [zones]);
-
   const summary = useMemo(() => {
     const countByStatus = (status) =>
       parkingSlots.filter((slot) => slot.status === status).length;
@@ -390,8 +390,8 @@ export default function ParkingSlotsPage() {
   const filteredSlots = useMemo(() => {
     return parkingSlots.filter((slot) => {
       const slotNumber = getSlotNumber(slot);
-      const zoneName = slot.zoneName || zoneMap[getZoneId(slot)] || "";
-      const vehicleTypeName = slot.vehicleTypeName || "";
+      const zoneName = slot.zone || "";
+      const vehicleTypeName = slot.vehicleType || "";
 
       const matchesKeyword = `${slotNumber} ${zoneName} ${vehicleTypeName}`
         .toLowerCase()
@@ -401,11 +401,11 @@ export default function ParkingSlotsPage() {
         selectedStatus === "ALL" || slot.status === selectedStatus;
 
       const matchesZone =
-        selectedZone === "ALL" || getZoneId(slot) === selectedZone;
+        selectedZone === "ALL" || getZoneId(slot, zones) === selectedZone;
 
       return matchesKeyword && matchesStatus && matchesZone;
     });
-  }, [parkingSlots, keyword, selectedStatus, selectedZone, zoneMap]);
+  }, [parkingSlots, keyword, selectedStatus, selectedZone, zones]);
 
   const showToast = (message) => {
     setToast(message);
@@ -730,8 +730,7 @@ export default function ParkingSlotsPage() {
               <tbody className="divide-y divide-slate-100">
                 {filteredSlots.map((slot) => {
                   const slotNumber = getSlotNumber(slot);
-                  const zoneName =
-                    slot.zoneName || zoneMap[getZoneId(slot)] || "N/A";
+                  const zoneName = slot.zone || "N/A";
                   const distance = getDistance(slot);
 
                   return (
@@ -765,7 +764,7 @@ export default function ParkingSlotsPage() {
 
                       <td className="px-6 py-4">
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                          {slot.vehicleTypeName || "N/A"}
+                          {slot.vehicleType || "N/A"}
                         </span>
                       </td>
 

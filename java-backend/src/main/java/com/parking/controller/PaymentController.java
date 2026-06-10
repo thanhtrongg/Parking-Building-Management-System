@@ -31,9 +31,17 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final VNPayService vnpayService;
 
+    @Operation(summary = "Get all payments")
+    @GetMapping
+    @PreAuthorize("hasAnyRole('MANAGER', 'STAFF', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getAllPayments() {
+        List<PaymentResponse> response = paymentService.getAllPayments();
+        return ResponseEntity.ok(ApiResponse.success("All payments retrieved successfully", response));
+    }
+
     @Operation(summary = "Process a payment")
     @PostMapping
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<ApiResponse<PaymentResponse>> processPayment(@Valid @RequestBody PaymentRequest request) {
         PaymentResponse response = paymentService.processPayment(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -42,7 +50,7 @@ public class PaymentController {
 
     @Operation(summary = "Get payments by session ID")
     @GetMapping("/session/{sessionId}")
-    @PreAuthorize("hasRole('STAFF')")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsBySession(@PathVariable UUID sessionId) {
         List<PaymentResponse> response = paymentService.getPaymentsBySession(sessionId);
         return ResponseEntity.ok(ApiResponse.success("Session payments retrieved successfully", response));
@@ -50,7 +58,7 @@ public class PaymentController {
 
     @Operation(summary = "Create a VNPay payment URL")
     @GetMapping("/vnpay/create")
-    @PreAuthorize("hasAnyRole('DRIVER', 'STAFF', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('DRIVER', 'STAFF', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<VNPayResponse>> createVNPayPayment(
             @RequestParam UUID sessionId,
             HttpServletRequest httpRequest,

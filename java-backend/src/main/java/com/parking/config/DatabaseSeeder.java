@@ -183,6 +183,13 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             log.info("Reservations seeded successfully.");
 
+            // Seed Zones
+            insertZone("11111111-2222-3333-4444-55555555555a", "Zone A", carTypeId, 10);
+            insertZone("11111111-2222-3333-4444-55555555555b", "Zone B", motoTypeId, 15);
+            insertZone("11111111-2222-3333-4444-55555555555c", "Zone C", bikeTypeId, 10);
+
+            log.info("Zones seeded successfully.");
+
             // 9. Seed Feedbacks
             insertFeedback("f1111111-1111-1111-1111-111111111111", driverId, session1Id, "Service", "Friendly staff, clean and safe parking space.", FeedbackStatus.OPEN.name(), LocalDateTime.of(2026, 6, 8, 12, 30, 0));
 
@@ -287,5 +294,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                 content,
                 status,
                 createdAt);
+    }
+
+    private void insertZone(String id, String zoneName, String vehicleTypeId, int totalCapacity) {
+        String query = "INSERT INTO zones (id, zone_name, vehicle_type_id, total_capacity) VALUES (?, ?, ?, ?)";
+        jdbcTemplate.update(query, UUID.fromString(id), zoneName, UUID.fromString(vehicleTypeId), totalCapacity);
     }
 }

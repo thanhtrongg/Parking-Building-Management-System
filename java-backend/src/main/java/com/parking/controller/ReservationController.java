@@ -38,7 +38,7 @@ public class ReservationController {
 
     @Operation(summary = "Cancel a reservation")
     @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('DRIVER', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('DRIVER', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<ReservationResponse>> cancelReservation(
             @PathVariable UUID id,
             Principal principal) {
@@ -56,7 +56,7 @@ public class ReservationController {
 
     @Operation(summary = "Get reservations by status (manager)")
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<ReservationResponse>>> getReservationsByStatus(
             @RequestParam(required = false) String status) {
         List<ReservationResponse> response = reservationService.getReservationsByStatus(status);

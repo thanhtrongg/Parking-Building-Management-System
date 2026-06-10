@@ -1,30 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
-
-const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const API_BASE_URL = API_ROOT.endsWith("/api") ? API_ROOT : `${API_ROOT}/api`;
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("accessToken");
-
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
+import { apiRequest } from "../../services/api";
 
 async function fetchApi(path) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${path}`);
+  try {
+    const result = await apiRequest(path);
+    return result?.data || [];
+  } catch (error) {
+    console.error(`Error fetching ${path}:`, error);
+    return [];
   }
-
-  const result = await response.json();
-  return result?.data || [];
 }
 
 function formatCurrency(value) {
@@ -88,6 +74,7 @@ function normalizeArray(value) {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.data)) return value.data;
   if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.content)) return value.content;
   return [];
 }
 

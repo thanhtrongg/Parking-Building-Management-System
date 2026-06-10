@@ -4,32 +4,27 @@ import { apiRequest } from "../../services/api";
 
 // Theme map cho các loại xe để hiển thị icon/màu sắc tương ứng trên Card
 const vehicleThemes = {
-  "Ô tô": {
+  "CAR": {
     gradient: "from-sky-500 via-blue-600 to-indigo-700",
     soft: "bg-sky-50 text-sky-700 border-sky-100",
     icon: "directions_car",
   },
-  "Xe máy": {
+  "MOTORBIKE": {
     gradient: "from-orange-500 via-amber-500 to-yellow-400",
     soft: "bg-orange-50 text-orange-700 border-orange-100",
     icon: "two_wheeler",
   },
-  "Xe đạp": {
+  "BICYCLE": {
     gradient: "from-emerald-500 via-green-500 to-lime-400",
     soft: "bg-emerald-50 text-emerald-700 border-emerald-100",
     icon: "directions_bike",
   },
-  "Xe điện": {
+  "ELECTRIC_VEHICLE": {
     gradient: "from-cyan-500 via-blue-500 to-violet-600",
     soft: "bg-cyan-50 text-cyan-700 border-cyan-100",
     icon: "ev_station",
   },
-  "Xe máy điện": {
-    gradient: "from-cyan-500 via-blue-500 to-violet-600",
-    soft: "bg-cyan-50 text-cyan-700 border-cyan-100",
-    icon: "electric_moped",
-  },
-  "Xe tải nhỏ": {
+  "LIGHT_TRUCK": {
     gradient: "from-slate-700 via-zinc-700 to-gray-500",
     soft: "bg-slate-50 text-slate-700 border-slate-200",
     icon: "local_shipping",
@@ -317,7 +312,7 @@ function ZoneFormModal({
               onChange={(e) =>
                 setForm((p) => ({ ...p, zoneName: e.target.value }))
               }
-              placeholder="Example: Khu vực A, Block B..."
+              placeholder="Example: Zone A, Block B..."
               className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
             />
           </div>
