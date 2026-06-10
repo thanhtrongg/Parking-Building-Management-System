@@ -370,3 +370,30 @@ Content-Type: {{contentType}}
 ### Get system configuration (Requires Admin)
 GET {{host}}/admin/config
 Authorization: Bearer {{adminToken}}
+
+
+# ==========================================
+# 11. GUEST & ANONYMOUS OPERATIONS
+# ==========================================
+
+### Get active buildings as Guest (No token)
+GET {{host}}/buildings/active
+
+### Get active building details as Guest
+GET {{host}}/buildings/8b72da1f-50b3-4632-a5e2-632b8ac425f1
+
+### Get pricing for building as Guest
+GET {{host}}/pricing/building/8b72da1f-50b3-4632-a5e2-632b8ac425f1
+
+### Get floors for building as Guest
+GET {{host}}/floors/building/8b72da1f-50b3-4632-a5e2-632b8ac425f1
+
+### Get vehicle types as Guest (Should be public)
+GET {{host}}/vehicle-types
+
+### Get all slots on Floor 1 as Guest (Should be public)
+GET {{host}}/slots/floor/9f3c1d9b-a48e-49b0-9b43-982823a0b12f
+
+### Get available slots on Floor 1 as Guest (Should be public)
+GET {{host}}/slots/floor/9f3c1d9b-a48e-49b0-9b43-982823a0b12f/available
+

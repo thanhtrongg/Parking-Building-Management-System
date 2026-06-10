@@ -84,6 +84,9 @@ public class ControllerE2ETest {
     @MockitoBean
     private FeedbackService feedbackService;
 
+    @MockitoBean
+    private com.parking.service.VehicleTypeService vehicleTypeService;
+
     // --- SLOT CONTROLLER TESTS ---
 
     @Test
@@ -103,6 +106,59 @@ public class ControllerE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].slotCode").value("A-01"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/slots/floor/{floorId} - success for guest")
+    void testGetSlotsByFloor_asGuest() throws Exception {
+        UUID floorId = UUID.randomUUID();
+        SlotResponse response = SlotResponse.builder()
+                .id(UUID.randomUUID())
+                .slotCode("A-01")
+                .status(SlotStatus.AVAILABLE)
+                .build();
+
+        when(slotService.getSlotsByFloor(floorId)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/slots/floor/" + floorId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].slotCode").value("A-01"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/slots/floor/{floorId}/available - success for guest")
+    void testGetAvailableSlotsByFloor_asGuest() throws Exception {
+        UUID floorId = UUID.randomUUID();
+        SlotResponse response = SlotResponse.builder()
+                .id(UUID.randomUUID())
+                .slotCode("A-01")
+                .status(SlotStatus.AVAILABLE)
+                .build();
+
+        when(slotService.getAvailableSlotsByFloor(floorId)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/slots/floor/" + floorId + "/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].slotCode").value("A-01"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/vehicle-types - success for guest")
+    void testGetVehicleTypes_asGuest() throws Exception {
+        com.parking.dto.vehicletype.VehicleTypeResponse response = com.parking.dto.vehicletype.VehicleTypeResponse.builder()
+                .id(UUID.randomUUID())
+                .name("CAR")
+                .description("Private cars")
+                .build();
+
+        when(vehicleTypeService.getAllVehicleTypes()).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/vehicle-types"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].name").value("CAR"));
     }
 
     @Test

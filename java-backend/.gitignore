@@ -9,6 +9,9 @@ target/
 *.iws
 .project
 GEMINI.md
+.gemini
+.beads/
+.claude/settings.local.json
 .factorypath
 .classpath
 .settings/
@@ -32,3 +35,8 @@ logs/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

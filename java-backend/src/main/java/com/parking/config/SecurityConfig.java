@@ -46,6 +46,8 @@ public class SecurityConfig {
                         .requestMatchers("/buildings/{id}").permitAll()
                         .requestMatchers("/floors/building/{buildingId}").permitAll()
                         .requestMatchers("/pricing/building/{buildingId}").permitAll()
+                        .requestMatchers("/vehicle-types", "/vehicle-types/{id}").permitAll()
+                        .requestMatchers("/slots/floor/{floorId}", "/slots/floor/{floorId}/available").permitAll()
                         .requestMatchers("/sessions/public/lookup").permitAll()
                         .requestMatchers("/payments/vnpay/create-guest").permitAll()
                         .anyRequest().authenticated())
