@@ -574,6 +574,7 @@ export default function ParkingSessionsPage() {
 
     return (
         <AdminLayout>
+            <div className="parking-sessions-page">
             <PageHero total={sessions.length} activeCount={activeCount} />
 
             <Alert alert={alert} onClose={() => setAlert({ type: "", message: "" })} />
@@ -613,6 +614,7 @@ export default function ParkingSessionsPage() {
                 onConfirm={handleCheckout}
                 onPaymentMethodChange={setCheckoutPaymentMethod}
             />
+            </div>
         </AdminLayout>
     );
 }
