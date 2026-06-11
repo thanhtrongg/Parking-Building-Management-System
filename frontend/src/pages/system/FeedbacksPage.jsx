@@ -40,7 +40,7 @@ function getStatusMeta(status) {
 function formatDateTime(value) {
   if (!value) return "N/A";
 
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));

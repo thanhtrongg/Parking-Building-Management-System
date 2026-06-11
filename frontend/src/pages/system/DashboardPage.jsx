@@ -383,7 +383,7 @@ function RecentSessions({ sessions }) {
                     </td>
 
                     <td className="px-6 py-4 font-medium text-slate-500">
-                      {entry ? new Date(entry).toLocaleString("vi-VN") : "N/A"}
+                      {entry ? new Date(entry).toLocaleString("en-US") : "N/A"}
                     </td>
 
                     <td className="px-6 py-4">

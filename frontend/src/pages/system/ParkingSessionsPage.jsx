@@ -5,9 +5,9 @@ import { apiRequest } from "../../services/api";
 // Helper to format date-time
 const formatDateTime = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleString("vi-VN", {
-        day: "2-digit",
+    return new Date(dateString).toLocaleString("en-US", {
         month: "2-digit",
+        day: "2-digit",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",

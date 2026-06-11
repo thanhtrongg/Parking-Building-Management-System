@@ -15,9 +15,9 @@ const cancellableStatuses = ["CONFIRMED"];
 function formatDateTime(value) {
   if (!value) return "N/A";
 
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
+  return new Intl.DateTimeFormat("en-US", {
     month: "2-digit",
+    day: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",

@@ -1,5 +1,22 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
+const refineVehicleTypeName = (typeStr) => {
+  if (!typeStr) return "N/A";
+  const str = String(typeStr).toUpperCase().trim();
+  const mapping = {
+    "CAR": "Car",
+    "MOTORBIKE": "Motorbike",
+    "BICYCLE": "Bicycle",
+    "ELECTRIC_VEHICLE": "Electric Vehicle",
+    "LIGHT_TRUCK": "Light Truck"
+  };
+  if (mapping[str]) return mapping[str];
+  return str
+    .split(/[\s_-]+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 export const apiRequest = async (path, options = {}) => {
   const token = localStorage.getItem("accessToken");
   
@@ -302,6 +319,41 @@ export const apiRequest = async (path, options = {}) => {
       }
       const normalizeItem = (item) => {
         if (!item) return;
+
+        // Universal vehicleType name refinement
+        if (item.typeName !== undefined || item.name !== undefined) {
+          const rawName = item.typeName || item.name;
+          if (rawName) {
+            item.typeName = refineVehicleTypeName(rawName);
+            item.name = item.typeName;
+          }
+        }
+        if (item.vehicleType && typeof item.vehicleType === "object") {
+          const rawName = item.vehicleType.typeName || item.vehicleType.name;
+          if (rawName) {
+            item.vehicleType.typeName = refineVehicleTypeName(rawName);
+            item.vehicleType.name = item.vehicleType.typeName;
+            item.vehicleTypeName = item.vehicleType.typeName;
+          }
+        } else if (item.vehicleType && typeof item.vehicleType === "string") {
+          const refined = refineVehicleTypeName(item.vehicleType);
+          item.vehicleType = { typeName: refined, name: refined };
+          item.vehicleTypeName = refined;
+        }
+        if (item.vehicle_types && typeof item.vehicle_types === "object") {
+          const rawName = item.vehicle_types.type_name || item.vehicle_types.name;
+          if (rawName) {
+            item.vehicle_types.type_name = refineVehicleTypeName(rawName);
+            item.vehicle_types.name = item.vehicle_types.type_name;
+            item.vehicleTypeName = item.vehicle_types.type_name;
+          }
+        }
+        if (item.vehicleTypeName) {
+          item.vehicleTypeName = refineVehicleTypeName(item.vehicleTypeName);
+        }
+        if (item.vehicle_type_name) {
+          item.vehicle_type_name = refineVehicleTypeName(item.vehicle_type_name);
+        }
         if (item.role === "DRIVER") {
           item.role = "USER";
         }
@@ -374,7 +426,7 @@ export const apiRequest = async (path, options = {}) => {
             const typeStr = typeof item.vehicleType === "string" 
               ? item.vehicleType 
               : (item.vehicleType.name || item.vehicleType.typeName || String(item.vehicleType));
-            const formattedType = typeStr ? (typeStr.charAt(0).toUpperCase() + typeStr.slice(1).toLowerCase()) : "N/A";
+            const formattedType = refineVehicleTypeName(typeStr);
             item.vehicleType = {
               typeName: formattedType
             };
@@ -422,7 +474,7 @@ export const apiRequest = async (path, options = {}) => {
             const typeStr = typeof item.vehicleType === "string" 
               ? item.vehicleType 
               : (item.vehicleType.name || item.vehicleType.typeName || String(item.vehicleType));
-            const formattedType = typeStr ? (typeStr.charAt(0).toUpperCase() + typeStr.slice(1).toLowerCase()) : "N/A";
+            const formattedType = refineVehicleTypeName(typeStr);
             item.vehicleType = {
               typeName: formattedType
             };
@@ -454,7 +506,7 @@ export const apiRequest = async (path, options = {}) => {
             const typeStr = typeof item.vehicleType === "string" 
               ? item.vehicleType 
               : (item.vehicleType ? (item.vehicleType.name || item.vehicleType.typeName || String(item.vehicleType)) : "N/A");
-            const formattedType = typeStr ? (typeStr.charAt(0).toUpperCase() + typeStr.slice(1).toLowerCase()) : "N/A";
+            const formattedType = refineVehicleTypeName(typeStr);
 
             item.parkingSession = {
               id: item.sessionId,
