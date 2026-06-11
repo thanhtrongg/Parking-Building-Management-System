@@ -318,7 +318,7 @@ export const apiRequest = async (path, options = {}) => {
         result.data = result.data.content;
       }
       const normalizeItem = (item) => {
-        if (!item) return;
+        if (!item || typeof item !== "object") return;
 
         // Universal vehicleType name refinement
         if (item.typeName !== undefined || item.name !== undefined) {
