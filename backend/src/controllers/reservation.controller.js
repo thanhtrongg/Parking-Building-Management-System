@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { getFeeForVehicleType } from "../services/pricing.service.js";
+import jwt from "jsonwebtoken";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -27,6 +28,36 @@ const STAFF_ALLOWED_STATUSES = [
 const USER_CANCELLABLE_STATUSES = ["CONFIRMED"];
 
 const ACTIVE_PARKING_SESSION_STATUSES = ["ACTIVE"];
+
+const QR_PURPOSE = "RESERVATION_CHECK_IN";
+const CHECK_IN_GRACE_PERIOD_MINUTES = 15;
+
+const getJwtSecret = () => {
+  return process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || "your-secret-key";
+};
+
+const buildReservationQrToken = (reservation) => {
+  return jwt.sign(
+    {
+      purpose: QR_PURPOSE,
+      reservationId: reservation.id,
+      userId: reservation.user_id,
+    },
+    getJwtSecret(),
+    {
+      expiresIn: "30d",
+    },
+  );
+};
+
+const buildReservationQrPayload = (reservation) => {
+  const token = buildReservationQrToken(reservation);
+
+  return {
+    token,
+    text: token,
+  };
+};
 
 const isValidUUID = (id) => {
   return typeof id === "string" && UUID_REGEX.test(id);
@@ -91,6 +122,9 @@ const mapReservationResponse = (reservation) => {
     endTime: reservation.expected_end_time,
     status: reservation.status,
     createdAt: reservation.created_at,
+    qr: reservation.status === "CONFIRMED"
+      ? buildReservationQrPayload(reservation)
+      : null,
     estimatedFee: reservation.estimatedFee ?? 0,
     parkingHours: reservation.parkingHours ?? 0,
     payment: latestPayment
@@ -192,8 +226,93 @@ const checkReservationOverlap = async ({
   });
 };
 
+export const expireOverdueConfirmedReservations = async () => {
+  const checkInDeadline = new Date(
+    Date.now() - CHECK_IN_GRACE_PERIOD_MINUTES * 60 * 1000,
+  );
+
+  const overdueReservations = await prisma.reservations.findMany({
+    where: {
+      status: "CONFIRMED",
+      expected_start_time: {
+        lt: checkInDeadline,
+      },
+    },
+    select: {
+      id: true,
+      parking_slot_id: true,
+    },
+  });
+
+  if (overdueReservations.length === 0) {
+    return 0;
+  }
+
+  const overdueReservationIds = overdueReservations.map(
+    (reservation) => reservation.id,
+  );
+  const affectedSlotIds = [
+    ...new Set(
+      overdueReservations
+        .map((reservation) => reservation.parking_slot_id)
+        .filter(Boolean),
+    ),
+  ];
+
+  await prisma.$transaction(async (tx) => {
+    await tx.reservations.updateMany({
+      where: {
+        id: {
+          in: overdueReservationIds,
+        },
+        status: "CONFIRMED",
+      },
+      data: {
+        status: "CANCELLED",
+      },
+    });
+
+    await Promise.all(
+      affectedSlotIds.map(async (slotId) => {
+        const activeReservationCount = await tx.reservations.count({
+          where: {
+            parking_slot_id: slotId,
+            status: {
+              in: ACTIVE_RESERVATION_STATUSES,
+            },
+          },
+        });
+
+        const activeSessionCount = await tx.parking_sessions.count({
+          where: {
+            status: {
+              in: ACTIVE_PARKING_SESSION_STATUSES,
+            },
+            OR: [{ parking_slot_id: slotId }, { assigned_slot_id: slotId }],
+          },
+        });
+
+        if (activeReservationCount === 0 && activeSessionCount === 0) {
+          await tx.parking_slots.update({
+            where: {
+              id: slotId,
+            },
+            data: {
+              status: "AVAILABLE",
+            },
+          });
+        }
+      }),
+    );
+  });
+
+  return overdueReservations.length;
+};
+
 export const getReservations = async (req, res) => {
   try {
+    await expireOverdueConfirmedReservations();
+
     const where = req.user.role === "USER" ? { user_id: req.user.id } : {};
 
     const reservations = await prisma.reservations.findMany({
@@ -222,6 +341,8 @@ export const getReservations = async (req, res) => {
 
 export const getReservationById = async (req, res) => {
   try {
+    await expireOverdueConfirmedReservations();
+
     const { id } = req.params;
 
     if (!isValidUUID(id)) {
@@ -804,6 +925,210 @@ export const cancelMyReservation = async (req, res) => {
     });
   } catch (error) {
     console.error("Cancel my reservation error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export const checkInReservationByQr = async (req, res) => {
+  try {
+    const { token, qrText, licensePlate } = req.body;
+    const rawToken = token || (() => {
+      if (!qrText) return "";
+
+      try {
+        const parsed = JSON.parse(qrText);
+        return parsed.token || "";
+      } catch {
+        return qrText;
+      }
+    })();
+
+    if (!rawToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing QR token",
+      });
+    }
+
+    let payload;
+
+    try {
+      payload = jwt.verify(rawToken, getJwtSecret());
+    } catch {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired QR token",
+      });
+    }
+
+    if (payload.purpose !== QR_PURPOSE || !isValidUUID(payload.reservationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reservation QR code",
+      });
+    }
+
+    await expireOverdueConfirmedReservations();
+
+    const reservation = await prisma.reservations.findUnique({
+      where: {
+        id: payload.reservationId,
+      },
+      include: {
+        ...reservationInclude,
+        parking_slots: {
+          select: {
+            id: true,
+            slot_name: true,
+            status: true,
+            zone_id: true,
+            zones: {
+              select: {
+                id: true,
+                zone_name: true,
+                total_capacity: true,
+                vehicle_type_id: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
+    }
+
+    if (reservation.user_id !== payload.userId) {
+      return res.status(400).json({
+        success: false,
+        message: "QR token does not match reservation owner",
+      });
+    }
+
+    if (reservation.status === "CHECKED_IN") {
+      return res.status(409).json({
+        success: false,
+        message: "Reservation has already been checked in",
+      });
+    }
+
+    if (reservation.status !== "CONFIRMED") {
+      return res.status(400).json({
+        success: false,
+        message: "Only confirmed reservations can be checked in",
+      });
+    }
+
+    if (!reservation.parking_slot_id || !reservation.parking_slots) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation does not have an assigned parking slot",
+      });
+    }
+
+    if (BLOCKED_SLOT_STATUSES.includes(reservation.parking_slots.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Reserved parking slot is unavailable",
+      });
+    }
+
+    const now = new Date();
+
+    if (now > reservation.expected_end_time) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation time window has ended",
+      });
+    }
+
+    const activeSession = await prisma.parking_sessions.findFirst({
+      where: {
+        status: "ACTIVE",
+        OR: [
+          { parking_slot_id: reservation.parking_slot_id },
+          { assigned_slot_id: reservation.parking_slot_id },
+          {
+            user_id: reservation.user_id,
+            vehicle_type_id: reservation.vehicle_type_id,
+            parking_slot_id: reservation.parking_slot_id,
+          },
+        ],
+      },
+    });
+
+    if (activeSession) {
+      return res.status(409).json({
+        success: false,
+        message: "Parking slot already has an active session",
+      });
+    }
+
+    const normalizedLicensePlate = String(
+      licensePlate || `QR-${reservation.id.slice(0, 8)}`,
+    )
+      .trim()
+      .toUpperCase()
+      .slice(0, 20);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const session = await tx.parking_sessions.create({
+        data: {
+          ticket_code: `TK-${Date.now()}`,
+          license_plate: normalizedLicensePlate,
+          user_id: reservation.user_id,
+          vehicle_type_id: reservation.vehicle_type_id,
+          parking_slot_id: reservation.parking_slot_id,
+          checkin_staff_id: req.user?.id || null,
+          entry_time: now,
+          status: "ACTIVE",
+        },
+      });
+
+      const updatedReservation = await tx.reservations.update({
+        where: {
+          id: reservation.id,
+        },
+        data: {
+          status: "CHECKED_IN",
+        },
+        include: reservationInclude,
+      });
+
+      await tx.parking_slots.update({
+        where: {
+          id: reservation.parking_slot_id,
+        },
+        data: {
+          status: "OCCUPIED",
+        },
+      });
+
+      return {
+        session,
+        reservation: updatedReservation,
+      };
+    });
+
+    return res.json({
+      success: true,
+      message: "QR check-in successful. Barrier can be opened.",
+      data: {
+        session: result.session,
+        reservation: await mapReservationResponseWithFee(result.reservation),
+      },
+    });
+  } catch (error) {
+    console.error("QR reservation check-in error:", error);
 
     return res.status(500).json({
       success: false,

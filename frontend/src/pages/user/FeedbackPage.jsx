@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
-import { getReservationCode } from "./BookingHistoryPage";
+import { getReservationCode } from "../../utils/reservation";
 
 function normalizeBookings(value) {
   if (Array.isArray(value)) return value;

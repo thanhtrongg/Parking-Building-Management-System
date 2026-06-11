@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
+import { API_URL } from "../../services/api";
 
-const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const API_BASE_URL = API_ROOT.endsWith("/api") ? API_ROOT : `${API_ROOT}/api`;
+const API_BASE_URL = API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`;
 
 function getAuthHeaders() {
   const token = localStorage.getItem("accessToken");

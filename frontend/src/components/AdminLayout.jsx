@@ -39,6 +39,12 @@ const navItems = [
     roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
+    icon: "qr_code_scanner",
+    label: "QR Check-in",
+    path: "/qr-check-in",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
+  },
+  {
     icon: "payments",
     label: "Payments",
     path: "/payments",

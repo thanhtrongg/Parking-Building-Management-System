@@ -6,6 +6,7 @@ import {
   createReservation,
   updateReservation,
   deleteReservation,
+  checkInReservationByQr,
 } from "../controllers/reservation.controller.js";
 
 import { verifyToken, requireRoles } from "../middlewares/auth.middleware.js";
@@ -31,6 +32,13 @@ router.post(
   verifyToken,
   requireRoles("ADMIN", "MANAGER", "USER"),
   createReservation,
+);
+
+router.post(
+  "/qr-check-in",
+  verifyToken,
+  requireRoles("ADMIN", "MANAGER", "STAFF"),
+  checkInReservationByQr,
 );
 
 router.put(

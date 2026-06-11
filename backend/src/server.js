@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes.js";
 import parkingSlotRoutes from "./routes/parkingSlot.routes.js";
 import parkingSessionRoutes from "./routes/parkingSession.routes.js";
 import reservationRoutes from "./routes/reservation.routes.js";
+import { expireOverdueConfirmedReservations } from "./controllers/reservation.controller.js";
 import userReservationRoutes from "./routes/userReservation.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import vehicleTypeRoutes from "./routes/vehicleType.routes.js";
@@ -68,7 +69,28 @@ app.use("/api/user/feedbacks", userFeedbackRoutes);
 app.use("/api/user/parking-sessions", userParkingSessionRoutes);
 
 const PORT = process.env.PORT || 5000;
+const RESERVATION_EXPIRY_INTERVAL_MS = 60 * 1000;
+
+const runReservationExpiryJob = async () => {
+  try {
+    const expiredCount = await expireOverdueConfirmedReservations();
+
+    if (expiredCount > 0) {
+      console.log(`Auto-cancelled ${expiredCount} overdue reservation(s)`);
+    }
+  } catch (error) {
+    console.error("Reservation expiry job error:", error);
+  }
+};
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  runReservationExpiryJob();
+
+  const expiryInterval = setInterval(
+    runReservationExpiryJob,
+    RESERVATION_EXPIRY_INTERVAL_MS,
+  );
+
+  expiryInterval.unref?.();
 });

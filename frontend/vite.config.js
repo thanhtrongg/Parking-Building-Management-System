@@ -7,4 +7,17 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    allowedHosts: [
+      "anvil-enlisted-kindling.ngrok-free.dev",
+      ".ngrok-free.app",
+      ".ngrok-free.dev",
+    ],
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+      },
+    },
+  },
 })

@@ -17,6 +17,7 @@ import ParkingSlotsPage from "./pages/system/ParkingSlotsPage";
 import PaymentsPage from "./pages/system/PaymentsPage";
 import PricingPoliciesPage from "./pages/system/PricingPoliciesPage";
 import ReservationsPage from "./pages/system/ReservationsPage";
+import QrCheckInPage from "./pages/system/QrCheckInPage";
 import FeedbacksPage from "./pages/system/FeedbacksPage";
 import AdminUsersPage from "./pages/system/UsersPage";
 import AdminVehiclesPage from "./pages/system/VehiclesPage";
@@ -217,6 +218,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={systemRoles}>
               <ReservationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/qr-check-in"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <QrCheckInPage />
             </ProtectedRoute>
           }
         />

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_URL } from "../../services/api";
 
 const authImage =
   "https://images.unsplash.com/photo-1649307035604-ab3c5e5c9e7a?auto=format&fit=crop&q=82&w=1600";
