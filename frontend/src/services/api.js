@@ -30,6 +30,15 @@ export const apiRequest = async (path, options = {}) => {
     cleanPath = cleanPath.slice(1);
   }
   
+  // Separate base path and query parameters
+  let basePath = cleanPath;
+  let queryString = "";
+  if (cleanPath.includes("?")) {
+    const questionMarkIndex = cleanPath.indexOf("?");
+    basePath = cleanPath.substring(0, questionMarkIndex);
+    queryString = cleanPath.substring(questionMarkIndex);
+  }
+
   // Clean options copy
   let cleanOptions = { ...options };
 
@@ -47,8 +56,26 @@ export const apiRequest = async (path, options = {}) => {
       if (bodyObj.role === "USER") {
         bodyObj.role = "DRIVER";
       }
-      
-      cleanOptions.body = JSON.stringify(bodyObj);
+
+      // Map feedback payload keys from frontend to backend DTO
+      const method = (cleanOptions.method || "GET").toUpperCase();
+      if ((basePath === "user/feedbacks" || basePath === "feedback") && method === "POST") {
+        if (bodyObj.subject !== undefined || bodyObj.message !== undefined) {
+          const category = bodyObj.subject || "General";
+          const bookingInfo = bodyObj.bookingId ? `[Booking ID: ${bodyObj.bookingId}] ` : "";
+          const content = bookingInfo + (bodyObj.message || "");
+          
+          // Construct backend FeedbackRequest payload
+          const backendFeedback = {
+            category: category,
+            content: content,
+            sessionId: null // Session is optional
+          };
+          cleanOptions.body = JSON.stringify(backendFeedback);
+        }
+      } else {
+        cleanOptions.body = JSON.stringify(bodyObj);
+      }
     } catch {
       // Body not JSON, keep as is
     }
@@ -271,30 +298,35 @@ export const apiRequest = async (path, options = {}) => {
   }
 
   // Dynamic path translations for Spring Boot REST API
-  if (cleanPath === "users") {
-    cleanPath = "admin/users?size=1000";
-  } else if (cleanPath === "user/feedbacks") {
-    cleanPath = "feedback/my";
-  } else if (cleanPath === "feedbacks") {
-    cleanPath = "feedback";
-  } else if (cleanPath.startsWith("feedbacks/") && cleanPath.endsWith("/status")) {
-    const feedbackId = cleanPath.split("/")[1];
-    cleanPath = `feedback/${feedbackId}/status`;
+  if (basePath === "users") {
+    basePath = "admin/users";
+    if (!queryString.includes("size=")) {
+      queryString = queryString ? `${queryString}&size=1000` : "?size=1000";
+    }
+  } else if (basePath === "user/feedbacks") {
+    basePath = (cleanOptions.method || "GET").toUpperCase() === "POST" ? "feedback" : "feedback/my";
+  } else if (basePath === "feedbacks") {
+    basePath = "feedback";
+  } else if (basePath.startsWith("feedbacks/") && basePath.endsWith("/status")) {
+    const feedbackId = basePath.split("/")[1];
+    basePath = `feedback/${feedbackId}/status`;
     if (cleanOptions.method === "PUT") cleanOptions.method = "PATCH";
-  } else if (cleanPath.startsWith("feedbacks/") && cleanPath.endsWith("/reply")) {
-    const feedbackId = cleanPath.split("/")[1];
-    cleanPath = `feedback/${feedbackId}/reply`;
-  } else if (cleanPath === "parking-slots") {
-    cleanPath = "slots";
-  } else if (cleanPath === "reservations") {
-    cleanPath = isDriver ? "reservations/my" : "reservations";
-  } else if (cleanPath === "parking-sessions") {
-    cleanPath = isDriver ? "sessions/my" : "sessions/active";
-  } else if (cleanPath.startsWith("parking-sessions/")) {
-    cleanPath = `sessions/${cleanPath.slice(17)}`;
-  } else if (cleanPath === "user/parking-sessions") {
-    cleanPath = "sessions/my";
+  } else if (basePath.startsWith("feedbacks/") && basePath.endsWith("/reply")) {
+    const feedbackId = basePath.split("/")[1];
+    basePath = `feedback/${feedbackId}/reply`;
+  } else if (basePath === "parking-slots") {
+    basePath = "slots";
+  } else if (basePath === "reservations") {
+    basePath = isDriver ? "reservations/my" : "reservations";
+  } else if (basePath === "parking-sessions") {
+    basePath = isDriver ? "sessions/my" : "sessions/active";
+  } else if (basePath.startsWith("parking-sessions/")) {
+    basePath = `sessions/${basePath.slice(17)}`;
+  } else if (basePath === "user/parking-sessions") {
+    basePath = "sessions/my";
   }
+
+  cleanPath = basePath + queryString;
 
   const response = await fetch(`${API_URL}/${cleanPath}`, {
     ...cleanOptions,
@@ -362,6 +394,28 @@ export const apiRequest = async (path, options = {}) => {
         }
         if (item.email && !item.username) {
           item.username = item.email.split("@")[0];
+        }
+
+        // Normalize feedback fields
+        if (item.category !== undefined && item.content !== undefined) {
+          if (item.subject === undefined) {
+            item.subject = item.category;
+          }
+          if (item.message === undefined) {
+            item.message = item.content;
+          }
+          if (!item.bookingId) {
+            if (item.content && item.content.startsWith("[Booking ID: ")) {
+              const endIndex = item.content.indexOf("]");
+              if (endIndex !== -1) {
+                item.bookingId = item.content.substring(13, endIndex);
+                // Strip the booking ID prefix from the message displayed to the user
+                item.message = item.content.substring(endIndex + 1).trim();
+              }
+            } else if (item.session) {
+              item.bookingId = item.session.ticketCode || item.session.id;
+            }
+          }
         }
 
         // Normalize pricing policies (map effectiveFrom to effectiveDate)
