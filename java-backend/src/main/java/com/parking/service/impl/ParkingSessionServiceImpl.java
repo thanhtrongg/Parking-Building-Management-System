@@ -36,7 +36,9 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     private final UserRepository userRepository;
     private final VehicleTypeRepository vehicleTypeRepository;
     private final PricingRepository pricingRepository;
+    private final PaymentRepository paymentRepository;
     private final AuditService auditService;
+
 
     @Override
     public SessionResponse checkIn(CheckInRequest request, String currentUserEmail) {
@@ -264,6 +266,35 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     }
 
     private SessionResponse mapToResponse(ParkingSession session) {
+        com.parking.entity.Payment payment = paymentRepository.findBySessionId(session.getId()).stream()
+                .filter(p -> p.getStatus() == com.parking.enums.PaymentStatus.PAID || p.getStatus() == com.parking.enums.PaymentStatus.REFUNDED)
+                .findFirst()
+                .orElse(null);
+        if (payment == null) {
+            payment = paymentRepository.findBySessionId(session.getId()).stream().findFirst().orElse(null);
+        }
+
+        com.parking.dto.payment.PaymentResponse paymentRes = null;
+        if (payment != null) {
+            paymentRes = com.parking.dto.payment.PaymentResponse.builder()
+                    .id(payment.getId())
+                    .sessionId(session.getId())
+                    .amount(payment.getAmount())
+                    .extraFee(payment.getExtraFee())
+                    .method(payment.getMethod())
+                    .status(payment.getStatus())
+                    .paidAt(payment.getPaidAt())
+                    .build();
+        }
+
+        BigDecimal totalFee = BigDecimal.ZERO;
+        if (paymentRes != null) {
+            totalFee = paymentRes.getAmount().add(paymentRes.getExtraFee() != null ? paymentRes.getExtraFee() : BigDecimal.ZERO);
+        } else if (session.getSlot() != null) {
+            LocalDateTime endTime = session.getCheckOutTime() != null ? session.getCheckOutTime() : LocalDateTime.now();
+            totalFee = calculateFee(session, endTime);
+        }
+
         return SessionResponse.builder()
                 .id(session.getId())
                 .licensePlate(session.getLicensePlate())
@@ -283,6 +314,8 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
                 .staffInName(session.getStaffIn() != null ? session.getStaffIn().getFullName() : null)
                 .staffOutId(session.getStaffOut() != null ? session.getStaffOut().getId() : null)
                 .staffOutName(session.getStaffOut() != null ? session.getStaffOut().getFullName() : null)
+                .totalFee(totalFee)
+                .payment(paymentRes)
                 .build();
     }
 

@@ -160,7 +160,7 @@ function PremiumCar({
         />
       </RoundedBox>
 
-      {/* Windshield - dùng polygonOffset để tránh z-fighting */}
+      {/* Windshield - use polygonOffset to avoid z-fighting */}
       <RoundedBox
         args={[0.82, 0.24, 0.09]}
         position={[0, 0.23, 0.38]}
@@ -309,7 +309,7 @@ function PremiumCar({
   );
 }
 
-// --- SLOT SIGNAL (Đã tăng khoảng cách để tránh z-fighting) ---
+// --- SLOT SIGNAL (Increased distance to avoid z-fighting) ---
 function SlotSignal({ color = "#22c55e" }) {
   return (
     <group>
@@ -360,7 +360,7 @@ function ParkingSlot({ position, state = "available", carColor = "#2563eb" }) {
   );
 }
 
-// --- PARKING DECK (Đã fix z-fighting triệt để) ---
+// --- PARKING DECK (Fixed z-fighting thoroughly) ---
 function ParkingDeck({ y = 0, slots = [] }) {
   return (
     <group position={[0, y, 0]}>
@@ -898,7 +898,7 @@ function HeroScene({ progressRef }) {
 
       <ParkingBuilding progressRef={progressRef} />
 
-      {/* FIX TRIỆT ĐỂ: MeshReflectorMaterial đơn giản, an toàn */}
+      {/* FIXED THOROUGHLY: Simple, safe MeshReflectorMaterial */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.28, 0]}>
         <planeGeometry args={[50, 50]} />
         <MeshReflectorMaterial

@@ -5,6 +5,8 @@ import com.parking.dto.payment.PaymentResponse;
 import com.parking.entity.ParkingSession;
 import com.parking.entity.ParkingSlot;
 import com.parking.entity.Payment;
+import com.parking.entity.User;
+
 import com.parking.enums.PaymentStatus;
 import com.parking.enums.SessionStatus;
 import com.parking.enums.SlotStatus;
@@ -98,14 +100,26 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private PaymentResponse mapToResponse(Payment payment) {
+        ParkingSession session = payment.getSession();
+        User driver = session != null ? session.getDriver() : null;
+        ParkingSlot slot = session != null ? session.getSlot() : null;
+
         return PaymentResponse.builder()
                 .id(payment.getId())
-                .sessionId(payment.getSession().getId())
+                .sessionId(session != null ? session.getId() : null)
                 .amount(payment.getAmount())
                 .extraFee(payment.getExtraFee())
                 .method(payment.getMethod())
                 .status(payment.getStatus())
                 .paidAt(payment.getPaidAt())
+                .ticketCode(session != null ? session.getTicketCode() : null)
+                .licensePlate(session != null ? session.getLicensePlate() : null)
+                .driverName(driver != null ? driver.getFullName() : "Guest User")
+                .driverEmail(driver != null ? driver.getEmail() : "No email")
+                .vehicleType(session != null && session.getVehicleType() != null ? session.getVehicleType().name() : null)
+                .slotCode(slot != null ? slot.getSlotCode() : null)
+                .checkInTime(session != null ? session.getCheckInTime() : null)
+                .checkOutTime(session != null ? session.getCheckOutTime() : null)
                 .build();
     }
 }

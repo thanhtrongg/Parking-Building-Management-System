@@ -179,6 +179,8 @@ public class ReservationServiceImpl implements ReservationService {
                 .createdAt(reservation.getCreatedAt())
                 .driverId(reservation.getDriver().getId())
                 .driverName(reservation.getDriver().getFullName())
+                .driverEmail(reservation.getDriver().getEmail())
+                .driverPhone(reservation.getDriver().getPhone())
                 .slotId(reservation.getSlot() != null ? reservation.getSlot().getId() : null)
                 .slotCode(reservation.getSlot() != null ? reservation.getSlot().getSlotCode() : null)
                 .buildingName(reservation.getBuilding().getName())

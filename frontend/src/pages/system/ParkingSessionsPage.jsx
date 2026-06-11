@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 
-// Helper để định dạng thời gian
+// Helper to format date-time
 const formatDateTime = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString("vi-VN", {
@@ -487,7 +487,7 @@ export default function ParkingSessionsPage() {
     const fetchSessions = async () => {
         setLoading(true);
         try {
-            // Lưu ý: Điều chỉnh endpoint '/api/parking-sessions' nếu backend của bạn dùng đường dẫn khác
+            // Note: Adjust endpoint '/api/parking-sessions' if your backend uses a different path
             const result = await apiRequest("/api/parking-sessions");
             setSessions(result.data || []);
             setError("");

@@ -26,10 +26,10 @@ function scrollToHeroProgress(href, progress) {
 
 function PublicHeader() {
   return (
-    // ẨN HOÀN TOÀN NỀN: bg-transparent, không border, z-50 để luôn nằm trên Canvas
+    // HIDE BACKGROUND COMPLETELY: bg-transparent, no border, z-50 to always sit on top of Canvas
     <header className="fixed left-0 top-0 z-50 w-full bg-transparent px-5 py-4 transition-all duration-300 md:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
-        {/* Logo Cyberpunk */}
+        {/* Cyberpunk Logo */}
         <button
           type="button"
           onClick={() => scrollToHeroProgress("#home", 0)}

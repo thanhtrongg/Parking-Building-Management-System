@@ -160,7 +160,7 @@ function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "N/A";
 
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
@@ -172,7 +172,7 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "N/A";
 
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
@@ -186,7 +186,7 @@ function formatTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "N/A";
 
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
@@ -398,8 +398,8 @@ function PageHeader() {
             </h2>
 
             <p className="mt-2 max-w-3xl font-['Inter'] text-sm leading-6 text-[#6b7280]">
-              Quản lý lịch đặt chỗ gửi xe, kiểm tra trùng lịch, trạng thái đặt
-              chỗ và thông tin user, slot, zone, vehicle type từ backend.
+              Manage parking reservations, check for overlaps, track booking
+              statuses, and view user, slot, zone, and vehicle type information from the backend.
             </p>
           </div>
 
@@ -560,7 +560,7 @@ function FilterToolbar({
               Reservation Filters
             </h3>
             <p className="mt-1 font-['Inter'] text-xs text-[#6b7280]">
-              Tìm theo khách hàng, email, slot, zone hoặc loại xe.
+              Filter by customer, email, slot, zone, or vehicle type.
             </p>
           </div>
 
@@ -831,7 +831,7 @@ function EmptyState() {
           No reservations found
         </h3>
         <p className="mt-2 font-['Inter'] text-sm text-[#6b7280]">
-          Không có reservation nào khớp với bộ lọc hiện tại.
+          No reservations match the current filters.
         </p>
       </div>
     </div>
@@ -859,7 +859,7 @@ function ReservationsTable({
               Reservation List
             </h3>
             <p className="mt-1 font-['Inter'] text-sm text-[#6b7280]">
-              Danh sách người dùng đang đặt trước slot gửi xe.
+              List of users reserving parking slots.
             </p>
           </div>
 
@@ -944,17 +944,17 @@ function ReservationInsight({ reservations }) {
           <FlowInfoCard
             icon="person_add"
             title="User creates booking"
-            text="Khách chọn loại xe, thời gian và slot phù hợp."
+            text="Customers select vehicle type, time, and preferred slot."
           />
           <FlowInfoCard
             icon="event_available"
             title="Backend validates"
-            text="API kiểm tra slot tồn tại, trạng thái slot và trùng lịch."
+            text="API validates slot existence, status, and prevents overlapping times."
           />
           <FlowInfoCard
             icon="local_parking"
             title="Staff operates"
-            text="Staff có thể cập nhật trạng thái check-in/cancel/completed."
+            text="Staff can update status to check-in, cancel, or completed."
           />
         </div>
       </div>
@@ -1059,7 +1059,7 @@ function ReservationFormModal({
   return (
     <ModalShell
       title={mode === "create" ? "New Reservation" : "Edit Reservation"}
-      subtitle="Dữ liệu gửi lên backend dùng camelCase, controller sẽ map sang Prisma snake_case."
+      subtitle="Request data sent to the backend uses camelCase, which maps to database schema properties."
       onClose={onClose}
     >
       <form onSubmit={onSubmit} className="space-y-5">
@@ -1093,8 +1093,7 @@ function ReservationFormModal({
               ))}
             </select>
             <p className="mt-2 font-['Inter'] text-xs text-[#6b7280]">
-              Chỉ chọn slot thật lấy từ GET /api/parking-slots, không dùng
-              placeholder.
+              Select an active parking slot retrieved from the slots API.
             </p>
           </div>
 
@@ -1124,7 +1123,7 @@ function ReservationFormModal({
             {selectedSlot?.vehicleTypeName &&
             selectedSlot.vehicleTypeName !== "N/A" ? (
               <p className="mt-2 font-['Inter'] text-xs text-[#6b7280]">
-                Slot này thuộc loại xe: {selectedSlot.vehicleTypeName}
+                This slot is designed for: {selectedSlot.vehicleTypeName}
               </p>
             ) : null}
           </div>
@@ -1204,9 +1203,7 @@ function ReservationFormModal({
         </div>
 
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 font-['Inter'] text-sm text-blue-700">
-          Khi chuyển sang CHECKED_IN, hệ thống sẽ tạo parking session từ thời
-          điểm hiện tại. Nếu slot đã đặt đang bận, chọn slot khác còn trống để
-          xếp xe thực tế.
+          When changing status to CHECKED_IN, the system will create a parking session starting from the current time. If the reserved slot is currently occupied, select another available slot to assign the vehicle.
         </div>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -1240,7 +1237,7 @@ function ReservationDetailModal({ reservation, onClose }) {
   return (
     <ModalShell
       title={`Reservation RSV-${reservation.displayId}`}
-      subtitle="Chi tiết reservation lấy từ API backend."
+      subtitle="Reservation details retrieved from the backend API."
       onClose={onClose}
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

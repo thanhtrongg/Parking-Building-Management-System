@@ -349,6 +349,134 @@ export const apiRequest = async (path, options = {}) => {
           };
           item.zoneName = zoneName;
         }
+
+        // Normalize parking session fields
+        if (item.checkInTime !== undefined) {
+          if (item.startTime === undefined) {
+            item.startTime = item.checkInTime;
+          }
+          if (item.entryTime === undefined) {
+            item.entryTime = item.checkInTime;
+          }
+          if (item.endTime === undefined) {
+            item.endTime = item.checkOutTime;
+          }
+          if (item.exitTime === undefined) {
+            item.exitTime = item.checkOutTime;
+          }
+          if (!item.user && item.driverName) {
+            item.user = {
+              fullName: item.driverName,
+              phone: "N/A"
+            };
+          }
+          if (item.vehicleType && (typeof item.vehicleType === "string" || !item.vehicleType.typeName)) {
+            const typeStr = typeof item.vehicleType === "string" 
+              ? item.vehicleType 
+              : (item.vehicleType.name || item.vehicleType.typeName || String(item.vehicleType));
+            const formattedType = typeStr ? (typeStr.charAt(0).toUpperCase() + typeStr.slice(1).toLowerCase()) : "N/A";
+            item.vehicleType = {
+              typeName: formattedType
+            };
+            item.vehicleTypeName = formattedType;
+          }
+          if (!item.slotName && item.slotCode) {
+            item.slotName = item.slotCode;
+          }
+          if (item.entryTime) {
+            const exit = item.exitTime || new Date().toISOString();
+            const hours = Math.max(1, Math.ceil((new Date(exit) - new Date(item.entryTime)) / (1000 * 60 * 60)));
+            item.parkingHours = item.parkingHours || hours;
+          }
+          if (item.payment) {
+            item.paymentStatus = item.payment.status;
+            item.paymentMethod = item.payment.method;
+          }
+        }
+
+        // Normalize reservation fields
+        if (item.reservedFrom !== undefined) {
+          if (item.expectedStartTime === undefined) {
+            item.expectedStartTime = item.reservedFrom;
+          }
+          if (item.expectedEndTime === undefined) {
+            item.expectedEndTime = item.reservedTo;
+          }
+          if (item.startTime === undefined) {
+            item.startTime = item.reservedFrom;
+          }
+          if (item.endTime === undefined) {
+            item.endTime = item.reservedTo;
+          }
+          if (item.customerName === undefined && item.driverName) {
+            item.customerName = item.driverName;
+          }
+          if (!item.user && item.driverName) {
+            item.user = {
+              fullName: item.driverName,
+              email: item.driverEmail || "No email",
+              phone: item.driverPhone || "N/A"
+            };
+          }
+          if (item.vehicleType && (typeof item.vehicleType === "string" || !item.vehicleType.typeName)) {
+            const typeStr = typeof item.vehicleType === "string" 
+              ? item.vehicleType 
+              : (item.vehicleType.name || item.vehicleType.typeName || String(item.vehicleType));
+            const formattedType = typeStr ? (typeStr.charAt(0).toUpperCase() + typeStr.slice(1).toLowerCase()) : "N/A";
+            item.vehicleType = {
+              typeName: formattedType
+            };
+            item.vehicleTypeName = formattedType;
+          }
+          if (!item.slotName && item.slotCode) {
+            item.slotName = item.slotCode;
+          }
+        }
+
+        // Normalize payment fields
+        if (item.amount !== undefined && item.sessionId !== undefined) {
+          const status = item.status === "PAID" ? "SUCCESS" : item.status;
+          item.status = status;
+          item.paymentMethod = item.paymentMethod || item.method;
+          item.paymentTime = item.paymentTime || item.paidAt;
+          
+          if (!item.parkingSession) {
+            let zoneLetter = "A";
+            if (item.slotCode) {
+              const parts = item.slotCode.split("-");
+              if (parts.length === 2) {
+                zoneLetter = parts[0].replace(/[0-9]/g, "").toUpperCase() || "A";
+              } else if (parts.length === 1) {
+                zoneLetter = parts[0].replace(/[0-9]/g, "").toUpperCase() || "A";
+              }
+            }
+            const zoneName = `Zone ${zoneLetter}`;
+            const typeStr = typeof item.vehicleType === "string" 
+              ? item.vehicleType 
+              : (item.vehicleType ? (item.vehicleType.name || item.vehicleType.typeName || String(item.vehicleType)) : "N/A");
+            const formattedType = typeStr ? (typeStr.charAt(0).toUpperCase() + typeStr.slice(1).toLowerCase()) : "N/A";
+
+            item.parkingSession = {
+              id: item.sessionId,
+              ticketCode: item.ticketCode || (item.reservationId ? `RSV-${item.reservationId.slice(0, 8)}` : "No ticket"),
+              licensePlate: item.licensePlate || "N/A",
+              entryTime: item.checkInTime,
+              exitTime: item.checkOutTime,
+              status: item.checkOutTime ? "COMPLETED" : "ACTIVE",
+              user: {
+                fullName: item.driverName || "Guest User",
+                email: item.driverEmail || "No email"
+              },
+              vehicleType: {
+                typeName: formattedType
+              },
+              parkingSlot: {
+                slotName: item.slotCode || "No slot",
+                zoneName: zoneName
+              }
+            };
+          }
+        }
       };
 
       if (Array.isArray(result.data)) {
@@ -364,8 +492,8 @@ export const apiRequest = async (path, options = {}) => {
     result = { message: text || `HTTP ${response.status}` };
   }
 
-  if (!response.ok) {
-    throw new Error(result.message || "API request failed");
+  if (!response.ok || (result && result.success === false)) {
+    throw new Error(result?.message || result?.errors?.join(", ") || "API request failed");
   }
 
   return result;

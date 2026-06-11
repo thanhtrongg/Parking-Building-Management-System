@@ -24,4 +24,13 @@ public class PaymentResponse {
     private PaymentMethod method;
     private PaymentStatus status;
     private LocalDateTime paidAt;
+    private String ticketCode;
+    private String licensePlate;
+    private String driverName;
+    private String driverEmail;
+    private String vehicleType;
+    private String slotCode;
+    private LocalDateTime checkInTime;
+    private LocalDateTime checkOutTime;
 }
+

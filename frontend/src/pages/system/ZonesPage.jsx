@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 
-// Theme map cho các loại xe để hiển thị icon/màu sắc tương ứng trên Card
+// Theme map for vehicle types to display corresponding icons/colors on Cards
 const vehicleThemes = {
   "CAR": {
     gradient: "from-sky-500 via-blue-600 to-indigo-700",

@@ -25,6 +25,8 @@ public class ReservationResponse {
     private LocalDateTime createdAt;
     private UUID driverId;
     private String driverName;
+    private String driverEmail;
+    private String driverPhone;
     private UUID slotId;
     private String slotCode;
     private String buildingName;
