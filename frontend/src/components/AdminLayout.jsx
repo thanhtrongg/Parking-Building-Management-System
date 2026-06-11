@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const navItems = [
   {
@@ -257,9 +257,10 @@ function Sidebar({ onLogout }) {
   );
 }
 
-function Header() {
+function Header({ theme, onToggleTheme }) {
   const user = useMemo(() => getStoredUser(), []);
   const { name } = getUserDisplay(user);
+  const isDark = theme === "dark";
 
   return (
     <header className="fixed right-0 top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/90 px-4 shadow-sm backdrop-blur-xl sm:px-6 lg:w-[calc(100%-260px)] lg:justify-end lg:px-8">
@@ -290,10 +291,12 @@ function Header() {
 
         <button
           type="button"
+          onClick={onToggleTheme}
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
         >
           <span className="material-symbols-outlined text-[21px] leading-none">
-            settings
+            {isDark ? "light_mode" : "dark_mode"}
           </span>
         </button>
 
@@ -362,6 +365,31 @@ function MobileNav() {
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem("systemTheme") || "light";
+    } catch {
+      return "light";
+    }
+  });
+  const isDark = theme === "dark";
+
+  const handleToggleTheme = () => {
+    setTheme((current) => {
+      const nextTheme = current === "dark" ? "light" : "dark";
+      localStorage.setItem("systemTheme", nextTheme);
+      return nextTheme;
+    });
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("system-dark", isDark);
+    document.documentElement.classList.toggle("system-light", !isDark);
+
+    return () => {
+      document.documentElement.classList.remove("system-dark", "system-light");
+    };
+  }, [isDark]);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -371,9 +399,14 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-['Inter'] text-slate-900">
+    <div
+      className={[
+        "min-h-screen bg-slate-50 font-['Inter'] font-medium text-slate-900",
+        isDark ? "system-dark" : "system-light",
+      ].join(" ")}
+    >
       <Sidebar onLogout={handleLogout} />
-      <Header />
+      <Header theme={theme} onToggleTheme={handleToggleTheme} />
 
       <main className="min-h-screen pt-16 lg:ml-[260px]">
         <div className="p-4 pb-40 sm:p-6 sm:pb-40 lg:p-8">{children}</div>

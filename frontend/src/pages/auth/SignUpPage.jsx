@@ -3,11 +3,88 @@ import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
+const authImage =
+  "https://images.unsplash.com/photo-1649307035604-ab3c5e5c9e7a?auto=format&fit=crop&q=82&w=1600";
+
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d7b46a]";
+
 async function readResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   return contentType.includes("application/json")
     ? response.json()
     : response.text();
+}
+
+function ArrowGlyph() {
+  return (
+    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center transition duration-300 group-hover:translate-x-0.5">
+      <span className="h-2 w-2 rotate-45 border-r-2 border-t-2 border-current" />
+    </span>
+  );
+}
+
+function Field({
+  icon,
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required,
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-[#efe4cf]">
+        {label}
+      </label>
+      <div className="relative">
+        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-[#9b917f]">
+          {icon}
+        </span>
+        <input
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          required={required}
+          className="h-12 w-full rounded-lg border border-white/10 bg-white/[0.055] pl-11 pr-4 text-sm text-[#fbf4e7] outline-none transition duration-300 placeholder:text-[#746b5e] focus:border-[#d7b46a]/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-[#d7b46a]/10"
+        />
+      </div>
+    </div>
+  );
+}
+
+function PasswordField({ label, value, show, onToggle, onChange }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-[#efe4cf]">
+        {label}
+      </label>
+      <div className="relative">
+        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-[#9b917f]">
+          lock
+        </span>
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Enter your password"
+          required
+          className="h-12 w-full rounded-lg border border-white/10 bg-white/[0.055] pl-11 pr-12 text-sm text-[#fbf4e7] outline-none transition duration-300 placeholder:text-[#746b5e] focus:border-[#d7b46a]/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-[#d7b46a]/10"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9b917f] transition hover:text-[#f7efe0]"
+        >
+          <span className="material-symbols-outlined text-[21px]">
+            {show ? "visibility_off" : "visibility"}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function SignUpPage() {
@@ -70,81 +147,76 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#eef2f7] px-4 py-8">
-      <div className="grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-[26px] bg-white shadow-[0_25px_70px_rgba(15,23,42,0.16)] lg:grid-cols-2">
-        <div className="hidden min-h-[660px] flex-col justify-between bg-[#0f1f3a] p-10 text-white lg:flex">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl font-bold text-[#0f1f3a]">
-                P
-              </div>
-              <div>
-                <h1 className="text-xl font-bold leading-none">ParkHub</h1>
-                <p className="mt-1 text-sm text-slate-300">
-                  Parking Management
-                </p>
-              </div>
-            </div>
+    <div className="relative min-h-[100dvh] overflow-hidden bg-[#070705] px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] text-[#fbf4e7] md:px-8">
+      <div className="pointer-events-none fixed inset-0 opacity-[0.035] [background-image:radial-gradient(circle_at_1px_1px,#ffffff_1px,transparent_0)] [background-size:24px_24px]" />
 
-            <div className="mt-20">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-200">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Secure access
-              </div>
-              <h2 className="mt-7 text-4xl font-bold leading-tight tracking-tight">
-                Create an account for parking operations.
-              </h2>
-              <p className="mt-5 max-w-md leading-7 text-slate-300">
-                Register a customer account and start using the parking
-                management system.
-              </p>
-            </div>
-          </div>
-        </div>
+      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between">
+        <Link to="/" className={`group flex items-center gap-3 rounded-full ${focusRing}`}>
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#d7b46a] text-sm font-black text-[#11100d] transition duration-300 group-hover:bg-[#e7c77f]">
+            P
+          </span>
+          <span>
+            <span className="block text-sm font-semibold tracking-[0.12em]">
+              PARKMASTER
+            </span>
+            <span className="block text-[10px] tracking-[0.22em] text-[#d7b46a]/80">
+              BUILDING SYSTEM
+            </span>
+          </span>
+        </Link>
+        <Link
+          to="/login"
+          className={`hidden rounded-lg bg-white/[0.055] px-4 py-2.5 text-xs font-medium text-[#ddd4c4] ring-1 ring-white/12 transition duration-300 hover:bg-white/[0.09] hover:text-white md:inline-flex ${focusRing}`}
+        >
+          Sign in
+        </Link>
+      </header>
 
-        <div className="flex min-h-[660px] items-center justify-center px-6 py-10 sm:px-12">
-          <div className="w-full max-w-md">
-            <div className="mb-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600">
-                Get started
-              </p>
-              <h2 className="mt-3 text-3xl font-bold text-slate-950">
-                Create your account
-              </h2>
-              <p className="mt-3 text-sm text-slate-500">
-                Use a phone number, email, and password to register.
-              </p>
-            </div>
+      <main className="relative z-10 mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-center gap-8 py-10 lg:grid-cols-[0.95fr_1.05fr]">
+        <section className="rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
+          <div className="rounded-[calc(1rem-0.25rem)] bg-[#11100c] p-6 sm:p-8 md:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
+              Guest access
+            </p>
+            <h1 className="mt-4 text-3xl font-bold leading-tight tracking-[-0.025em] text-[#fbf4e7] md:text-4xl">
+              Create your account.
+            </h1>
+            <p className="mt-4 max-w-md text-sm leading-7 text-[#b9af9d]">
+              Register as a user to reserve parking, manage booking history, and
+              track payment records.
+            </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              {error ? (
+                <div className="rounded-lg border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                   {error}
                 </div>
-              )}
-              {success && (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              ) : null}
+              {success ? (
+                <div className="rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                   {success}
                 </div>
-              )}
+              ) : null}
 
-              <Field
-                icon="call"
-                label="Phone number"
-                value={form.phone}
-                onChange={(value) => updateField("phone", value)}
-                placeholder="0912345678"
-                required
-              />
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field
+                  icon="call"
+                  label="Phone number"
+                  value={form.phone}
+                  onChange={(value) => updateField("phone", value)}
+                  placeholder="0912345678"
+                  required
+                />
 
-              <Field
-                icon="badge"
-                label="Full name"
-                value={form.fullName}
-                onChange={(value) => updateField("fullName", value)}
-                placeholder="Nguyen Van A"
-                required
-              />
+                <Field
+                  icon="badge"
+                  label="Full name"
+                  value={form.fullName}
+                  onChange={(value) => updateField("fullName", value)}
+                  placeholder="Nguyen Van A"
+                  required
+                />
+              </div>
 
               <Field
                 icon="mail"
@@ -152,124 +224,86 @@ export default function SignUpPage() {
                 type="email"
                 value={form.email}
                 onChange={(value) => updateField("email", value)}
-                placeholder="admin@test.com"
+                placeholder="user@example.com"
                 required
               />
 
-              <PasswordField
-                label="Password"
-                value={form.password}
-                show={showPassword}
-                onToggle={() => setShowPassword((value) => !value)}
-                onChange={(value) => updateField("password", value)}
-              />
+              <div className="grid gap-5 sm:grid-cols-2">
+                <PasswordField
+                  label="Password"
+                  value={form.password}
+                  show={showPassword}
+                  onToggle={() => setShowPassword((value) => !value)}
+                  onChange={(value) => updateField("password", value)}
+                />
 
-              <Field
-                icon="lock"
-                label="Confirm password"
-                type={showPassword ? "text" : "password"}
-                value={form.confirmPassword}
-                onChange={(value) => updateField("confirmPassword", value)}
-                placeholder="Repeat your password"
-                required
-              />
+                <Field
+                  icon="lock"
+                  label="Confirm password"
+                  type={showPassword ? "text" : "password"}
+                  value={form.confirmPassword}
+                  onChange={(value) => updateField("confirmPassword", value)}
+                  placeholder="Repeat password"
+                  required
+                />
+              </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0f1f3a] font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-[#182f58] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+                className={`group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#d7b46a] px-5 text-sm font-semibold text-[#11100d] transition duration-300 hover:bg-[#e7c77f] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing}`}
               >
                 {loading ? (
                   <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Creating account...
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#11100d]/30 border-t-[#11100d]" />
+                    Creating account
                   </>
                 ) : (
                   <>
                     Sign up
-                    <span className="material-symbols-outlined text-[20px]">
-                      arrow_forward
-                    </span>
+                    <ArrowGlyph />
                   </>
                 )}
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-slate-500">
+            <p className="mt-6 text-center text-sm text-[#9b917f]">
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="font-semibold text-blue-600 hover:text-blue-700"
+                className="font-semibold text-[#d7b46a] transition hover:text-[#f0d89c]"
               >
                 Sign in
               </Link>
             </p>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+        </section>
 
-function Field({
-  icon,
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-  required,
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
-      <div className="relative">
-        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">
-          {icon}
-        </span>
-        <input
-          type={type}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          required={required}
-          className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-        />
-      </div>
-    </div>
-  );
-}
-
-function PasswordField({ label, value, show, onToggle, onChange }) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
-      <div className="relative">
-        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">
-          lock
-        </span>
-        <input
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="Enter your password"
-          required
-          className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-12 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-        >
-          <span className="material-symbols-outlined text-[21px]">
-            {show ? "visibility_off" : "visibility"}
-          </span>
-        </button>
-      </div>
+        <section className="hidden lg:block">
+          <div className="rounded-2xl bg-white/[0.035] p-1 ring-1 ring-white/10">
+            <div className="relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b]">
+              <img
+                src={authImage}
+                alt="Urban parking building ramp at night"
+                className="absolute inset-0 h-full w-full object-cover opacity-62 saturate-[0.78]"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,5,0.12),rgba(6,6,5,0.86))]" />
+              <div className="absolute inset-x-0 bottom-0 p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
+                  Reservation-ready
+                </p>
+                <h2 className="mt-4 max-w-xl text-4xl font-bold leading-tight tracking-[-0.025em] text-[#fbf4e7]">
+                  Reserve a slot with a clear record.
+                </h2>
+                <p className="mt-6 max-w-md text-base leading-8 text-[#c7beae]">
+                  Create an account, reserve a slot, and keep the full parking
+                  record connected from arrival to payment.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

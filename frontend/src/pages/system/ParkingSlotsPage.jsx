@@ -509,7 +509,8 @@ export default function ParkingSlotsPage() {
 
   return (
     <AdminLayout activeLabel="Parking Slots" headerAction={headerAction}>
-      <div className="mb-8 overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-white via-blue-50/80 to-sky-50 p-6 shadow-sm ring-1 ring-white">
+      <div className="parking-slots-page">
+        <div className="mb-8 overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-white via-blue-50/80 to-sky-50 p-6 shadow-sm ring-1 ring-white">
         <div className="relative">
           <div className="absolute -right-10 -top-16 h-40 w-40 rounded-full bg-blue-200/60 blur-3xl" />
           <div className="absolute bottom-0 right-32 h-24 w-24 rounded-full bg-cyan-200/60 blur-2xl" />
@@ -829,6 +830,7 @@ export default function ParkingSlotsPage() {
           onSubmit={handleSubmitSlot}
         />
       )}
+      </div>
     </AdminLayout>
   );
 }

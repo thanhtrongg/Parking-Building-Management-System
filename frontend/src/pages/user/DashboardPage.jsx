@@ -112,19 +112,19 @@ function PageHero({ nextBooking }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-950 p-5 text-white">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+        <div className="rounded-2xl border border-amber-200 bg-[#fffaf0] p-5 text-slate-950 shadow-sm shadow-amber-900/10">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">
             Next Booking
           </p>
           {nextBooking ? (
             <>
-              <p className="mt-4 text-2xl font-black">
+              <p className="mt-4 text-2xl font-black text-slate-950">
                 {nextBooking.parkingSlot?.slotName || "Unassigned"}
               </p>
-              <p className="mt-1 text-sm font-semibold text-slate-300">
+              <p className="mt-1 text-sm font-semibold text-slate-600">
                 {nextBooking.parkingSlot?.zone?.zoneName || "No zone"}
               </p>
-              <div className="mt-5 space-y-3 text-sm text-slate-200">
+              <div className="mt-5 space-y-3 text-sm text-slate-700">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[20px]">
                     schedule
@@ -146,7 +146,7 @@ function PageHero({ nextBooking }) {
               </div>
             </>
           ) : (
-            <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+            <div className="mt-8 rounded-2xl border border-amber-200 bg-[#f7ecd5] p-4 text-sm font-semibold leading-6 text-slate-600">
               No upcoming booking yet.
             </div>
           )}

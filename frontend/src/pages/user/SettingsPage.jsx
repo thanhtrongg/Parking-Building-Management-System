@@ -87,7 +87,7 @@ function ToggleRow({ icon, label, checked }) {
       </div>
       <label className="relative inline-flex cursor-pointer items-center">
         <input className="peer sr-only" defaultChecked={checked} type="checkbox" />
-        <span className="h-6 w-11 rounded-full bg-slate-300 transition after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition peer-checked:bg-blue-600 peer-checked:after:translate-x-5" />
+        <span className="user-setting-switch h-6 w-11 rounded-full bg-slate-300 transition after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition peer-checked:bg-blue-600 peer-checked:after:translate-x-5" />
       </label>
     </div>
   );
