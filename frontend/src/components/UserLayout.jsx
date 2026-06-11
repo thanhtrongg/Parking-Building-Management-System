@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const navItems = [
   {
@@ -303,6 +303,15 @@ export default function UserLayout({ children }) {
       return nextTheme;
     });
   };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("system-dark", isDark);
+    document.documentElement.classList.toggle("system-light", !isDark);
+
+    return () => {
+      document.documentElement.classList.remove("system-dark", "system-light");
+    };
+  }, [isDark]);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");

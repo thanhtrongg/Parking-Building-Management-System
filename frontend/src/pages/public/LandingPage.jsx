@@ -825,6 +825,15 @@ export default function PublicLandingPage() {
   };
 
   useEffect(() => {
+    document.documentElement.classList.toggle("landing-light", isLight);
+    document.documentElement.classList.toggle("landing-dark", !isLight);
+
+    return () => {
+      document.documentElement.classList.remove("landing-light", "landing-dark");
+    };
+  }, [isLight]);
+
+  useEffect(() => {
     let isMounted = true;
 
     apiRequest("/api/public/landing-info")
