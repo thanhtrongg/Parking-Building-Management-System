@@ -88,6 +88,23 @@ Content-Type: {{contentType}}
   "refreshToken": "{{driverRefreshToken}}"
 }
 
+### Request Password Reset Token (Check Spring console output to see the token)
+POST {{host}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "driver@parking.com"
+}
+
+### Reset Password (Replace token with the UUID logged in console)
+POST {{host}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "token": "REPLACE_WITH_UUID_FROM_CONSOLE",
+  "newPassword": "newpassword123"
+}
+
 
 # ==========================================
 # 2. BUILDINGS & FLOORS

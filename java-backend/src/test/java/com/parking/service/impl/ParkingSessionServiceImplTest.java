@@ -18,6 +18,7 @@ import com.parking.exception.BadRequestException;
 import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.UserRepository;
+import com.parking.repository.PaymentRepository;
 import com.parking.service.AuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,6 +62,9 @@ public class ParkingSessionServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PaymentRepository paymentRepository;
 
     @Mock
     private AuditService auditService;

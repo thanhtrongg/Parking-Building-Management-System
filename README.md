@@ -210,7 +210,8 @@ API documentation is available via Swagger at `http://localhost:8080/api/v1/swag
 | --- | --- | --- |
 | `POST` | `/api/v1/auth/register` | Register a new user |
 | `POST` | `/api/v1/auth/login` | Login and receive JWT |
-| `GET` | `/api/v1/auth/me` | Get current authenticated user |
+| `POST` | `/api/v1/auth/forgot-password` | Request password reset token |
+| `POST` | `/api/v1/auth/reset-password` | Reset password using token |
 
 ### System Management
 - `/api/v1/admin/users`: User management
@@ -223,6 +224,44 @@ API documentation is available via Swagger at `http://localhost:8080/api/v1/swag
 - `/api/v1/sessions/check-in`: Start parking session
 - `/api/v1/sessions/checkout`: Complete session and pay
 - `/api/v1/sessions/active`: Monitor active vehicles
+
+## Testing Password Reset Flow
+
+For local development/testing, the password reset flow can be tested using the following steps:
+
+1. **Request a Password Reset**:
+   ```bash
+   curl -i -X POST http://localhost:8080/api/v1/auth/forgot-password \
+     -H "Content-Type: application/json" \
+     -d '{"email": "driver@gmail.com"}'
+   ```
+
+2. **Retrieve the Token from logs**:
+   - If running the backend locally:
+     Look at the terminal log output of the running server, or run:
+     ```bash
+     grep "NOTIFICATION" java-backend.log
+     ```
+   - If running the backend in Docker:
+     ```bash
+     docker logs parking-app 2>&1 | grep "NOTIFICATION"
+     ```
+   *Example output:*
+   `[NOTIFICATION] Password reset request — to=driver@gmail.com, token=1f6942e1-3ad1-4aac-9edf-95d95c827518, ...`
+
+3. **Reset Password**:
+   ```bash
+   curl -i -X POST http://localhost:8080/api/v1/auth/reset-password \
+     -H "Content-Type: application/json" \
+     -d '{"token": "YOUR_TOKEN_HERE", "newPassword": "newsecurepwd123"}'
+   ```
+
+4. **Verify Login with new password**:
+   ```bash
+   curl -i -X POST http://localhost:8080/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email": "driver@gmail.com", "password": "newsecurepwd123"}'
+   ```
 
 ## License
 This project is licensed under the terms included in the `LICENSE` file.

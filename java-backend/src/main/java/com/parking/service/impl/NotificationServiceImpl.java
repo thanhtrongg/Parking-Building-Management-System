@@ -37,4 +37,11 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("[NOTIFICATION] Session expiry alert — to={}, sessionId={}, licensePlate={}",
                 email, sessionId, licensePlate);
     }
+
+    @Override
+    @Async
+    public void sendPasswordResetToken(String email, String token, String resetUrl) {
+        log.info("[NOTIFICATION] Password reset request — to={}, token={}, resetUrl={}",
+                email, token, resetUrl);
+    }
 }

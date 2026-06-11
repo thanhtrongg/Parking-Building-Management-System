@@ -196,6 +196,11 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     }
 
     BigDecimal calculateFee(ParkingSession session, LocalDateTime checkoutTime) {
+        if (session.getCheckInTime() == null || checkoutTime == null ||
+            session.getSlot() == null || session.getSlot().getFloor() == null ||
+            session.getSlot().getFloor().getBuilding() == null) {
+            return BigDecimal.ZERO;
+        }
         double durationHours = calculateDurationHours(session.getCheckInTime(), checkoutTime);
         UUID buildingId = session.getSlot().getFloor().getBuilding().getId();
         VehicleTypeEnum vehicleTypeEnum = session.getVehicleType();

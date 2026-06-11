@@ -24,4 +24,9 @@ public interface NotificationService {
      * Send a session expiry alert (e.g., approaching max duration).
      */
     void sendSessionExpiryAlert(String email, UUID sessionId, String licensePlate);
+
+    /**
+     * Send a password reset token notification.
+     */
+    void sendPasswordResetToken(String email, String token, String resetUrl);
 }
