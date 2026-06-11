@@ -1238,3 +1238,119 @@ textarea {
 .landing-light .landing-cta-panel [class*="text-[#d7b46a]"] {
   color: #9a6a16 !important;
 }
+
+/* Final system theme guards for pages that use hard-coded cream panels. */
+.system-dark :where(article, section, div, form, button)[class*="bg-[#fffaf0]"],
+.system-dark :where(article, section, div, form, button)[class*="bg-[#f7ecd5]"],
+.system-dark :where(article, section, div, form, button)[class*="bg-[#fffdfa]"],
+.system-dark :where(article, section, div, form, button)[class*="bg-[#f8f9fc]"],
+.system-dark :where(article, section, div, form, button)[class*="bg-[#f3f4f8]"],
+.system-dark :where(article, section, div, form, button)[class*="from-white"],
+.system-dark :where(article, section, div, form, button)[class*="via-blue-50"],
+.system-dark :where(article, section, div, form, button)[class*="to-sky-50"],
+.system-dark :where(article, section, div, form, button)[class*="to-cyan-50"] {
+  background-color: rgb(17 16 12 / 0.96) !important;
+  background-image: none !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where(h1, h2, h3, h4, strong, th, [class*="font-black"], [class*="font-bold"], [class*="text-[#191b23]"], [class*="text-[#111827]"], [class*="text-slate-950"], [class*="text-slate-900"], [class*="text-slate-800"], [class*="text-slate-700"]) {
+  color: #fbf4e7 !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where(p, td, label, [class*="text-[#6b7280]"], [class*="text-[#374151]"], [class*="text-slate-600"], [class*="text-slate-500"], [class*="text-slate-400"]) {
+  color: #b9af9d !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where(input, select, textarea) {
+  background-color: rgb(255 255 255 / 0.055) !important;
+  border-color: rgb(255 255 255 / 0.14) !important;
+  color: #fbf4e7 !important;
+}
+
+.system-dark .dashboard-page input::placeholder,
+.system-dark .dashboard-page textarea::placeholder,
+.system-dark .parking-sessions-page input::placeholder,
+.system-dark .parking-sessions-page textarea::placeholder,
+.system-dark .feedback-management-page input::placeholder,
+.system-dark .feedback-management-page textarea::placeholder {
+  color: #8f8678 !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="border-amber"], [class*="border-slate"], [class*="border-blue"], [class*="ring-amber"], [class*="ring-slate"], [class*="ring-blue"]) {
+  border-color: rgb(255 255 255 / 0.12) !important;
+  --tw-ring-color: rgb(255 255 255 / 0.12) !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="shadow-"]) {
+  box-shadow: none !important;
+}
+
+.system-light
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="bg-[#fffaf0]"], [class*="bg-[#fffdfa]"], [class*="from-white"]) {
+  background-color: #fffaf0 !important;
+}
+
+.system-light
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="bg-[#f7ecd5]"]) {
+  background-color: #f7ecd5 !important;
+}
+
+.system-light
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where(h1, h2, h3, h4, strong, th, [class*="font-black"], [class*="font-bold"], [class*="text-[#191b23]"], [class*="text-[#111827]"], [class*="text-slate-950"], [class*="text-slate-900"], [class*="text-slate-800"], [class*="text-slate-700"]) {
+  color: #191b23 !important;
+}
+
+.system-light
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where(p, td, label, [class*="text-[#6b7280]"], [class*="text-[#374151]"], [class*="text-slate-600"], [class*="text-slate-500"], [class*="text-slate-400"]) {
+  color: #6b5f4f !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="text-emerald"], [class*="text-green"]) {
+  color: #6ee7b7 !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="text-amber"], [class*="text-yellow"], [class*="text-orange"], [class*="text-blue"]) {
+  color: #d7b46a !important;
+}
+
+.system-dark
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="text-red"], [class*="text-rose"]) {
+  color: #fda4af !important;
+}
+
+.system-light
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="text-emerald"], [class*="text-green"]) {
+  color: #059669 !important;
+}
+
+.system-light
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="text-amber"], [class*="text-yellow"], [class*="text-orange"], [class*="text-blue"]) {
+  color: #b7791f !important;
+}
+
+.system-light
+  :where(.dashboard-page, .parking-sessions-page, .feedback-management-page)
+  :where([class*="text-red"], [class*="text-rose"]) {
+  color: #dc2626 !important;
+}

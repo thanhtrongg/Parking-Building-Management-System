@@ -649,7 +649,7 @@ export default function DashboardPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-7">
+      <div className="dashboard-page space-y-7">
         <DashboardHero
           name={getDisplayName()}
           onNewEntry={() => navigate("/parking-sessions")}
