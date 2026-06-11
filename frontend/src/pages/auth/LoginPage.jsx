@@ -4,14 +4,60 @@ import { Link } from "react-router-dom";
 const REMEMBER_ME_DAYS = 30;
 const DEFAULT_SESSION_DAYS = 1;
 
+const authImage =
+  "https://images.unsplash.com/photo-1566636137426-500b3b61dcaa?auto=format&fit=crop&q=82&w=1600";
+
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d7b46a]";
+
 function getExpiryTimestamp(rememberMe) {
   const days = rememberMe ? REMEMBER_ME_DAYS : DEFAULT_SESSION_DAYS;
   return Date.now() + days * 24 * 60 * 60 * 1000;
 }
 
+function ArrowGlyph() {
+  return (
+    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center transition duration-300 group-hover:translate-x-0.5">
+      <span className="h-2 w-2 rotate-45 border-r-2 border-t-2 border-current" />
+    </span>
+  );
+}
+
+function AuthInput({
+  label,
+  icon,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  rightSlot,
+  required = true,
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-[#efe4cf]">
+        {label}
+      </label>
+      <div className="relative">
+        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-[#9b917f]">
+          {icon}
+        </span>
+        <input
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          required={required}
+          className="h-12 w-full rounded-lg border border-white/10 bg-white/[0.055] pl-11 pr-12 text-sm text-[#fbf4e7] outline-none transition duration-300 placeholder:text-[#746b5e] focus:border-[#d7b46a]/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-[#d7b46a]/10"
+        />
+        {rightSlot}
+      </div>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-
   const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("123456");
   const [rememberMe, setRememberMe] = useState(false);
@@ -62,8 +108,8 @@ export default function LoginPage() {
       } else {
         window.location.href = "/login";
       }
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (loginError) {
+      console.error("Login error:", loginError);
       setError("Cannot connect to server");
     } finally {
       setLoading(false);
@@ -71,217 +117,169 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#eef2f7] flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-5xl bg-white rounded-[26px] shadow-[0_25px_70px_rgba(15,23,42,0.16)] overflow-hidden grid grid-cols-1 lg:grid-cols-2">
-        {/* Left panel */}
-        <div className="hidden lg:flex flex-col justify-between bg-[#0f1f3a] text-white p-10 min-h-155 relative overflow-hidden">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
-          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
+    <div className="relative min-h-[100dvh] overflow-hidden bg-[#070705] px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] text-[#fbf4e7] md:px-8">
+      <div className="pointer-events-none fixed inset-0 opacity-[0.035] [background-image:radial-gradient(circle_at_1px_1px,#ffffff_1px,transparent_0)] [background-size:24px_24px]" />
 
-          <div className="relative z-10">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center text-[#0f1f3a] font-bold text-2xl">
-                P
-              </div>
+      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between">
+        <Link to="/" className={`group flex items-center gap-3 rounded-full ${focusRing}`}>
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#d7b46a] text-sm font-black text-[#11100d] transition duration-300 group-hover:bg-[#e7c77f]">
+            P
+          </span>
+          <span>
+            <span className="block text-sm font-semibold tracking-[0.12em]">
+              PARKMASTER
+            </span>
+            <span className="block text-[10px] tracking-[0.22em] text-[#d7b46a]/80">
+              BUILDING SYSTEM
+            </span>
+          </span>
+        </Link>
+        <Link
+          to="/signup"
+          className={`hidden rounded-lg bg-white/[0.055] px-4 py-2.5 text-xs font-medium text-[#ddd4c4] ring-1 ring-white/12 transition duration-300 hover:bg-white/[0.09] hover:text-white md:inline-flex ${focusRing}`}
+        >
+          Create account
+        </Link>
+      </header>
 
-              <div>
-                <h1 className="text-xl font-bold leading-none">ParkHub</h1>
-                <p className="text-sm text-slate-300 mt-1">
-                  Parking Management
+      <main className="relative z-10 mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-center gap-8 py-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="hidden lg:block">
+          <div className="rounded-2xl bg-white/[0.035] p-1 ring-1 ring-white/10">
+            <div className="relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b]">
+              <img
+                src={authImage}
+                alt="Underground parking garage with cinematic lighting"
+                className="absolute inset-0 h-full w-full object-cover opacity-62 saturate-[0.78]"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,5,0.12),rgba(6,6,5,0.86))]" />
+              <div className="absolute inset-x-0 bottom-0 p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
+                  Secure building access
                 </p>
+                <h1 className="mt-4 max-w-xl text-4xl font-bold leading-tight tracking-[-0.025em] text-[#fbf4e7]">
+                  Sign in to manage parking operations.
+                </h1>
+                <div className="mt-8 grid grid-cols-3 gap-3">
+                  {["Slots", "Sessions", "Payments"].map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-lg bg-[#080806]/72 p-4 ring-1 ring-white/10"
+                    >
+                      <p className="text-xs font-medium tracking-[0.18em] text-[#d7b46a]/80">
+                        {item.toUpperCase()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            <div className="mt-20">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/10 px-4 py-2 text-sm text-slate-200">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                System is online
-              </div>
-
-              <h2 className="mt-7 text-4xl font-bold leading-tight tracking-tight">
-                Manage your parking building with confidence.
-              </h2>
-
-              <p className="mt-5 text-slate-300 leading-7 max-w-md">
-                Monitor parking slots, reservations, vehicles, payments and
-                daily staff operations from one dashboard.
-              </p>
             </div>
           </div>
+        </section>
 
-          <div className="relative z-10 grid grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
-              <p className="text-2xl font-bold">120+</p>
-              <p className="text-xs text-slate-300 mt-1">Slots</p>
-            </div>
+        <section className="rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
+          <div className="rounded-[calc(1rem-0.25rem)] bg-[#11100c] p-6 sm:p-8 md:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
+              Welcome back
+            </p>
+            <h2 className="mt-4 text-3xl font-bold leading-tight tracking-[-0.025em] text-[#fbf4e7] md:text-4xl">
+              Sign in to your account.
+            </h2>
+            <p className="mt-4 max-w-md text-sm leading-7 text-[#b9af9d]">
+              Continue to reservations, slots, sessions, payments, and building
+              operations.
+            </p>
 
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
-              <p className="text-2xl font-bold">24/7</p>
-              <p className="text-xs text-slate-300 mt-1">Service</p>
-            </div>
-
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
-              <p className="text-2xl font-bold">Fast</p>
-              <p className="text-xs text-slate-300 mt-1">Check-in</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right panel */}
-        <div className="min-h-155 flex items-center justify-center px-6 py-10 sm:px-12">
-          <div className="w-full max-w-md">
-            <div className="lg:hidden mb-8 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-2xl bg-[#0f1f3a] flex items-center justify-center text-white font-bold text-2xl">
-                P
-              </div>
-
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">ParkHub</h1>
-                <p className="text-sm text-slate-500">Parking Management</p>
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <p className="text-sm font-semibold text-blue-600 tracking-[0.16em] uppercase">
-                Welcome back
-              </p>
-
-              <h2 className="mt-3 text-3xl font-bold text-slate-950">
-                Sign in to your account
-              </h2>
-
-              <p className="mt-3 text-sm text-slate-500">
-                Enter your account information to continue.
-              </p>
-            </div>
-
-            <form onSubmit={handleLogin} className="space-y-5">
-              {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <form onSubmit={handleLogin} className="mt-8 space-y-5">
+              {error ? (
+                <div className="rounded-lg border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                   {error}
                 </div>
-              )}
+              ) : null}
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Email address
-                </label>
+              <AuthInput
+                label="Email address"
+                icon="mail"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="admin@gmail.com"
+              />
 
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">
-                    mail
-                  </span>
-
-                  <input
-                    type="email"
-                    placeholder="admin@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-13 rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm text-slate-800 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-slate-700">
-                    Password
-                  </label>
-
+              <AuthInput
+                label="Password"
+                icon="lock"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={setPassword}
+                placeholder="Enter your password"
+                rightSlot={
                   <button
                     type="button"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">
-                    lock
-                  </span>
-
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-13 rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-12 text-sm text-slate-800 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                    required
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                    onClick={() => setShowPassword((value) => !value)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9b917f] transition hover:text-[#f7efe0]"
                   >
                     <span className="material-symbols-outlined text-[21px]">
                       {showPassword ? "visibility_off" : "visibility"}
                     </span>
                   </button>
-                </div>
-              </div>
+                }
+              />
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <label className="flex cursor-pointer items-center gap-3 text-sm text-[#b9af9d]">
                   <input
                     id="remember"
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(event) => setRememberMe(event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300"
+                    className="h-4 w-4 rounded border-white/20 bg-white/[0.06] accent-[#d7b46a]"
                   />
                   Remember me
                 </label>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-[#d7b46a] transition hover:text-[#f0d89c]"
+                >
+                  Forgot password?
+                </button>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-13 rounded-2xl bg-[#0f1f3a] text-white font-semibold shadow-lg shadow-slate-900/20 transition hover:bg-[#182f58] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                className={`group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#d7b46a] px-5 text-sm font-semibold text-[#11100d] transition duration-300 hover:bg-[#e7c77f] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing}`}
               >
                 {loading ? (
                   <>
-                    <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                    Signing in...
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#11100d]/30 border-t-[#11100d]" />
+                    Signing in
                   </>
                 ) : (
                   <>
                     Sign in
-                    <span className="material-symbols-outlined text-[20px]">
-                      arrow_forward
-                    </span>
+                    <ArrowGlyph />
                   </>
                 )}
               </button>
             </form>
 
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-800">
-                Test account
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                admin@gmail.com / 123456
-              </p>
+            <div className="mt-6 rounded-lg bg-white/[0.045] p-4 text-sm ring-1 ring-white/10">
+              <p className="font-semibold text-[#efe4cf]">Test account</p>
+              <p className="mt-1 text-[#9b917f]">admin@gmail.com / 123456</p>
             </div>
 
-            <p className="mt-6 text-center text-sm text-slate-500">
+            <p className="mt-6 text-center text-sm text-[#9b917f]">
               Do not have an account?{" "}
               <Link
                 to="/signup"
-                className="font-semibold text-blue-600 hover:text-blue-700"
+                className="font-semibold text-[#d7b46a] transition hover:text-[#f0d89c]"
               >
                 Sign up
               </Link>
             </p>
-
-            <p className="mt-8 text-center text-xs text-slate-400">
-              © 2026 Parking Building Management System
-            </p>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

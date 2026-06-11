@@ -64,10 +64,10 @@ function PageHeader() {
 
 function SummaryCard({ title, value, icon, className }) {
   return (
-    <div>
+    <div className="feedback-surface rounded-2xl border border-[#d2b77a] bg-[#fffdfa] p-5 shadow-[0_18px_42px_rgba(86,63,23,0.16)]">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
+          <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b5a3d]">
             {title}
           </p>
           <h3 className="mt-2 font-['Geist'] text-2xl font-bold text-[#191b23]">
@@ -75,7 +75,7 @@ function SummaryCard({ title, value, icon, className }) {
           </h3>
         </div>
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${className}`}
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-inner ${className}`}
         >
           <span className="material-symbols-outlined text-[24px]">{icon}</span>
         </div>
@@ -144,7 +144,7 @@ function FeedbackTable({
 }) {
   if (loading) {
     return (
-      <div className="rounded-2xl border border-[#d7d9e4] bg-white p-6 shadow-sm">
+      <div className="feedback-panel rounded-2xl border border-amber-200 bg-[#fffaf0] p-6 shadow-sm shadow-amber-900/10">
         <div className="space-y-3">
           {[1, 2, 3, 4].map((item) => (
             <div
@@ -159,7 +159,7 @@ function FeedbackTable({
 
   if (feedbacks.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm">
+      <div className="feedback-panel rounded-2xl border border-dashed border-amber-300 bg-[#fffaf0] px-6 py-12 text-center shadow-sm shadow-amber-900/10">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
           <span className="material-symbols-outlined text-3xl">forum</span>
         </div>
@@ -174,7 +174,7 @@ function FeedbackTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
+    <div className="feedback-panel overflow-hidden rounded-2xl border border-amber-200 bg-[#fffaf0] shadow-sm shadow-amber-900/10">
       <div className="overflow-x-auto">
         <table className="min-w-[1120px] border-collapse text-left">
           <thead className="border-b border-[#d7d9e4] bg-[#f8f9fc]">
@@ -242,7 +242,7 @@ function FeedbackTable({
                       onChange={(event) =>
                         onStatusChange(feedback, event.target.value)
                       }
-                      className="h-10 rounded-xl border border-[#d7d9e4] bg-white px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-10 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label={`Update status for ${feedback.subject}`}
                     >
                       {feedbackStatuses.map((status) => (
@@ -293,14 +293,14 @@ function DetailPage({
       <button
         type="button"
         onClick={onBack}
-        className="mb-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-['Inter'] text-sm font-black text-slate-700 transition hover:bg-slate-50"
+        className="mb-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-[#fffaf0] px-4 font-['Inter'] text-sm font-black text-slate-700 transition hover:bg-[#f7ecd5]"
       >
         <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         Back to feedbacks
       </button>
 
       <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-amber-200 bg-[#fffaf0] p-5 shadow-sm shadow-amber-900/10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="font-['Inter'] text-xs font-black uppercase tracking-wider text-[#6b7280]">
@@ -316,7 +316,7 @@ function DetailPage({
             <StatusBadge status={feedback.status} />
           </div>
 
-          <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-100">
+          <div className="mt-5 rounded-xl bg-[#f7ecd5] p-4 text-sm leading-6 text-slate-700 ring-1 ring-amber-200">
             {feedback.message}
           </div>
 
@@ -357,7 +357,7 @@ function DetailPage({
 
         <form
           onSubmit={onReplySubmit}
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+          className="rounded-xl border border-amber-200 bg-[#fffaf0] p-5 shadow-sm shadow-amber-900/10"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -381,7 +381,7 @@ function DetailPage({
               value={reply}
               onChange={(event) => onReplyChange(event.target.value)}
               rows={8}
-              className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              className="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 py-3 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
               placeholder="Write the response to send to the customer..."
               required
             />
@@ -398,7 +398,7 @@ function DetailPage({
               value={feedback.status || "OPEN"}
               disabled={updatingId === feedback.id}
               onChange={(event) => onStatusChange(feedback, event.target.value)}
-              className="h-11 rounded-xl border border-[#d7d9e4] bg-white px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {feedbackStatuses.map((status) => (
                 <option key={status} value={status}>
@@ -580,57 +580,59 @@ export default function FeedbacksPage() {
 
   return (
     <AdminLayout>
-      <PageHeader />
-      <OverviewGrid feedbacks={feedbacks} />
+      <div className="feedback-management-page">
+        <PageHeader />
+        <OverviewGrid feedbacks={feedbacks} />
 
-      <div className="mb-6 rounded-2xl border border-[#d7d9e4] bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative flex-1 lg:max-w-xl">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-              search
-            </span>
-            <input
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder="Search customer, ticket, subject, message..."
-              className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+        <div className="feedback-panel mb-6 rounded-2xl border border-amber-200 bg-[#fffaf0] p-4 shadow-sm shadow-amber-900/10">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative flex-1 lg:max-w-xl">
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                search
+              </span>
+              <input
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="Search customer, ticket, subject, message..."
+                className="h-12 w-full rounded-xl border border-amber-200 bg-[#f7ecd5] pl-12 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+            >
+              <option value="ALL">All Statuses</option>
+              {feedbackStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {getStatusMeta(status).label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-10 text-center text-red-700">
+            <span className="material-symbols-outlined text-4xl">error</span>
+            <p className="mt-3 font-['Geist'] text-lg font-bold">
+              Cannot load feedbacks
+            </p>
+            <p className="mt-1 text-sm">{error}</p>
+          </div>
+        ) : (
+          <div>
+            <FeedbackTable
+              feedbacks={filteredFeedbacks}
+              loading={loading}
+              updatingId={updatingId}
+              onStatusChange={handleStatusChange}
+              onOpenDetail={handleOpenDetail}
             />
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-          >
-            <option value="ALL">All Statuses</option>
-            {feedbackStatuses.map((status) => (
-              <option key={status} value={status}>
-                {getStatusMeta(status).label}
-              </option>
-            ))}
-          </select>
-        </div>
+        )}
       </div>
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-10 text-center text-red-700">
-          <span className="material-symbols-outlined text-4xl">error</span>
-          <p className="mt-3 font-['Geist'] text-lg font-bold">
-            Cannot load feedbacks
-          </p>
-          <p className="mt-1 text-sm">{error}</p>
-        </div>
-      ) : (
-        <div>
-          <FeedbackTable
-            feedbacks={filteredFeedbacks}
-            loading={loading}
-            updatingId={updatingId}
-            onStatusChange={handleStatusChange}
-            onOpenDetail={handleOpenDetail}
-          />
-        </div>
-      )}
     </AdminLayout>
   );
 }

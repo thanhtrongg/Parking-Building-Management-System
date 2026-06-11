@@ -73,29 +73,29 @@ function LoadingState() {
 
 function PageHero({ total, activeCount }) {
     return (
-        <div className="relative mb-7 overflow-hidden rounded-[32px] border border-slate-200 bg-slate-950 p-6 shadow-xl shadow-slate-900/10 md:p-8">
-            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-500/20 blur-3xl" />
-            <div className="absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
+        <div className="relative mb-7 overflow-hidden rounded-[32px] border border-amber-200 bg-[#fffaf0] p-6 shadow-xl shadow-amber-900/10 md:p-8">
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-amber-200/55 blur-3xl" />
+            <div className="absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-[#d7b46a]/25 blur-3xl" />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 font-['Inter'] text-xs font-medium text-emerald-100 backdrop-blur">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 font-['Inter'] text-xs font-bold text-amber-800">
                         <span className="material-symbols-outlined text-base">hourglass_top</span>
                         Live Parking Sessions
                     </div>
-                    <h2 className="mt-5 max-w-3xl font-['Geist'] text-3xl font-bold tracking-tight text-white md:text-4xl">
+                    <h2 className="mt-5 max-w-3xl font-['Geist'] text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
                         Session Management
                     </h2>
-                    <p className="mt-3 max-w-2xl font-['Inter'] text-sm leading-6 text-slate-300">
+                    <p className="mt-3 max-w-2xl font-['Inter'] text-sm leading-6 text-slate-600">
                         Monitor active parking sessions, track durations, and manage check-outs or completed sessions.
                     </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
-                    <div className="rounded-3xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur">
-                        <p className="font-['Inter'] text-xs text-slate-300">Total Sessions</p>
-                        <p className="mt-1 font-['Geist'] text-3xl font-bold text-white">{total}</p>
+                    <div className="rounded-3xl border border-amber-200 bg-[#f7ecd5] px-5 py-4 shadow-sm">
+                        <p className="font-['Inter'] text-xs font-bold text-amber-800">Total Sessions</p>
+                        <p className="mt-1 font-['Geist'] text-3xl font-bold text-slate-950">{total}</p>
                     </div>
-                    <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4 backdrop-blur">
-                        <p className="font-['Inter'] text-xs text-emerald-200">Currently Active</p>
+                    <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+                        <p className="font-['Inter'] text-xs font-bold text-emerald-700">Currently Active</p>
                         <p className="mt-1 font-['Geist'] text-3xl font-bold text-emerald-400">{activeCount}</p>
                     </div>
                 </div>
@@ -267,16 +267,16 @@ function DetailModal({ session, onClose }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
             <div className="w-full max-w-lg overflow-hidden rounded-[28px] bg-white shadow-2xl shadow-slate-950/30">
-                <div className={`relative h-36 ${isActive ? "bg-gradient-to-br from-emerald-600 to-teal-700" : "bg-gradient-to-br from-slate-700 to-slate-900"}`}>
+                <div className={`relative h-36 ${isActive ? "bg-gradient-to-br from-emerald-500 to-teal-600" : "bg-gradient-to-br from-amber-200 to-[#d7b46a]"}`}>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_40%)]" />
                     <button
                         onClick={onClose}
-                        className="absolute right-4 top-4 rounded-2xl bg-white/15 p-2 text-white backdrop-blur transition hover:bg-white/25"
+                        className="absolute right-4 top-4 rounded-2xl bg-white/60 p-2 text-slate-800 backdrop-blur transition hover:bg-white/80"
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
                     <div className="relative flex h-full items-center justify-center">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-white/20 text-white shadow-xl backdrop-blur">
+                        <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-white/55 text-slate-900 shadow-xl backdrop-blur">
                             <span className="material-symbols-outlined text-5xl">
                                 {isActive ? "hourglass_top" : "check_circle"}
                             </span>

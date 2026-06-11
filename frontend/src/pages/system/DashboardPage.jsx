@@ -174,6 +174,7 @@ function QuickAction({ icon, title, description, onClick, primary }) {
       onClick={onClick}
       className={[
         "group flex min-h-[104px] items-center gap-4 rounded-3xl border p-5 text-left transition active:scale-[0.98]",
+        primary ? "dashboard-primary-action" : "",
         primary
           ? "border-blue-600 bg-blue-600 text-white shadow-xl shadow-blue-200 hover:bg-blue-700"
           : "border-slate-200 bg-white text-slate-900 shadow-sm hover:-translate-y-1 hover:border-blue-100 hover:bg-blue-50 hover:shadow-xl hover:shadow-slate-200/80",
@@ -182,6 +183,7 @@ function QuickAction({ icon, title, description, onClick, primary }) {
       <span
         className={[
           "material-symbols-outlined grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-[25px] leading-none",
+          primary ? "dashboard-primary-action-icon" : "",
           primary
             ? "bg-white/15 text-white"
             : "bg-slate-100 text-slate-600 group-hover:bg-white group-hover:text-blue-600",
@@ -289,11 +291,13 @@ function DashboardHero({ name, onNewEntry, onViewSlots }) {
         </div>
 
         <div className="grid w-full max-w-md grid-cols-2 gap-3">
-          <div className="rounded-3xl bg-slate-950 p-5 text-white shadow-xl shadow-slate-200">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <div className="rounded-3xl border border-amber-200 bg-[#f7ecd5] p-5 text-slate-950 shadow-xl shadow-amber-900/10">
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
               Today
             </p>
-            <p className="mt-3 text-2xl font-black">{getTodayLabel()}</p>
+            <p className="mt-3 text-2xl font-black text-slate-950">
+              {getTodayLabel()}
+            </p>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
