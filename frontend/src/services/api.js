@@ -59,7 +59,41 @@ export const apiRequest = async (path, options = {}) => {
 
       // Map feedback payload keys from frontend to backend DTO
       const method = (cleanOptions.method || "GET").toUpperCase();
-      if ((basePath === "user/feedbacks" || basePath === "feedback") && method === "POST") {
+      if (basePath === "reservations" && (method === "POST" || method === "PUT")) {
+        // 1. Resolve vehicleType enum name from vehicleTypeId
+        const typesRes = await apiRequest("vehicle-types");
+        const types = typesRes.data || [];
+        const matchedType = types.find(t => t.id === bodyObj.vehicleTypeId);
+        const vehicleType = matchedType ? (matchedType.name || "").toUpperCase() : "CAR";
+
+        // 2. Fetch slot details to get the buildingId (since it's required)
+        let buildingId = bodyObj.buildingId;
+        if (!buildingId && bodyObj.parkingSlotId) {
+          const slotRes = await apiRequest(`slots/${bodyObj.parkingSlotId}`);
+          const slot = slotRes.data;
+          if (slot && slot.floorId) {
+            const floorRes = await apiRequest(`floors/${slot.floorId}`);
+            const floor = floorRes.data;
+            if (floor && floor.buildingId) {
+              buildingId = floor.buildingId;
+            }
+          }
+        }
+        if (!buildingId) {
+          const buildingsRes = await apiRequest("buildings");
+          buildingId = buildingsRes.data?.[0]?.id || "8b72da1f-50b3-4632-a5e2-632b8ac425f1";
+        }
+
+        // 3. Map to backend ReservationRequest DTO
+        const mappedBody = {
+          slotId: bodyObj.parkingSlotId || null,
+          vehicleType: vehicleType,
+          reservedFrom: bodyObj.startTime || bodyObj.reservedFrom,
+          reservedTo: bodyObj.endTime || bodyObj.reservedTo,
+          buildingId: buildingId
+        };
+        cleanOptions.body = JSON.stringify(mappedBody);
+      } else if ((basePath === "user/feedbacks" || basePath === "feedback") && method === "POST") {
         if (bodyObj.subject !== undefined || bodyObj.message !== undefined) {
           const category = bodyObj.subject || "General";
           const bookingInfo = bodyObj.bookingId ? `[Booking ID: ${bodyObj.bookingId}] ` : "";
@@ -317,9 +351,9 @@ export const apiRequest = async (path, options = {}) => {
   } else if (basePath === "parking-slots") {
     basePath = "slots";
   } else if (basePath === "reservations") {
-    basePath = isDriver ? "reservations/my" : "reservations";
+    basePath = (isDriver && method === "GET") ? "reservations/my" : "reservations";
   } else if (basePath === "parking-sessions") {
-    basePath = isDriver ? "sessions/my" : "sessions/active";
+    basePath = (isDriver && method === "GET") ? "sessions/my" : "sessions/active";
   } else if (basePath.startsWith("parking-sessions/")) {
     basePath = `sessions/${basePath.slice(17)}`;
   } else if (basePath === "user/parking-sessions") {

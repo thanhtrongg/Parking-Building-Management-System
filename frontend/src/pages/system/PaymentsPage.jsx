@@ -35,6 +35,21 @@ const paymentMethodConfig = {
     icon: "payments",
     className: "text-green-600",
   },
+  TRANSFER: {
+    label: "Bank Transfer",
+    icon: "credit_card",
+    className: "text-blue-600",
+  },
+  VNPAY: {
+    label: "VNPay QR",
+    icon: "qr_code_2",
+    className: "text-red-600",
+  },
+  EWALLET: {
+    label: "E-Wallet",
+    icon: "account_balance_wallet",
+    className: "text-purple-600",
+  },
   CARD: {
     label: "Card",
     icon: "credit_card",
@@ -304,6 +319,9 @@ function FilterToolbar({
           >
             <option value="ALL">All Methods</option>
             <option value="CASH">Cash</option>
+            <option value="TRANSFER">Bank Transfer</option>
+            <option value="VNPAY">VNPay QR</option>
+            <option value="EWALLET">E-Wallet</option>
             <option value="CARD">Card</option>
             <option value="SEPAY">SePay</option>
           </select>
@@ -722,18 +740,17 @@ function PaymentsTable({
 }
 
 function MethodBreakdown({ payments }) {
-  const methodData = ["CASH", "CARD", "SEPAY"].map((method) => {
-    const total = payments
-      .filter((payment) => payment.paymentMethod === method)
-      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-
-    return {
-      method,
-      total,
-      count: payments.filter((payment) => payment.paymentMethod === method)
-        .length,
-    };
-  });
+  const methodData = ["CASH", "TRANSFER", "VNPAY", "EWALLET", "CARD", "SEPAY"]
+    .map((method) => {
+      const filtered = payments.filter((payment) => payment.paymentMethod === method);
+      const total = filtered.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      return {
+        method,
+        total,
+        count: filtered.length,
+      };
+    })
+    .filter((item) => item.count > 0 || ["CASH", "TRANSFER", "VNPAY", "EWALLET"].includes(item.method));
 
   const maxTotal = Math.max(...methodData.map((item) => item.total), 1);
 

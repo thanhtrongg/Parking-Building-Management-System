@@ -147,11 +147,10 @@ function toDateTimeLocalValue(value) {
 
 function toIsoDateTime(value) {
   if (!value) return "";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-
-  return date.toISOString();
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 19);
 }
 
 function formatDateTime(value) {

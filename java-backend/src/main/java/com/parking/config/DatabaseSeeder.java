@@ -191,6 +191,9 @@ public class DatabaseSeeder implements CommandLineRunner {
             String session15Id = "a1515151-1515-1515-1515-151515151515";
             String session16Id = "a1616161-1616-1616-1616-161616161616";
             String session17Id = "a1717171-1717-1717-1717-171717171717";
+            String session18Id = "a1818181-1818-1818-1818-181818181818";
+            String session19Id = "a1919191-1919-1919-1919-191919191919";
+            String session20Id = "a2020202-2020-2020-2020-202020202020";
 
             // Session 1: Completed CAR (Cash payment)
             insertSession(session1Id, slotA01, driverId, staffId, staffId, "29A-12345", VehicleTypeEnum.CAR.name(), "TKT-CAR-001",
@@ -286,6 +289,24 @@ public class DatabaseSeeder implements CommandLineRunner {
             insertSession(session17Id, slotC02, null, staffId, null, "GUEST-BIKE-3", VehicleTypeEnum.BICYCLE.name(), "TKT-BIKE-017",
                     LocalDateTime.of(2026, 6, 10, 15, 0, 0), null,
                     LocalDateTime.of(2026, 6, 10, 15, 2, 0), SessionStatus.ACTIVE.name(), "Gate 1", null);
+
+            // Session 18: Completed MOTORBIKE (VNPay payment, PENDING status)
+            insertSession(session18Id, slotB03, driverId, staffId, null, "30F-99999", VehicleTypeEnum.MOTORBIKE.name(), "TKT-BIKE-018",
+                    LocalDateTime.of(2026, 6, 10, 10, 0, 0), null,
+                    LocalDateTime.of(2026, 6, 10, 10, 5, 0), SessionStatus.ACTIVE.name(), "Gate 2", null);
+            insertPayment(UUID.randomUUID().toString(), session18Id, new BigDecimal("8000.00"), BigDecimal.ZERO, PaymentMethod.VNPAY.name(), PaymentStatus.PENDING.name(), LocalDateTime.of(2026, 6, 10, 12, 0, 0));
+
+            // Session 19: Completed CAR (Ewallet payment, PENDING status)
+            insertSession(session19Id, slotA05, null, staffId, null, "29A-88888", VehicleTypeEnum.CAR.name(), "TKT-CAR-019",
+                    LocalDateTime.of(2026, 6, 9, 15, 0, 0), null,
+                    LocalDateTime.of(2026, 6, 9, 15, 5, 0), SessionStatus.ACTIVE.name(), "Gate 1", null);
+            insertPayment(UUID.randomUUID().toString(), session19Id, new BigDecimal("45000.00"), BigDecimal.ZERO, PaymentMethod.EWALLET.name(), PaymentStatus.PENDING.name(), LocalDateTime.of(2026, 6, 9, 18, 0, 0));
+
+            // Session 20: Completed CAR (Cash payment, REFUNDED status)
+            insertSession(session20Id, slotA04, driverId, staffId, staffId, "51D-77777", VehicleTypeEnum.CAR.name(), "TKT-CAR-020",
+                    LocalDateTime.of(2026, 6, 5, 8, 0, 0), LocalDateTime.of(2026, 6, 5, 12, 0, 0),
+                    LocalDateTime.of(2026, 6, 5, 8, 5, 0), SessionStatus.EXCEPTION.name(), "Gate 1", "Gate 1");
+            insertPayment(UUID.randomUUID().toString(), session20Id, new BigDecimal("50000.00"), BigDecimal.ZERO, PaymentMethod.CASH.name(), PaymentStatus.REFUNDED.name(), LocalDateTime.of(2026, 6, 5, 12, 10, 0));
 
             log.info("Parking sessions and payments seeded successfully.");
 

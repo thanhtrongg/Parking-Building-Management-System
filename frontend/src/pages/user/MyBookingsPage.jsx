@@ -40,7 +40,11 @@ function formatCurrency(amount) {
 }
 
 function toIsoString(localValue) {
-  return new Date(localValue).toISOString();
+  if (!localValue) return "";
+  const date = new Date(localValue);
+  if (Number.isNaN(date.getTime())) return "";
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 19);
 }
 
 function calculateHours(startTime, endTime) {
@@ -337,7 +341,9 @@ export default function UserMyBookingsPage() {
       return;
     }
 
-    if (selectedSlot.vehicleTypeId !== form.vehicleTypeId) {
+    const selectedType = vehicleTypes.find((t) => t.id === form.vehicleTypeId);
+    const slotTypeStr = selectedSlot?.vehicleTypeName || selectedSlot?.vehicleType?.name || selectedSlot?.vehicleType;
+    if (!selectedType || !slotTypeStr || String(slotTypeStr).toUpperCase() !== String(selectedType.name).toUpperCase()) {
       setAlert({
         type: "error",
         message: "Selected slot does not match the selected vehicle type.",
@@ -371,6 +377,10 @@ export default function UserMyBookingsPage() {
         type: "error",
         message: error.message || "Cannot create reservation",
       });
+      if (error.message && (error.message.includes("already reserved") || error.message.includes("capacity"))) {
+        setSelectedSlot(null);
+        loadAvailableSlots();
+      }
     } finally {
       setSubmitting(false);
     }

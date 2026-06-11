@@ -43,7 +43,8 @@ public class ReservationServiceImpl implements ReservationService {
         ParkingBuilding building = buildingRepository.findByIdWithWriteLock(request.getBuildingId())
                 .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
 
-        if (request.getReservedFrom().isBefore(LocalDateTime.now())) {
+        // Allow a 15-minute grace period/buffer for start time to account for clock skew and form submission latency
+        if (request.getReservedFrom().isBefore(LocalDateTime.now().minusMinutes(15))) {
             throw new BadRequestException("Reservation start time must be in the future.");
         }
         if (request.getReservedTo().isBefore(request.getReservedFrom())) {
