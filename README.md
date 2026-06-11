@@ -160,7 +160,7 @@ Starts only the database in Docker and runs the application locally for faster i
    ```
 2. **Run Backend**:
    ```bash
-   cd java-backend && mvnd spring-boot:run
+   cd java-backend && mvn clean spring-boot:run -Dspring-boot.run.profiles=dev
    ```
 
 3. **Run Frontend**:
