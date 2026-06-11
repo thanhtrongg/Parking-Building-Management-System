@@ -119,7 +119,7 @@ export const apiRequest = async (path, options = {}) => {
 
     // 5. Filter slots by vehicleType
     const matchedSlots = allSlots.filter(slot => {
-      const slotType = String(slot.vehicleType || "").toUpperCase();
+      const slotType = (slot.vehicleTypeName || slot.vehicleType?.typeName || String(slot.vehicleType || "")).toUpperCase();
       return slotType === vehicleTypeName;
     });
 
