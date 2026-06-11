@@ -177,7 +177,7 @@ function SlotCard({ slot, selected, onSelect }) {
           {slot.status || "AVAILABLE"}
         </span>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-          {slot.vehicleType || slot.vehicleTypeName || "Vehicle"}
+          {slot.vehicleTypeName || slot.vehicleType?.typeName || "Vehicle"}
         </span>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
           {slot.distanceToGate ?? 0}m to gate
@@ -202,6 +202,8 @@ export default function UserMyBookingsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   useEffect(() => {
     let ignore = false;
 
@@ -223,39 +225,6 @@ export default function UserMyBookingsPage() {
             startTime: defaultStartTime,
             endTime: defaultEndTime,
           });
-
-          if (defaultVehicleTypeId) {
-            setLoadingSlots(true);
-            setSelectedSlot(null);
-
-            const params = new URLSearchParams({
-              vehicleTypeId: defaultVehicleTypeId,
-              startTime: toIsoString(defaultStartTime),
-              endTime: toIsoString(defaultEndTime),
-            });
-
-            try {
-              const slotsResult = await apiRequest(
-                `/api/parking-slots/available-for-reservation?${params.toString()}`,
-              );
-
-              if (!ignore) {
-                setAvailableSlots(normalizeArray(slotsResult));
-              }
-            } catch (error) {
-              if (!ignore) {
-                setAvailableSlots([]);
-                setAlert({
-                  type: "error",
-                  message: error.message || "Cannot load available slots",
-                });
-              }
-            } finally {
-              if (!ignore) {
-                setLoadingSlots(false);
-              }
-            }
-          }
         }
       } catch (error) {
         if (!ignore) {
@@ -280,8 +249,62 @@ export default function UserMyBookingsPage() {
 
   const canSearchSlots = useMemo(() => {
     if (!form.vehicleTypeId || !form.startTime || !form.endTime) return false;
-    return new Date(form.startTime) < new Date(form.endTime);
+    const start = new Date(form.startTime);
+    const end = new Date(form.endTime);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
+    return start < end;
   }, [form]);
+
+  const displayedSlots = useMemo(() => {
+    return canSearchSlots ? availableSlots : [];
+  }, [canSearchSlots, availableSlots]);
+
+  useEffect(() => {
+    if (loadingTypes) return;
+    if (!canSearchSlots) return;
+
+    let ignore = false;
+
+    async function fetchSlots() {
+      try {
+        setLoadingSlots(true);
+        setSelectedSlot(null);
+        setAlert({ type: "", message: "" });
+
+        const params = new URLSearchParams({
+          vehicleTypeId: form.vehicleTypeId,
+          startTime: toIsoString(form.startTime),
+          endTime: toIsoString(form.endTime),
+        });
+
+        const result = await apiRequest(
+          `/api/parking-slots/available-for-reservation?${params.toString()}`,
+        );
+
+        if (!ignore) {
+          setAvailableSlots(normalizeArray(result));
+        }
+      } catch (error) {
+        if (!ignore) {
+          setAvailableSlots([]);
+          setAlert({
+            type: "error",
+            message: error.message || "Cannot load available slots",
+          });
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingSlots(false);
+        }
+      }
+    }
+
+    fetchSlots();
+
+    return () => {
+      ignore = true;
+    };
+  }, [form.vehicleTypeId, form.startTime, form.endTime, canSearchSlots, loadingTypes, refreshTrigger]);
 
   const estimatedFee = useMemo(
     () =>
@@ -294,49 +317,13 @@ export default function UserMyBookingsPage() {
     [form, pricingPolicies],
   );
 
-  const loadAvailableSlots = async () => {
-    if (!canSearchSlots) {
-      setAlert({
-        type: "error",
-        message: "Please select vehicle type and a valid time range.",
-      });
-      return;
-    }
-
-    try {
-      setLoadingSlots(true);
-      setSelectedSlot(null);
-      setAlert({ type: "", message: "" });
-
-      const params = new URLSearchParams({
-        vehicleTypeId: form.vehicleTypeId,
-        startTime: toIsoString(form.startTime),
-        endTime: toIsoString(form.endTime),
-      });
-
-      const result = await apiRequest(
-        `/api/parking-slots/available-for-reservation?${params.toString()}`,
-      );
-
-      setAvailableSlots(normalizeArray(result));
-    } catch (error) {
-      setAvailableSlots([]);
-      setAlert({
-        type: "error",
-        message: error.message || "Cannot load available slots",
-      });
-    } finally {
-      setLoadingSlots(false);
-    }
+  const loadAvailableSlots = () => {
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
-
-    if (field === "vehicleTypeId") {
-      setSelectedSlot(null);
-      setAvailableSlots([]);
-    }
+    setSelectedSlot(null);
   };
 
   const submitReservation = async (event) => {
@@ -514,7 +501,7 @@ export default function UserMyBookingsPage() {
                 Available Slots
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                {availableSlots.length} slots match your selected criteria.
+                {displayedSlots.length} slots match your selected criteria.
               </p>
             </div>
           </div>
@@ -528,7 +515,7 @@ export default function UserMyBookingsPage() {
                 />
               ))}
             </div>
-          ) : availableSlots.length === 0 ? (
+          ) : displayedSlots.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
                 <span className="material-symbols-outlined text-[34px]">
@@ -544,7 +531,7 @@ export default function UserMyBookingsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {availableSlots.map((slot) => (
+              {displayedSlots.map((slot) => (
                 <SlotCard
                   key={slot.id}
                   slot={slot}
