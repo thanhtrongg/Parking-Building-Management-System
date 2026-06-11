@@ -52,10 +52,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             String staffId = "3c8b5c9d-6fa4-46ab-8cb3-c3f2b45a49dc";
             String driverId = "4d8b5c9d-6fa4-46ab-8cb3-c3f2b45a49dc";
 
-            insertUser(adminId, "admin@gmail.com", "123456", "Admin Gmail", "0911234567", UserRole.ADMIN.name());
-            insertUser(managerId, "manager@gmail.com", "123456", "Manager Gmail", "0917654321", UserRole.MANAGER.name());
-            insertUser(staffId, "staff@gmail.com", "123456", "Staff Gmail", "0918888888", UserRole.STAFF.name());
-            insertUser(driverId, "driver@gmail.com", "123456", "Driver Gmail", "0919999999", UserRole.DRIVER.name());
+            insertUser(adminId, "admin@gmail.com", "123456", "Admin", "0911234567", UserRole.ADMIN.name());
+            insertUser(managerId, "manager@gmail.com", "123456", "Manager", "0917654321", UserRole.MANAGER.name());
+            insertUser(staffId, "staff@gmail.com", "123456", "Staff", "0918888888", UserRole.STAFF.name());
+            insertUser(driverId, "driver@gmail.com", "123456", "Driver", "0919999999", UserRole.DRIVER.name());
 
             log.info("Users seeded successfully.");
 

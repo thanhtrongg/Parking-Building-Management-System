@@ -174,10 +174,10 @@ When starting the application with the `dev` profile, the database is automatica
 
 | Role | Email | Full Name | Phone |
 |------|-------|-----------|-------|
-| **Admin** | `admin@gmail.com` | Admin Gmail | `0911234567` |
-| **Manager** | `manager@gmail.com` | Manager Gmail | `0917654321` |
-| **Staff** | `staff@gmail.com` | Staff Gmail | `0918888888` |
-| **Driver** | `driver@gmail.com` | Driver Gmail | `0919999999` |
+| **Admin** | `admin@gmail.com` | Admin | `0911234567` |
+| **Manager** | `manager@gmail.com` | Manager | `0917654321` |
+| **Staff** | `staff@gmail.com` | Staff | `0918888888` |
+| **Driver** | `driver@gmail.com` | Driver | `0919999999` |
 
 ### Seeding & Mock Data Diversity
 
