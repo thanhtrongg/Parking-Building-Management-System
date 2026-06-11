@@ -42,7 +42,7 @@ CREATE TABLE floors (
     building_id   UUID        NOT NULL REFERENCES parking_buildings(id) ON DELETE CASCADE,
     floor_name    VARCHAR(100) NOT NULL,
     floor_number  INT         NOT NULL,
-    vehicle_type  VARCHAR(20) CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE')),
+    vehicle_type  VARCHAR(20) CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE', 'ELECTRIC_VEHICLE', 'LIGHT_TRUCK')),
     total_slots   INT,
     is_active     BOOLEAN     NOT NULL DEFAULT true
 );
@@ -56,7 +56,7 @@ CREATE TABLE parking_slots (
     slot_code    VARCHAR(50) NOT NULL,
     status       VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE'
                              CHECK (status IN ('AVAILABLE', 'OCCUPIED', 'RESERVED', 'MAINTENANCE', 'LOCKED')),
-    vehicle_type VARCHAR(20) CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE'))
+    vehicle_type VARCHAR(20) CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE', 'ELECTRIC_VEHICLE', 'LIGHT_TRUCK'))
 );
 
 -- ============================================================
@@ -93,7 +93,7 @@ CREATE TABLE parking_sessions (
     staff_in_id    UUID         REFERENCES users(id) ON DELETE SET NULL,
     staff_out_id   UUID         REFERENCES users(id) ON DELETE SET NULL,
     license_plate  VARCHAR(20)  NOT NULL,
-    vehicle_type   VARCHAR(20)  CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE')),
+    vehicle_type   VARCHAR(20)  CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE', 'ELECTRIC_VEHICLE', 'LIGHT_TRUCK')),
     ticket_code    VARCHAR(100) NOT NULL UNIQUE,
     check_in_time  TIMESTAMP    NOT NULL,
     check_out_time TIMESTAMP,
@@ -124,7 +124,7 @@ CREATE TABLE reservations (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     driver_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     slot_id       UUID        NOT NULL REFERENCES parking_slots(id) ON DELETE CASCADE,
-    vehicle_type  VARCHAR(20) CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE')),
+    vehicle_type  VARCHAR(20) CHECK (vehicle_type IN ('CAR', 'MOTORBIKE', 'BICYCLE', 'ELECTRIC_VEHICLE', 'LIGHT_TRUCK')),
     reserved_from TIMESTAMP   NOT NULL,
     reserved_to   TIMESTAMP   NOT NULL,
     status        VARCHAR(20) NOT NULL DEFAULT 'PENDING'

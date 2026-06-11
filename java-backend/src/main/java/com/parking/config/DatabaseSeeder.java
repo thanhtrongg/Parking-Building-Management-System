@@ -93,10 +93,14 @@ public class DatabaseSeeder implements CommandLineRunner {
             String floor1Id = "9f3c1d9b-a48e-49b0-9b43-982823a0b12f";
             String floor2Id = "4f2d3a9b-b48e-49b0-9b43-982823a0b13f";
             String floor3Id = "5f2d3a9b-b48e-49b0-9b43-982823a0b14f";
+            String floor4Id = "6f2d3a9b-b48e-49b0-9b43-982823a0b15f";
+            String floor5Id = "7f2d3a9b-b48e-49b0-9b43-982823a0b16f";
 
             insertFloor(floor1Id, buildingId, "Floor 1", 1, 10);
             insertFloor(floor2Id, buildingId, "Floor 2", 2, 15);
             insertFloor(floor3Id, buildingId, "Floor 3", 3, 10);
+            insertFloor(floor4Id, buildingId, "Floor 4", 4, 5);
+            insertFloor(floor5Id, buildingId, "Floor 5", 5, 5);
 
             log.info("Floors seeded successfully.");
 
@@ -151,6 +155,20 @@ public class DatabaseSeeder implements CommandLineRunner {
                 String status = SlotStatus.AVAILABLE.name();
                 if (i == 5) status = SlotStatus.MAINTENANCE.name();
                 insertSlot(UUID.randomUUID().toString(), floor3Id, "3B-0" + i, status, VehicleTypeEnum.BICYCLE.name(), "B");
+            }
+
+            // ELECTRIC_VEHICLE Slots (Floor 4)
+            for (int i = 1; i <= 5; i++) {
+                String status = SlotStatus.AVAILABLE.name();
+                if (i == 5) status = SlotStatus.MAINTENANCE.name();
+                insertSlot(UUID.randomUUID().toString(), floor4Id, "4D-0" + i, status, VehicleTypeEnum.ELECTRIC_VEHICLE.name(), "D");
+            }
+
+            // LIGHT_TRUCK Slots (Floor 5)
+            for (int i = 1; i <= 5; i++) {
+                String status = SlotStatus.AVAILABLE.name();
+                if (i == 5) status = SlotStatus.MAINTENANCE.name();
+                insertSlot(UUID.randomUUID().toString(), floor5Id, "5E-0" + i, status, VehicleTypeEnum.LIGHT_TRUCK.name(), "E");
             }
 
             log.info("Parking slots seeded successfully.");
