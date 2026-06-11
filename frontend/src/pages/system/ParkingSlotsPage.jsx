@@ -391,7 +391,7 @@ export default function ParkingSlotsPage() {
     return parkingSlots.filter((slot) => {
       const slotNumber = getSlotNumber(slot);
       const zoneName = slot.zone || "";
-      const vehicleTypeName = slot.vehicleType || "";
+      const vehicleTypeName = slot.vehicleTypeName || slot.vehicleType?.typeName || "";
 
       const matchesKeyword = `${slotNumber} ${zoneName} ${vehicleTypeName}`
         .toLowerCase()
@@ -764,7 +764,7 @@ export default function ParkingSlotsPage() {
 
                       <td className="px-6 py-4">
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                          {slot.vehicleType || "N/A"}
+                          {slot.vehicleTypeName || slot.vehicleType?.typeName || "N/A"}
                         </span>
                       </td>
 
