@@ -15,14 +15,14 @@ const router = express.Router();
 router.get(
   "/",
   verifyToken,
-  requireRoles("ADMIN", "MANAGER", "STAFF"),
+  requireRoles("ADMIN", "MANAGER"),
   getFeedbacks,
 );
 
 router.get(
   "/:id",
   verifyToken,
-  requireRoles("ADMIN", "MANAGER", "STAFF"),
+  requireRoles("ADMIN", "MANAGER"),
   getFeedbackById,
 );
 
@@ -31,14 +31,14 @@ router.post("/", verifyToken, requireRoles("USER"), createFeedback);
 router.patch(
   "/:id/status",
   verifyToken,
-  requireRoles("ADMIN", "MANAGER", "STAFF"),
+  requireRoles("ADMIN", "MANAGER"),
   updateFeedbackStatus,
 );
 
 router.patch(
   "/:id/reply",
   verifyToken,
-  requireRoles("ADMIN", "MANAGER", "STAFF"),
+  requireRoles("ADMIN", "MANAGER"),
   updateFeedbackReply,
 );
 

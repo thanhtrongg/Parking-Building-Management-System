@@ -176,7 +176,7 @@ function FeedbackTable({
   return (
     <div className="feedback-panel overflow-hidden rounded-2xl border border-amber-200 bg-[#fffaf0] shadow-sm shadow-amber-900/10">
       <div className="overflow-x-auto">
-        <table className="min-w-[1120px] border-collapse text-left">
+        <table className="w-full min-w-[1120px] border-collapse text-left">
           <thead className="border-b border-[#d7d9e4] bg-[#f8f9fc]">
             <tr>
               {[

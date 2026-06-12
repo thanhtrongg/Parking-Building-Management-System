@@ -252,7 +252,7 @@ function App() {
         <Route
           path="/feedbacks"
           element={
-            <ProtectedRoute allowedRoles={systemRoles}>
+            <ProtectedRoute allowedRoles={managementRoles}>
               <FeedbacksPage />
             </ProtectedRoute>
           }
