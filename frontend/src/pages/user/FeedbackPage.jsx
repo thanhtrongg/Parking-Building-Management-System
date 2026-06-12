@@ -30,6 +30,8 @@ const feedbackStatusFilters = [
   { label: "Closed", value: "CLOSED" },
 ];
 
+const MAX_FEEDBACK_SUBJECT_LENGTH = 50;
+
 function formatDateTime(value) {
   if (!value) return "N/A";
 
@@ -479,9 +481,13 @@ export default function UserFeedbackPage() {
               <input
                 value={form.subject}
                 onChange={(event) => updateField("subject", event.target.value)}
+                maxLength={MAX_FEEDBACK_SUBJECT_LENGTH}
                 className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
                 required
               />
+              <span className="mt-1 block text-right text-xs font-bold text-slate-400">
+                {form.subject.length}/{MAX_FEEDBACK_SUBJECT_LENGTH}
+              </span>
             </label>
 
             <label className="block">

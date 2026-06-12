@@ -10,6 +10,7 @@ const VALID_FEEDBACK_STATUSES = [
   "CLOSED",
 ];
 
+const MAX_FEEDBACK_SUBJECT_LENGTH = 50;
 const RESERVATION_MARKER_PREFIX = "[Reservation:";
 const STAFF_REPLY_MARKER_PREFIX = "[Staff Reply:";
 
@@ -418,6 +419,13 @@ export const createFeedback = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Subject and message are required",
+      });
+    }
+
+    if (normalizedSubject.length > MAX_FEEDBACK_SUBJECT_LENGTH) {
+      return res.status(400).json({
+        success: false,
+        message: `Subject must be ${MAX_FEEDBACK_SUBJECT_LENGTH} characters or fewer`,
       });
     }
 

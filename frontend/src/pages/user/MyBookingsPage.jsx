@@ -150,36 +150,68 @@ function SlotCard({ slot, selected, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(slot)}
-      className={`rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+      aria-pressed={selected}
+      className={`relative rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
         selected
-          ? "border-blue-500 ring-4 ring-blue-100"
-          : "border-slate-200 hover:border-blue-200"
+          ? "border-blue-600 bg-blue-600 text-white shadow-blue-200 ring-4 ring-blue-100"
+          : "border-slate-200 bg-white text-slate-950 hover:border-blue-200"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-['Geist'] text-lg font-black text-slate-950">
+          <p
+            className={`font-['Geist'] text-lg font-black ${
+              selected ? "text-white" : "text-slate-950"
+            }`}
+          >
             {slot.slotName || slot.slotNumber}
           </p>
-          <p className="mt-1 text-sm font-semibold text-slate-500">
+          <p
+            className={`mt-1 text-sm font-semibold ${
+              selected ? "text-blue-100" : "text-slate-500"
+            }`}
+          >
             {slot.zoneName || "No zone"}
           </p>
         </div>
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
+        <span
+          className={`grid h-10 w-10 place-items-center rounded-xl ${
+            selected ? "bg-white text-blue-600" : "bg-blue-50 text-blue-600"
+          }`}
+        >
           <span className="material-symbols-outlined text-[22px]">
-            local_parking
+            {selected ? "check" : "local_parking"}
           </span>
         </span>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">
+        {selected && (
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700 ring-1 ring-white/70">
+            SELECTED
+          </span>
+        )}
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${
+            selected
+              ? "bg-blue-500 text-white ring-white/30"
+              : "bg-emerald-50 text-emerald-700 ring-emerald-100"
+          }`}
+        >
           {slot.status || "AVAILABLE"}
         </span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-black ${
+            selected ? "bg-blue-500 text-blue-50" : "bg-slate-100 text-slate-600"
+          }`}
+        >
           {slot.vehicleTypeName || "Vehicle"}
         </span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-black ${
+            selected ? "bg-blue-500 text-blue-50" : "bg-slate-100 text-slate-600"
+          }`}
+        >
           {slot.distanceToGate ?? 0}m to gate
         </span>
       </div>
