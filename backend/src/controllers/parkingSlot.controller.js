@@ -9,6 +9,7 @@ const VALID_SLOT_STATUSES = [
   "RESERVED",
   "MAINTENANCE",
 ];
+const RESERVATION_HOLD_WINDOW_MINUTES = 15;
 
 const isValidUUID = (id) => {
   return typeof id === "string" && UUID_REGEX.test(id);
@@ -30,7 +31,14 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
     }
 
     const parsedStartTime = startTime ? new Date(startTime) : null;
-    const parsedEndTime = endTime ? new Date(endTime) : null;
+    const parsedEndTime = endTime
+      ? new Date(endTime)
+      : parsedStartTime
+        ? new Date(
+            parsedStartTime.getTime() +
+              RESERVATION_HOLD_WINDOW_MINUTES * 60 * 1000,
+          )
+        : null;
 
     if (
       (startTime && !isValidDate(parsedStartTime)) ||

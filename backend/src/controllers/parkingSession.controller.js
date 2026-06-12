@@ -89,6 +89,9 @@ export const getParkingSessions = async (req, res) => {
                 status: session.status,
                 totalFee: fee.totalAmount,
                 parkingHours: fee.parkingHours,
+                basePrice: fee.basePrice,
+                hourlyRate: fee.hourlyRate,
+                nightRate: fee.nightRate,
                 billableHourlyHours: fee.billableHourlyHours,
                 billableNightHours: fee.billableNightHours,
                 payment: session.paymentId
@@ -266,6 +269,9 @@ export const getMyParkingSessions = async (req, res) => {
                 paidAmount: latestPayment?.amount ? Number(latestPayment.amount) : 0,
                 totalFee: fee.totalAmount,
                 parkingHours: fee.parkingHours,
+                basePrice: fee.basePrice,
+                hourlyRate: fee.hourlyRate,
+                nightRate: fee.nightRate,
                 billableHourlyHours: fee.billableHourlyHours,
                 billableNightHours: fee.billableNightHours,
             };

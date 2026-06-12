@@ -13,6 +13,7 @@ import SignUpPage from "./pages/auth/SignUpPage";
 import PublicLandingPage from "./pages/public/LandingPage";
 import DashboardPage from "./pages/system/DashboardPage";
 import ParkingSessionsPage from "./pages/system/ParkingSessionsPage";
+import WalkInParkingPage from "./pages/system/WalkInParkingPage";
 import ParkingSlotsPage from "./pages/system/ParkingSlotsPage";
 import PaymentsPage from "./pages/system/PaymentsPage";
 import PricingPoliciesPage from "./pages/system/PricingPoliciesPage";
@@ -223,6 +224,15 @@ function App() {
         />
 
         <Route
+          path="/parking-sessions/create"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <WalkInParkingPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/qr-check-in"
           element={
             <ProtectedRoute allowedRoles={systemRoles}>
@@ -252,7 +262,7 @@ function App() {
         <Route
           path="/feedbacks"
           element={
-            <ProtectedRoute allowedRoles={managementRoles}>
+            <ProtectedRoute allowedRoles={systemRoles}>
               <FeedbacksPage />
             </ProtectedRoute>
           }

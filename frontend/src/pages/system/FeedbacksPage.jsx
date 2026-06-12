@@ -1,8 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const feedbackStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+const feedbackCategories = {
+  GENERAL: "General",
+  PARKING_SERVICE: "Parking Service",
+  FACILITY: "Facility",
+  PAYMENT: "Payment",
+  TECHNICAL: "Technical",
+  STAFF_ATTITUDE: "Staff Attitude",
+};
+
+function CategoryBadge({ category }) {
+  const isPrivate = category === "STAFF_ATTITUDE";
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-black ${
+      isPrivate
+        ? "border-rose-200 bg-rose-50 text-rose-700"
+        : "border-slate-200 bg-slate-100 text-slate-600"
+    }`}>
+      {isPrivate ? "Private · " : ""}
+      {feedbackCategories[category] || "General"}
+    </span>
+  );
+}
 
 const statusConfig = {
   OPEN: {
@@ -182,6 +205,7 @@ function FeedbackTable({
               {[
                 "Customer",
                 "Booking",
+                "Category",
                 "Subject",
                 "Status",
                 "Created",
@@ -202,6 +226,9 @@ function FeedbackTable({
                 key={feedback.id}
                 className="transition hover:bg-[#f8f9fc]"
               >
+                <td className="px-5 py-4">
+                  <CategoryBadge category={feedback.category} />
+                </td>
                 <td className="px-5 py-4">
                   <div className="text-left">
                     <p className="font-['Geist'] text-sm font-bold text-[#191b23]">
@@ -309,6 +336,9 @@ function DetailPage({
               <h3 className="mt-1 font-['Geist'] text-2xl font-bold text-[#191b23]">
                 {feedback.subject}
               </h3>
+              <div className="mt-2">
+                <CategoryBadge category={feedback.category} />
+              </div>
               <p className="mt-1 text-xs font-semibold text-[#6b7280]">
                 {formatDateTime(feedback.createdAt)}
               </p>
@@ -434,6 +464,7 @@ export default function FeedbacksPage() {
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [detailFeedback, setDetailFeedback] = useState(null);
   const [replies, setReplies] = useState({});
   const [updatingId, setUpdatingId] = useState("");
@@ -457,12 +488,19 @@ export default function FeedbacksPage() {
     fetchFeedbacks();
   }, []);
 
+  useAutoRefresh(async () => {
+    const result = await apiRequest("/api/feedbacks");
+    setFeedbacks(result.data || []);
+  });
+
   const filteredFeedbacks = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
     return feedbacks.filter((feedback) => {
       const matchesStatus =
         statusFilter === "ALL" || feedback.status === statusFilter;
+      const matchesCategory =
+        categoryFilter === "ALL" || feedback.category === categoryFilter;
       const matchesKeyword =
         !normalizedKeyword ||
         [
@@ -470,6 +508,7 @@ export default function FeedbacksPage() {
           feedback.reservationCode,
           feedback.ticketCode,
           feedback.subject,
+          feedback.category,
           feedback.message,
           feedback.user?.email,
           feedback.parkingSession?.licensePlate,
@@ -479,9 +518,9 @@ export default function FeedbacksPage() {
             String(value).toLowerCase().includes(normalizedKeyword),
           );
 
-      return matchesStatus && matchesKeyword;
+      return matchesStatus && matchesCategory && matchesKeyword;
     });
-  }, [feedbacks, keyword, statusFilter]);
+  }, [feedbacks, keyword, statusFilter, categoryFilter]);
 
   const handleStatusChange = async (feedback, status) => {
     try {
@@ -597,6 +636,17 @@ export default function FeedbacksPage() {
                 className="h-12 w-full rounded-xl border border-amber-200 bg-[#f7ecd5] pl-12 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
               />
             </div>
+
+            <select
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+            >
+              <option value="ALL">All Categories</option>
+              {Object.entries(feedbackCategories).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
 
             <select
               value={statusFilter}

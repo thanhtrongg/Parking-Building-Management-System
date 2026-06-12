@@ -11,6 +11,15 @@ const VALID_FEEDBACK_STATUSES = [
 ];
 
 const MAX_FEEDBACK_SUBJECT_LENGTH = 50;
+const VALID_FEEDBACK_CATEGORIES = [
+  "GENERAL",
+  "PARKING_SERVICE",
+  "FACILITY",
+  "PAYMENT",
+  "TECHNICAL",
+  "STAFF_ATTITUDE",
+];
+const STAFF_RESTRICTED_CATEGORY = "STAFF_ATTITUDE";
 const RESERVATION_MARKER_PREFIX = "[Reservation:";
 const STAFF_REPLY_MARKER_PREFIX = "[Staff Reply:";
 
@@ -92,6 +101,39 @@ const normalizeStatus = (status) => {
     .toUpperCase();
 };
 
+const normalizeCategory = (category) => {
+  return String(category || "GENERAL").trim().toUpperCase();
+};
+
+const isStaffUser = (req) => normalizeStatus(req.user?.role) === "STAFF";
+
+const canAccessFeedback = (req, feedback) => {
+  return !isStaffUser(req) || feedback.category !== STAFF_RESTRICTED_CATEGORY;
+};
+
+const getFeedbackCategory = async (feedbackId) => {
+  const rows = await prisma.$queryRaw`
+    SELECT category
+    FROM feedbacks
+    WHERE id = ${feedbackId}::uuid
+    LIMIT 1
+  `;
+
+  return rows[0]?.category || "GENERAL";
+};
+
+const enrichFeedbackCategories = async (feedbacks) => {
+  if (!feedbacks.length) return feedbacks;
+
+  const rows = await prisma.$queryRaw`SELECT id, category FROM feedbacks`;
+  const categoryById = new Map(rows.map((row) => [row.id, row.category]));
+
+  return feedbacks.map((feedback) => ({
+    ...feedback,
+    category: categoryById.get(feedback.id) || "GENERAL",
+  }));
+};
+
 const feedbackInclude = {
   users_feedbacks_user_idTousers: {
     select: {
@@ -127,6 +169,7 @@ const mapFeedbackResponse = (feedback) => {
     customerName: user?.full_name || null,
     ticketCode: parkingSession?.ticket_code || null,
     subject: feedback.issue_type,
+    category: feedback.category || "GENERAL",
     message: parsedDescription.message,
     reply: feedback.reply || parsedDescription.reply || null,
     replyCreatedAt:
@@ -299,12 +342,15 @@ const validateReservationForUser = async ({
 
 export const getFeedbacks = async (req, res) => {
   try {
-    const feedbacks = await prisma.feedbacks.findMany({
+    const storedFeedbacks = await prisma.feedbacks.findMany({
       include: feedbackInclude,
       orderBy: {
         created_at: "desc",
       },
     });
+    const feedbacks = (await enrichFeedbackCategories(storedFeedbacks)).filter(
+      (feedback) => canAccessFeedback(req, feedback),
+    );
 
     return res.json({
       success: true,
@@ -334,7 +380,7 @@ export const getMyFeedbacks = async (req, res) => {
       });
     }
 
-    const feedbacks = await prisma.feedbacks.findMany({
+    const storedFeedbacks = await prisma.feedbacks.findMany({
       where: {
         user_id: req.user.id,
         ...(status ? { status } : {}),
@@ -344,6 +390,7 @@ export const getMyFeedbacks = async (req, res) => {
         created_at: "desc",
       },
     });
+    const feedbacks = await enrichFeedbackCategories(storedFeedbacks);
 
     return res.json({
       success: true,
@@ -372,12 +419,22 @@ export const getFeedbackById = async (req, res) => {
       });
     }
 
-    const feedback = await prisma.feedbacks.findUnique({
+    const storedFeedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: feedbackInclude,
     });
+    const feedback = storedFeedback
+      ? { ...storedFeedback, category: await getFeedbackCategory(id) }
+      : null;
 
     if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: "Feedback not found",
+      });
+    }
+
+    if (!canAccessFeedback(req, feedback)) {
       return res.status(404).json({
         success: false,
         message: "Feedback not found",
@@ -408,12 +465,14 @@ export const createFeedback = async (req, res) => {
       reservationId,
       reservationCode,
       subject,
+      category,
       message,
     } = req.body;
     const userId = req.user.id;
 
     const normalizedSubject = String(subject || "").trim();
     const normalizedMessage = String(message || "").trim();
+    const normalizedCategory = normalizeCategory(category);
 
     if (!normalizedSubject || !normalizedMessage) {
       return res.status(400).json({
@@ -426,6 +485,13 @@ export const createFeedback = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: `Subject must be ${MAX_FEEDBACK_SUBJECT_LENGTH} characters or fewer`,
+      });
+    }
+
+    if (!VALID_FEEDBACK_CATEGORIES.includes(normalizedCategory)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid feedback category. Allowed values: ${VALID_FEEDBACK_CATEGORIES.join(", ")}`,
       });
     }
 
@@ -475,11 +541,17 @@ export const createFeedback = async (req, res) => {
       },
       include: feedbackInclude,
     });
+    await prisma.$executeRaw`
+      UPDATE feedbacks
+      SET category = ${normalizedCategory}
+      WHERE id = ${feedback.id}::uuid
+    `;
+    const categorizedFeedback = { ...feedback, category: normalizedCategory };
 
     return res.status(201).json({
       success: true,
       message: "Feedback created successfully",
-      data: mapFeedbackResponse(feedback),
+      data: mapFeedbackResponse(categorizedFeedback),
     });
   } catch (error) {
     console.error("Create feedback error:", error);
@@ -524,6 +596,13 @@ export const updateFeedbackStatus = async (req, res) => {
       });
     }
 
+    if (!canAccessFeedback(req, { ...feedback, category: await getFeedbackCategory(id) })) {
+      return res.status(404).json({
+        success: false,
+        message: "Feedback not found",
+      });
+    }
+
     const updatedFeedback = await prisma.feedbacks.update({
       where: { id },
       data: {
@@ -534,11 +613,15 @@ export const updateFeedbackStatus = async (req, res) => {
       },
       include: feedbackInclude,
     });
+    const categorizedFeedback = {
+      ...updatedFeedback,
+      category: await getFeedbackCategory(id),
+    };
 
     return res.json({
       success: true,
       message: "Update feedback status successfully",
-      data: mapFeedbackResponse(updatedFeedback),
+      data: mapFeedbackResponse(categorizedFeedback),
     });
   } catch (error) {
     console.error("Update feedback status error:", error);
@@ -570,12 +653,22 @@ export const updateFeedbackReply = async (req, res) => {
       });
     }
 
-    const feedback = await prisma.feedbacks.findUnique({
+    const storedFeedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: feedbackInclude,
     });
+    const feedback = storedFeedback
+      ? { ...storedFeedback, category: await getFeedbackCategory(id) }
+      : null;
 
     if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: "Feedback not found",
+      });
+    }
+
+    if (!canAccessFeedback(req, feedback)) {
       return res.status(404).json({
         success: false,
         message: "Feedback not found",
@@ -591,11 +684,15 @@ export const updateFeedbackReply = async (req, res) => {
       },
       include: feedbackInclude,
     });
+    const categorizedFeedback = {
+      ...updatedFeedback,
+      category: feedback.category,
+    };
 
     return res.json({
       success: true,
       message: "Reply saved successfully",
-      data: mapFeedbackResponse(updatedFeedback),
+      data: mapFeedbackResponse(categorizedFeedback),
     });
   } catch (error) {
     console.error("Update feedback reply error:", error);

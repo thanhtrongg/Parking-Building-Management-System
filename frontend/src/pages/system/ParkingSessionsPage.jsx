@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import {
+    calculateLiveSessionFee,
+    formatElapsedTime,
+} from "../../utils/parkingSession";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 // Helper để định dạng thời gian
 const formatDateTime = (dateString) => {
@@ -90,6 +96,13 @@ function PageHero({ total, activeCount }) {
                     </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
+                    <Link
+                        to="/parking-sessions/create"
+                        className="col-span-2 inline-flex min-h-16 items-center justify-center gap-2 rounded-3xl bg-slate-950 px-5 font-['Inter'] text-sm font-bold text-white shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-blue-700 sm:col-span-1"
+                    >
+                        <span className="material-symbols-outlined text-xl">add</span>
+                        Create
+                    </Link>
                     <div className="rounded-3xl border border-amber-200 bg-[#f7ecd5] px-5 py-4 shadow-sm">
                         <p className="font-['Inter'] text-xs font-bold text-amber-800">Total Sessions</p>
                         <p className="mt-1 font-['Geist'] text-3xl font-bold text-slate-950">{total}</p>
@@ -140,8 +153,9 @@ function FilterBar({ keyword, onKeywordChange, statusFilter, onStatusChange, tot
     );
 }
 
-function SessionCard({ session, onView, onCheckout }) {
+function SessionCard({ session, now, onView, onCheckout }) {
     const isActive = session.status === "ACTIVE";
+    const displayedFee = calculateLiveSessionFee(session, now);
 
     return (
         <article className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -189,9 +203,13 @@ function SessionCard({ session, onView, onCheckout }) {
 
             <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
                 <div>
+                    <p className="font-['Inter'] text-xs text-slate-400">Elapsed Time</p>
+                    <p className="font-['Geist'] text-lg font-bold text-blue-700">
+                        {formatElapsedTime(session, now)}
+                    </p>
                     <p className="font-['Inter'] text-xs text-slate-400">Current Fee</p>
                     <p className="font-['Geist'] text-xl font-bold text-slate-950">
-                        {formatCurrency(session.totalFee)}
+                        {formatCurrency(displayedFee)}
                     </p>
                     <p className="mt-1 font-['Inter'] text-xs font-semibold text-slate-500">
                         {session.payment
@@ -221,7 +239,7 @@ function SessionCard({ session, onView, onCheckout }) {
     );
 }
 
-function SessionGrid({ sessions, loading, error, onRefresh, onView, onCheckout }) {
+function SessionGrid({ sessions, now, loading, error, onRefresh, onView, onCheckout }) {
     if (loading) return <LoadingState />;
     if (error) {
         return (
@@ -252,6 +270,7 @@ function SessionGrid({ sessions, loading, error, onRefresh, onView, onCheckout }
                 <SessionCard
                     key={session.id}
                     session={session}
+                    now={now}
                     onView={onView}
                     onCheckout={onCheckout}
                 />
@@ -260,7 +279,7 @@ function SessionGrid({ sessions, loading, error, onRefresh, onView, onCheckout }
     );
 }
 
-function DetailModal({ session, onClose }) {
+function DetailModal({ session, now, onClose }) {
     if (!session) return null;
     const isActive = session.status === "ACTIVE";
 
@@ -291,7 +310,7 @@ function DetailModal({ session, onClose }) {
                             {session.status}
                         </span>
                         <span className="font-['Geist'] text-2xl font-bold text-slate-950">
-                            {formatCurrency(session.totalFee)}
+                            {formatCurrency(calculateLiveSessionFee(session, now))}
                         </span>
                     </div>
 
@@ -324,6 +343,9 @@ function DetailModal({ session, onClose }) {
                                 <p className="font-['Inter'] text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</p>
                                 <p className="font-['Inter'] text-sm font-semibold text-slate-800">
                                     From: {formatDateTime(session.startTime)}
+                                </p>
+                                <p className="font-['Inter'] text-sm text-blue-700">
+                                    Elapsed: {formatElapsedTime(session, now)}
                                 </p>
                                 {session.endTime && (
                                     <p className="font-['Inter'] text-sm text-slate-600">
@@ -361,6 +383,7 @@ function DetailModal({ session, onClose }) {
 
 function CheckoutModal({
     session,
+    now,
     paymentMethod,
     processing,
     onClose,
@@ -391,7 +414,7 @@ function CheckoutModal({
                         Final fee
                     </p>
                     <p className="mt-1 font-['Geist'] text-3xl font-bold text-slate-950">
-                        {formatCurrency(session.totalFee)}
+                        {formatCurrency(calculateLiveSessionFee(session, now))}
                     </p>
                     <label className="mt-4 block">
                         <span className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700">
@@ -483,6 +506,12 @@ export default function ParkingSessionsPage() {
     // Action State
     const [processing, setProcessing] = useState(false);
     const [alert, setAlert] = useState({ type: "", message: "" });
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(new Date()), 1000);
+        return () => window.clearInterval(timer);
+    }, []);
 
     const fetchSessions = async () => {
         setLoading(true);
@@ -499,8 +528,14 @@ export default function ParkingSessionsPage() {
     };
 
     useEffect(() => {
-        fetchSessions();
+        const initialLoad = window.setTimeout(fetchSessions, 0);
+        return () => window.clearTimeout(initialLoad);
     }, []);
+
+    useAutoRefresh(async () => {
+        const result = await apiRequest("/api/parking-sessions");
+        setSessions(result.data || []);
+    });
 
     const filteredSessions = useMemo(() => {
         let result = [...sessions];
@@ -572,6 +607,7 @@ export default function ParkingSessionsPage() {
 
             <SessionGrid
                 sessions={filteredSessions}
+                now={now}
                 loading={loading}
                 error={error}
                 onRefresh={fetchSessions}
@@ -584,11 +620,13 @@ export default function ParkingSessionsPage() {
 
             <DetailModal
                 session={viewSession}
+                now={now}
                 onClose={() => setViewSession(null)}
             />
 
             <CheckoutModal
                 session={checkoutSession}
+                now={now}
                 paymentMethod={checkoutPaymentMethod}
                 processing={processing}
                 onClose={() => {

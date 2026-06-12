@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const statusConfig = {
   SUCCESS: {
@@ -816,8 +817,14 @@ export default function PaymentsPage() {
   };
 
   useEffect(() => {
-    fetchPayments();
+    const initialLoad = window.setTimeout(fetchPayments, 0);
+    return () => window.clearTimeout(initialLoad);
   }, []);
+
+  useAutoRefresh(async () => {
+    const result = await apiRequest("/api/payments");
+    setPayments(result.data || []);
+  });
 
   useEffect(() => {
     const clearPrintPayment = () => setPrintPayment(null);

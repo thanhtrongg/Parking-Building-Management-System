@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
+import {
+  calculateLiveSessionFee,
+  formatElapsedTime,
+} from "../../utils/parkingSession";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const filters = [
   { label: "All", value: "" },
@@ -158,9 +163,10 @@ function Info({ label, value }) {
   );
 }
 
-function SessionCard({ session }) {
+function SessionCard({ session, now }) {
   const isActive = String(session.status || "").toUpperCase() === "ACTIVE";
   const hasAssignedSlot = Boolean(session.assignedSlotName);
+  const displayedFee = calculateLiveSessionFee(session, now);
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -182,7 +188,7 @@ function SessionCard({ session }) {
             {isActive ? "Current fee" : "Final fee"}
           </span>
           <span className="font-['Geist'] text-lg font-black text-slate-950">
-            {formatCurrency(session.totalFee)}
+            {formatCurrency(displayedFee)}
           </span>
         </div>
       </div>
@@ -204,7 +210,7 @@ function SessionCard({ session }) {
         <Info label="Exit Time" value={formatDateTime(session.exitTime)} />
         <Info
           label="Duration"
-          value={`${session.parkingHours || 0} hour(s)`}
+          value={formatElapsedTime(session, now)}
         />
         <Info
           label="Payment"
@@ -226,6 +232,12 @@ export default function UserParkingSessionsPage() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -260,6 +272,12 @@ export default function UserParkingSessionsPage() {
     };
   }, [status]);
 
+  useAutoRefresh(async () => {
+    const query = status ? `?status=${status}` : "";
+    const result = await apiRequest(`/api/user/parking-sessions${query}`);
+    setSessions(normalizeSessions(result));
+  });
+
   const sortedSessions = useMemo(() => {
     return [...sessions].sort((a, b) => {
       return new Date(b.entryTime || 0) - new Date(a.entryTime || 0);
@@ -282,7 +300,7 @@ export default function UserParkingSessionsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {sortedSessions.map((session) => (
-            <SessionCard key={session.id} session={session} />
+            <SessionCard key={session.id} session={session} now={now} />
           ))}
         </div>
       )}

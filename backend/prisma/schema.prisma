@@ -10,8 +10,9 @@ datasource db {
 model feedbacks {
   id                                 String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_id                            String?           @db.Uuid
-  parking_session_id                 String?           @db.Uuid
-  issue_type                         String            @db.VarChar(50)
+    parking_session_id                 String?           @db.Uuid
+    category                           String            @default("GENERAL") @db.VarChar(30)
+    issue_type                         String            @db.VarChar(50)
   description                        String
   status                             String?           @default("OPEN") @db.VarChar(20)
   reply                              String?

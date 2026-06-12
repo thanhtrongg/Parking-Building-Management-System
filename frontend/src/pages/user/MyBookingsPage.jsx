@@ -1,30 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
-
-function toDateTimeLocalValue(date) {
-  const pad = (value) => String(value).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-function getDefaultStartTime() {
-  const date = new Date();
-  date.setMinutes(0, 0, 0);
-  date.setHours(date.getHours() + 1);
-  return toDateTimeLocalValue(date);
-}
-
-function getDefaultEndTime() {
-  const date = new Date();
-  date.setMinutes(0, 0, 0);
-  date.setHours(date.getHours() + 3);
-  return toDateTimeLocalValue(date);
-}
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 function normalizeArray(value) {
   if (Array.isArray(value)) return value;
@@ -32,82 +9,85 @@ function normalizeArray(value) {
   return [];
 }
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(Number(amount || 0));
+function pad2(value) {
+  return String(value).padStart(2, "0");
 }
 
-function toIsoString(localValue) {
-  return new Date(localValue).toISOString();
+function toDateKey(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
-function calculateHours(startTime, endTime) {
-  return Math.max(
-    1,
-    Math.ceil((new Date(endTime) - new Date(startTime)) / (1000 * 60 * 60)),
-  );
+function toTimeValue(date) {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-function isNightHour(date) {
-  const hour = date.getHours();
-  return hour >= 22 || hour < 6;
+function parseDateKey(dateKey) {
+  if (!dateKey) return null;
+
+  const [year, month, day] = String(dateKey).split("-").map(Number);
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
 }
 
-function getBestPricingPolicy(policies, vehicleTypeId, startTime) {
-  const effectiveDate = new Date(startTime);
-  const candidates = policies
-    .filter((policy) => {
-      const policyVehicleTypeId = policy.vehicleTypeId || null;
-      const matchesVehicle =
-        policyVehicleTypeId === vehicleTypeId || policyVehicleTypeId === null;
-      return matchesVehicle && new Date(policy.effectiveDate) <= effectiveDate;
-    })
-    .sort((a, b) => {
-      const aExact = a.vehicleTypeId === vehicleTypeId ? 1 : 0;
-      const bExact = b.vehicleTypeId === vehicleTypeId ? 1 : 0;
+function combineDateAndTime(dateKey, timeValue) {
+  const date = parseDateKey(dateKey);
+  if (!date || !timeValue) return null;
 
-      if (aExact !== bExact) return bExact - aExact;
-      return new Date(b.effectiveDate) - new Date(a.effectiveDate);
-    });
+  const [hours, minutes] = String(timeValue).split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
 
-  return candidates[0] || null;
+  date.setHours(hours, minutes, 0, 0);
+  return date;
 }
 
-function calculateEstimatedFee({ policies, vehicleTypeId, startTime, endTime }) {
-  if (!vehicleTypeId || !startTime || !endTime) return null;
-  if (new Date(startTime) >= new Date(endTime)) return null;
+function toIsoString(localDate) {
+  return localDate ? new Date(localDate).toISOString() : "";
+}
 
-  const policy = getBestPricingPolicy(policies, vehicleTypeId, startTime);
-  if (!policy) return null;
-
-  const parkingHours = calculateHours(startTime, endTime);
-  const basePrice = Number(policy.basePrice || 0);
-  const hourlyRate = Number(policy.hourlyRate || 0);
-  const nightRate = Number(policy.nightRate ?? hourlyRate);
-  const startDate = new Date(startTime);
-  let billableHourlyHours = 0;
-  let billableNightHours = 0;
-
-  for (let hourIndex = 2; hourIndex < parkingHours; hourIndex += 1) {
-    const hourStart = new Date(startDate);
-    hourStart.setHours(startDate.getHours() + hourIndex);
-
-    if (isNightHour(hourStart)) {
-      billableNightHours += 1;
-    } else {
-      billableHourlyHours += 1;
-    }
+function roundUpToMinute(date) {
+  const next = new Date(date);
+  next.setSeconds(0, 0);
+  if (date.getSeconds() > 0 || date.getMilliseconds() > 0) {
+    next.setMinutes(next.getMinutes() + 1);
   }
+  return next;
+}
 
-  return {
-    total: basePrice + billableHourlyHours * hourlyRate + billableNightHours * nightRate,
-    parkingHours,
-    basePrice,
-    hourlyRate,
-    nightRate,
-  };
+function getDefaultStartDateTime() {
+  const date = roundUpToMinute(new Date());
+  date.setMinutes(date.getMinutes() + 10);
+  return date;
+}
+
+function formatDisplayDate(date) {
+  if (!date) return null;
+
+  const dayMonth = new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+  const year = new Intl.DateTimeFormat("vi-VN", {
+    year: "numeric",
+  }).format(date);
+
+  return { dayMonth, year };
+}
+
+function formatDisplayTime(dateKey, timeValue) {
+  const combined = combineDateAndTime(dateKey, timeValue);
+  if (!combined) return { time: "--:--", meridiem: "" };
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(combined);
+
+  const time = `${parts.find((part) => part.type === "hour")?.value || "--"}:${parts.find((part) => part.type === "minute")?.value || "--"}`;
+  const meridiem = parts.find((part) => part.type === "dayPeriod")?.value || "";
+
+  return { time, meridiem };
 }
 
 function PageHeader() {
@@ -117,8 +97,8 @@ function PageHeader() {
         Book a Parking Slot
       </h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-        Choose vehicle type and reservation time, then pick one of the real
-        available slots returned by the backend.
+        Choose your vehicle type, then pick a date and time from the live
+        picker. Past moments are locked out completely.
       </p>
     </div>
   );
@@ -202,14 +182,18 @@ function SlotCard({ slot, selected, onSelect }) {
         </span>
         <span
           className={`rounded-full px-3 py-1 text-xs font-black ${
-            selected ? "bg-blue-500 text-blue-50" : "bg-slate-100 text-slate-600"
+            selected
+              ? "bg-blue-500 text-blue-50"
+              : "bg-slate-100 text-slate-600"
           }`}
         >
           {slot.vehicleTypeName || "Vehicle"}
         </span>
         <span
           className={`rounded-full px-3 py-1 text-xs font-black ${
-            selected ? "bg-blue-500 text-blue-50" : "bg-slate-100 text-slate-600"
+            selected
+              ? "bg-blue-500 text-blue-50"
+              : "bg-slate-100 text-slate-600"
           }`}
         >
           {slot.distanceToGate ?? 0}m to gate
@@ -219,15 +203,166 @@ function SlotCard({ slot, selected, onSelect }) {
   );
 }
 
+function BookingDateTimeField({
+  now,
+  selectedDate,
+  selectedTime,
+  onDateChange,
+  onTimeChange,
+}) {
+  const todayKey = toDateKey(now);
+  const minTime =
+    selectedDate === todayKey
+      ? toTimeValue(roundUpToMinute(now))
+      : "";
+  const displayDate = selectedDate ? formatDisplayDate(parseDateKey(selectedDate)) : null;
+  const displayTime = formatDisplayTime(selectedDate, selectedTime);
+  const dateInputRef = useRef(null);
+  const timeInputRef = useRef(null);
+
+  const openPicker = (inputRef) => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    input.focus();
+
+    try {
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+        return;
+      }
+    } catch {
+      // Fall through to the native click fallback.
+    }
+
+    input.click();
+  };
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
+      <div className="border-b border-blue-100 bg-gradient-to-br from-blue-50 to-white px-4 py-4">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-200">
+            <span className="material-symbols-outlined text-[21px]">
+              calendar_clock
+            </span>
+          </span>
+          <div className="min-w-0">
+            <h3 className="font-['Geist'] text-base font-black text-slate-950">
+              Arrival time
+            </h3>
+            <p className="mt-0.5 text-xs font-semibold leading-5 text-slate-500">
+              Select any future date and minute.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 p-4">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => openPicker(dateInputRef)}
+            className="group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left transition hover:border-blue-200 hover:bg-blue-50/60 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+              <span className="material-symbols-outlined text-[20px]">
+                calendar_month
+              </span>
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                Date
+              </span>
+              <span className="mt-0.5 block whitespace-nowrap font-['Geist'] text-lg font-black text-slate-950">
+                {displayDate
+                  ? `${displayDate.dayMonth}/${displayDate.year}`
+                  : "Select date"}
+              </span>
+            </span>
+            <span className="material-symbols-outlined shrink-0 text-[20px] text-slate-400">
+              expand_more
+            </span>
+          </button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={selectedDate || ""}
+            min={todayKey}
+            onChange={(event) => onDateChange(event.target.value)}
+            className="pointer-events-none absolute h-px w-px opacity-0"
+            required
+          />
+        </div>
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => openPicker(timeInputRef)}
+            className="group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left transition hover:border-blue-200 hover:bg-blue-50/60 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+              <span className="material-symbols-outlined text-[20px]">
+                schedule
+              </span>
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                Time
+              </span>
+              <span className="mt-0.5 flex items-baseline gap-1 whitespace-nowrap font-['Geist'] text-lg font-black text-slate-950">
+                <span>{displayTime.time}</span>
+                {displayTime.meridiem ? (
+                  <span className="text-xs font-black uppercase tracking-wider text-blue-600">
+                    {displayTime.meridiem}
+                  </span>
+                ) : null}
+              </span>
+            </span>
+            <span className="material-symbols-outlined shrink-0 text-[20px] text-slate-400">
+              expand_more
+            </span>
+          </button>
+          <input
+            ref={timeInputRef}
+            type="time"
+            value={selectedTime || ""}
+            step={60}
+            min={minTime || undefined}
+            onChange={(event) => onTimeChange(event.target.value)}
+            className="pointer-events-none absolute h-px w-px opacity-0"
+            required
+          />
+        </div>
+
+        <div className="flex items-start gap-2 rounded-2xl bg-emerald-50 px-3 py-2.5 text-emerald-700 ring-1 ring-emerald-100">
+          <span className="material-symbols-outlined mt-0.5 text-[17px]">
+            verified
+          </span>
+          <p className="text-xs font-bold leading-5">
+            Past dates and times are automatically blocked.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UserMyBookingsPage() {
+  const defaultStart = getDefaultStartDateTime();
+  const defaultParts = {
+    dateKey: toDateKey(defaultStart),
+    timeValue: toTimeValue(defaultStart),
+  };
+
   const [vehicleTypes, setVehicleTypes] = useState([]);
-  const [pricingPolicies, setPricingPolicies] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [now, setNow] = useState(() => new Date());
   const [form, setForm] = useState(() => ({
     vehicleTypeId: "",
-    startTime: getDefaultStartTime(),
-    endTime: getDefaultEndTime(),
+    startDate: defaultParts.dateKey,
+    startTime: defaultParts.timeValue,
   }));
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -235,25 +370,31 @@ export default function UserMyBookingsPage() {
   const [alert, setAlert] = useState({ type: "", message: "" });
 
   useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(new Date());
+    }, 30000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     let ignore = false;
 
     async function loadVehicleTypes() {
       try {
         const result = await apiRequest("/api/vehicle-types");
-        const pricingResult = await apiRequest("/api/pricing-policies");
-
         if (!ignore) {
           const types = normalizeArray(result);
-          setPricingPolicies(normalizeArray(pricingResult));
           const defaultVehicleTypeId = types[0]?.id || "";
-          const defaultStartTime = getDefaultStartTime();
-          const defaultEndTime = getDefaultEndTime();
+          const defaultStart = getDefaultStartDateTime();
+          const defaultDateKey = toDateKey(defaultStart);
+          const defaultTimeValue = toTimeValue(defaultStart);
 
           setVehicleTypes(types);
           setForm({
             vehicleTypeId: defaultVehicleTypeId,
-            startTime: defaultStartTime,
-            endTime: defaultEndTime,
+            startDate: defaultDateKey,
+            startTime: defaultTimeValue,
           });
 
           if (defaultVehicleTypeId) {
@@ -262,8 +403,9 @@ export default function UserMyBookingsPage() {
 
             const params = new URLSearchParams({
               vehicleTypeId: defaultVehicleTypeId,
-              startTime: toIsoString(defaultStartTime),
-              endTime: toIsoString(defaultEndTime),
+              startTime: toIsoString(
+                combineDateAndTime(defaultDateKey, defaultTimeValue),
+              ),
             });
 
             try {
@@ -310,27 +452,22 @@ export default function UserMyBookingsPage() {
     };
   }, []);
 
-  const canSearchSlots = useMemo(() => {
-    if (!form.vehicleTypeId || !form.startTime || !form.endTime) return false;
-    return new Date(form.startTime) < new Date(form.endTime);
-  }, [form]);
+  const selectedStartDateTime = useMemo(() => {
+    return combineDateAndTime(form.startDate, form.startTime);
+  }, [form.startDate, form.startTime]);
 
-  const estimatedFee = useMemo(
-    () =>
-      calculateEstimatedFee({
-        policies: pricingPolicies,
-        vehicleTypeId: form.vehicleTypeId,
-        startTime: form.startTime,
-        endTime: form.endTime,
-      }),
-    [form, pricingPolicies],
-  );
+  const canSearchSlots = useMemo(() => {
+    return (
+      Boolean(form.vehicleTypeId && selectedStartDateTime) &&
+      selectedStartDateTime >= now
+    );
+  }, [form.vehicleTypeId, selectedStartDateTime, now]);
 
   const loadAvailableSlots = async () => {
     if (!canSearchSlots) {
       setAlert({
         type: "error",
-        message: "Please select vehicle type and a valid time range.",
+        message: "Please select a future date and time.",
       });
       return;
     }
@@ -342,8 +479,7 @@ export default function UserMyBookingsPage() {
 
       const params = new URLSearchParams({
         vehicleTypeId: form.vehicleTypeId,
-        startTime: toIsoString(form.startTime),
-        endTime: toIsoString(form.endTime),
+        startTime: toIsoString(selectedStartDateTime),
       });
 
       const result = await apiRequest(
@@ -362,6 +498,25 @@ export default function UserMyBookingsPage() {
     }
   };
 
+  useAutoRefresh(async () => {
+    if (!canSearchSlots || availableSlots.length === 0) return;
+
+    const params = new URLSearchParams({
+      vehicleTypeId: form.vehicleTypeId,
+      startTime: toIsoString(selectedStartDateTime),
+    });
+    const result = await apiRequest(
+      `/api/parking-slots/available-for-reservation?${params.toString()}`,
+    );
+    const nextSlots = normalizeArray(result);
+    setAvailableSlots(nextSlots);
+    setSelectedSlot((current) =>
+      current && nextSlots.some((slot) => slot.id === current.id)
+        ? current
+        : null,
+    );
+  });
+
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -378,6 +533,14 @@ export default function UserMyBookingsPage() {
       setAlert({
         type: "error",
         message: "Please choose an available parking slot.",
+      });
+      return;
+    }
+
+    if (!selectedStartDateTime || selectedStartDateTime < now) {
+      setAlert({
+        type: "error",
+        message: "Start time cannot be in the past.",
       });
       return;
     }
@@ -400,8 +563,7 @@ export default function UserMyBookingsPage() {
         body: JSON.stringify({
           parkingSlotId: selectedSlot.id,
           vehicleTypeId: form.vehicleTypeId,
-          startTime: toIsoString(form.startTime),
-          endTime: toIsoString(form.endTime),
+          startTime: toIsoString(selectedStartDateTime),
         }),
       });
 
@@ -434,7 +596,7 @@ export default function UserMyBookingsPage() {
         onSubmit={submitReservation}
         className="grid gap-6 lg:grid-cols-[360px_1fr]"
       >
-        <section className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="font-['Geist'] text-lg font-black text-slate-950">
             Reservation Details
           </h2>
@@ -462,52 +624,39 @@ export default function UserMyBookingsPage() {
               </select>
             </label>
 
-            <label className="block">
-              <span className="mb-2 block text-sm font-bold text-slate-700">
-                Start time
-              </span>
-              <input
-                type="datetime-local"
-                value={form.startTime}
-                onChange={(event) => updateField("startTime", event.target.value)}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-bold text-slate-700">
-                End time
-              </span>
-              <input
-                type="datetime-local"
-                value={form.endTime}
-                onChange={(event) => updateField("endTime", event.target.value)}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                required
-              />
-            </label>
+            <BookingDateTimeField
+              now={now}
+              selectedDate={form.startDate}
+              selectedTime={form.startTime}
+              onDateChange={(dateKey) => {
+                setForm((current) => ({ ...current, startDate: dateKey }));
+                setSelectedSlot(null);
+                setAvailableSlots([]);
+              }}
+              onTimeChange={(timeValue) => {
+                setForm((current) => ({ ...current, startTime: timeValue }));
+                setSelectedSlot(null);
+                setAvailableSlots([]);
+              }}
+            />
 
             <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-black uppercase tracking-wider text-blue-700">
-                    Estimated fee
+                    Pay on checkout
                   </p>
-                  <p className="mt-1 font-['Geist'] text-2xl font-black text-slate-950">
-                    {estimatedFee ? formatCurrency(estimatedFee.total) : "N/A"}
+                  <p className="mt-1 font-['Geist'] text-lg font-black text-slate-950">
+                    Fee starts at check-in
                   </p>
                 </div>
                 <span className="material-symbols-outlined text-[24px] text-blue-600">
                   payments
                 </span>
               </div>
-              {estimatedFee && (
-                <p className="mt-2 text-xs font-semibold text-blue-700">
-                  {estimatedFee.parkingHours} hour(s), base{" "}
-                  {formatCurrency(estimatedFee.basePrice)}
-                </p>
-              )}
+              <p className="mt-2 text-xs font-semibold text-blue-700">
+                The live session shows elapsed time and current fee.
+              </p>
             </div>
 
             <button
@@ -571,7 +720,7 @@ export default function UserMyBookingsPage() {
                 No slots found
               </h3>
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                Try another vehicle type or reservation time range.
+                Try another vehicle type or choose a later time.
               </p>
             </div>
           ) : (

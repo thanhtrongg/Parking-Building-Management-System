@@ -31,6 +31,7 @@ const ACTIVE_PARKING_SESSION_STATUSES = ["ACTIVE"];
 
 const QR_PURPOSE = "RESERVATION_CHECK_IN";
 const CHECK_IN_GRACE_PERIOD_MINUTES = 15;
+const RESERVATION_HOLD_WINDOW_MINUTES = 15;
 
 const getJwtSecret = () => {
   return process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || "your-secret-key";
@@ -392,7 +393,7 @@ export const createReservation = async (req, res) => {
     const { parkingSlotId, vehicleTypeId, userId, startTime, endTime } =
       req.body;
 
-    if (!parkingSlotId || !vehicleTypeId || !startTime || !endTime) {
+    if (!parkingSlotId || !vehicleTypeId || !startTime) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
@@ -421,7 +422,11 @@ export const createReservation = async (req, res) => {
     }
 
     const parsedStartTime = new Date(startTime);
-    const parsedEndTime = new Date(endTime);
+    const parsedEndTime = endTime
+      ? new Date(endTime)
+      : new Date(
+          parsedStartTime.getTime() + RESERVATION_HOLD_WINDOW_MINUTES * 60 * 1000,
+        );
 
     if (!isValidDate(parsedStartTime) || !isValidDate(parsedEndTime)) {
       return res.status(400).json({

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 import { getReservationCode } from "../../utils/reservation";
 
 function normalizeBookings(value) {
@@ -31,6 +32,18 @@ const feedbackStatusFilters = [
 ];
 
 const MAX_FEEDBACK_SUBJECT_LENGTH = 50;
+const feedbackCategories = [
+  { value: "GENERAL", label: "General feedback", icon: "forum" },
+  { value: "PARKING_SERVICE", label: "Parking service", icon: "local_parking" },
+  { value: "FACILITY", label: "Facility & equipment", icon: "domain" },
+  { value: "PAYMENT", label: "Payment & fee", icon: "payments" },
+  { value: "TECHNICAL", label: "Website / technical issue", icon: "bug_report" },
+  { value: "STAFF_ATTITUDE", label: "Staff attitude", icon: "support_agent" },
+];
+
+const getCategoryLabel = (category) =>
+  feedbackCategories.find((item) => item.value === category)?.label ||
+  "General feedback";
 
 function formatDateTime(value) {
   if (!value) return "N/A";
@@ -225,6 +238,9 @@ function FeedbackHistory({
                       {feedback.subject}
                     </h3>
                     <StatusBadge status={feedback.status} />
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600 ring-1 ring-slate-200">
+                      {getCategoryLabel(feedback.category)}
+                    </span>
                   </div>
                   <p className="mt-1 text-xs font-bold text-slate-400">
                     {feedback.reservationCode ||
@@ -278,6 +294,7 @@ export default function UserFeedbackPage() {
   const [alert, setAlert] = useState({ type: "", message: "" });
   const [form, setForm] = useState({
     bookingId: "",
+    category: "GENERAL",
     subject: "",
     message: "",
   });
@@ -356,6 +373,17 @@ export default function UserFeedbackPage() {
     };
   }, [feedbackStatusFilter]);
 
+  useAutoRefresh(async () => {
+    const query =
+      feedbackStatusFilter === "ALL" ? "" : `?status=${feedbackStatusFilter}`;
+    const [bookingsResult, feedbacksResult] = await Promise.all([
+      apiRequest("/api/reservations"),
+      apiRequest(`/api/user/feedbacks${query}`),
+    ]);
+    setBookings(normalizeBookings(bookingsResult));
+    setFeedbacks(normalizeFeedbacks(feedbacksResult));
+  });
+
   const bookingOptions = useMemo(() => {
     return bookings.map((booking) => ({
       value: getReservationCode(booking.id),
@@ -395,6 +423,7 @@ export default function UserFeedbackPage() {
         method: "POST",
         body: JSON.stringify({
           bookingId: form.bookingId,
+          category: form.category,
           subject: form.subject.trim(),
           message: form.message.trim(),
         }),
@@ -472,6 +501,28 @@ export default function UserFeedbackPage() {
                   </option>
                 ))}
               </select>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                Feedback category
+              </span>
+              <select
+                value={form.category}
+                onChange={(event) => updateField("category", event.target.value)}
+                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+              >
+                {feedbackCategories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+              {form.category === "STAFF_ATTITUDE" && (
+                <span className="mt-2 block rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
+                  Staff attitude feedback is private and only visible to Admin and Manager.
+                </span>
+              )}
             </label>
 
             <label className="block">

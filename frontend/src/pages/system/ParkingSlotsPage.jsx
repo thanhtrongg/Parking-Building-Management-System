@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const SLOT_STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"];
 
@@ -366,6 +367,8 @@ export default function ParkingSlotsPage() {
       setError(err.message || "Cannot refresh parking slot data");
     }
   };
+
+  useAutoRefresh(fetchData);
 
   const zoneMap = useMemo(() => {
     return zones.reduce((map, zone) => {

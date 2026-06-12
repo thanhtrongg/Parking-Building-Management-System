@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
 import { getReservationCode } from "../../utils/reservation";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const statusStyles = {
   CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
@@ -23,13 +24,6 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(Number(amount || 0));
 }
 
 function normalizeBookings(value) {
@@ -180,8 +174,6 @@ function BookingCard({ booking, cancelling, onCancel }) {
         <Info label="Slot" value={slotName} />
         <Info label="Vehicle" value={vehicleType} />
         <Info label="Start" value={formatDateTime(booking.startTime)} />
-        <Info label="End" value={formatDateTime(booking.endTime)} />
-        <Info label="Estimated fee" value={formatCurrency(booking.estimatedFee)} />
         <Info label="Payment" value="Pay when checkout" />
       </div>
 
@@ -285,6 +277,11 @@ export default function BookingHistoryPage() {
       ignore = true;
     };
   }, []);
+
+  useAutoRefresh(async () => {
+    const result = await apiRequest("/api/reservations");
+    setBookings(normalizeBookings(result));
+  });
 
   const handleCancelReservation = async (booking) => {
     const slotName = booking.parkingSlot?.slotName || "this slot";
