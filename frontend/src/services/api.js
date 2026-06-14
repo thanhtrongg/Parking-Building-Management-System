@@ -197,6 +197,127 @@ export const apiRequest = async (path, options = {}) => {
     return { success: true, data: matchedSlots };
   }
 
+  // Intercept GET /public/landing-info
+  if (cleanPath === "public/landing-info" && method === "GET") {
+    const localFallback = {
+      summary: {
+        totalSlots: 0,
+        availableSlots: 0,
+        occupiedSlots: 0,
+        reservedSlots: 0,
+        maintenanceSlots: 0,
+        totalZones: 0,
+        vehicleTypes: 0,
+      },
+      zones: [],
+      pricingPolicies: [],
+      availableSlots: [],
+    };
+
+    try {
+      // 1. Fetch active buildings
+      const buildingsRes = await apiRequest("buildings/active");
+      const buildings = buildingsRes.data || [];
+      if (buildings.length === 0) {
+        return { success: true, data: localFallback };
+      }
+      const firstBuilding = buildings[0];
+
+      // 2. Fetch pricing, floors, and vehicle types in parallel
+      const [pricingRes, floorsRes, vehicleTypesRes] = await Promise.all([
+        apiRequest(`pricing/building/${firstBuilding.id}`).catch(() => ({ data: [] })),
+        apiRequest(`floors/building/${firstBuilding.id}`).catch(() => ({ data: [] })),
+        apiRequest("vehicle-types").catch(() => ({ data: [] }))
+      ]);
+
+      const pricingPolicies = (pricingRes.data || []).map(p => ({
+        id: p.id,
+        vehicleTypeId: p.vehicleTypeId,
+        vehicleTypeName: refineVehicleTypeName(p.vehicleTypeName || p.vehicleType?.typeName || "All vehicles"),
+        basePrice: p.basePrice || 0,
+        hourlyRate: p.hourlyRate || 0,
+        nightRate: p.nightRate || 0,
+        effectiveDate: p.effectiveFrom || null
+      }));
+
+      const floors = floorsRes.data || [];
+      const vehicleTypes = vehicleTypesRes.data || [];
+
+      // 3. Fetch slots for all floors in parallel
+      const slotsPromises = floors.map(floor =>
+        apiRequest(`slots/floor/${floor.id}`).catch(() => ({ data: [] }))
+      );
+      const slotsResults = await Promise.all(slotsPromises);
+      const allSlots = slotsResults.flatMap(res => res.data || []);
+
+      // 4. Calculate summary stats
+      const totalSlots = allSlots.length;
+      const availableSlots = allSlots.filter(s => s.status === "AVAILABLE");
+      const occupiedCount = allSlots.filter(s => s.status === "OCCUPIED").length;
+      const reservedCount = allSlots.filter(s => s.status === "RESERVED").length;
+      const maintenanceCount = allSlots.filter(s => s.status === "MAINTENANCE").length;
+
+      // 5. Group slots by zone to build zones summary
+      const zonesMap = {};
+      allSlots.forEach(slot => {
+        const zoneName = slot.zone || "Zone A";
+        if (!zonesMap[zoneName]) {
+          zonesMap[zoneName] = {
+            id: `zone-${zoneName.toLowerCase().replace(/\s+/g, "-")}`,
+            zoneName: zoneName,
+            totalCapacity: 0,
+            vehicleTypeId: null,
+            vehicleTypeName: refineVehicleTypeName(slot.vehicleType),
+            slotCount: 0,
+            availableSlots: 0
+          };
+        }
+        zonesMap[zoneName].totalCapacity += 1;
+        zonesMap[zoneName].slotCount += 1;
+        if (slot.status === "AVAILABLE") {
+          zonesMap[zoneName].availableSlots += 1;
+        }
+      });
+      const zones = Object.values(zonesMap);
+
+      // 6. Map available slots to landing page expected format
+      const mappedAvailableSlots = availableSlots.map(slot => ({
+        id: slot.id,
+        slotName: slot.slotCode,
+        status: slot.status,
+        distanceToGate: slot.distanceToGate || 10,
+        zoneId: `zone-${(slot.zone || "A").toLowerCase().replace(/\s+/g, "-")}`,
+        zoneName: slot.zone || "Zone A",
+        vehicleTypeId: null,
+        vehicleTypeName: refineVehicleTypeName(slot.vehicleType)
+      }));
+
+      const summary = {
+        totalSlots,
+        availableSlots: availableSlots.length,
+        occupiedSlots: occupiedCount,
+        reservedSlots: reservedCount,
+        maintenanceSlots: maintenanceCount,
+        totalZones: zones.length,
+        vehicleTypes: vehicleTypes.length
+      };
+
+      return {
+        success: true,
+        message: "Get public landing information successfully",
+        data: {
+          summary,
+          zones,
+          availableSlots: mappedAvailableSlots,
+          pricingPolicies
+        }
+      };
+    } catch (error) {
+      console.error("Intercepted landing-info error:", error);
+      return { success: true, data: localFallback };
+    }
+  }
+
   // Intercept GET /users/profile to return stored user profile
   if (cleanPath === "users/profile" && method === "GET") {
     const userStr = localStorage.getItem("user");
