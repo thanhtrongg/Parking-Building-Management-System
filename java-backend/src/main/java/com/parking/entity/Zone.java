@@ -26,4 +26,8 @@ public class Zone {
 
     @Column(name = "total_capacity", nullable = false)
     private int totalCapacity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "building_id", nullable = false)
+    private ParkingBuilding building;
 }

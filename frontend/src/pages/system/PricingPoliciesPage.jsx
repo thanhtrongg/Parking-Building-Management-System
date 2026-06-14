@@ -530,9 +530,20 @@ export default function PricingPoliciesPage() {
   const [modalMode, setModalMode] = useState(null);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [form, setForm] = useState(initialForm);
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
 
   const role = getUserRole();
   const canManage = ["ADMIN", "MANAGER"].includes(role);
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -561,10 +572,15 @@ export default function PricingPoliciesPage() {
     return () => window.clearTimeout(timer);
   }, [loadData]);
 
+  const buildingPolicies = useMemo(() => {
+    if (!activeBuildingId) return pricingPolicies;
+    return pricingPolicies.filter((p) => p.buildingId === activeBuildingId);
+  }, [pricingPolicies, activeBuildingId]);
+
   const filteredPolicies = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    const result = pricingPolicies.filter((policy) => {
+    const result = buildingPolicies.filter((policy) => {
       if (!normalizedKeyword) return true;
 
       const vehicleName = getPolicyVehicleName(policy).toLowerCase();
@@ -603,28 +619,28 @@ export default function PricingPoliciesPage() {
         new Date(a.effectiveDate || a.effective_date)
       );
     });
-  }, [keyword, pricingPolicies, sortBy]);
+  }, [keyword, buildingPolicies, sortBy]);
 
   const stats = useMemo(() => {
-    const totalBase = pricingPolicies.reduce(
+    const totalBase = buildingPolicies.reduce(
       (sum, item) => sum + Number(item.basePrice ?? item.base_price ?? 0),
       0,
     );
-    const avgBase = pricingPolicies.length
-      ? Math.round(totalBase / pricingPolicies.length)
+    const avgBase = buildingPolicies.length
+      ? Math.round(totalBase / buildingPolicies.length)
       : 0;
     const vehicleTypeCount = new Set(
-      pricingPolicies
+      buildingPolicies
         .map((item) => item.vehicleTypeId || item.vehicle_type_id)
         .filter(Boolean),
     ).size;
 
     return {
-      total: pricingPolicies.length,
+      total: buildingPolicies.length,
       avgBase,
       vehicleTypeCount,
     };
-  }, [pricingPolicies]);
+  }, [buildingPolicies]);
 
   const openCreateModal = () => {
     setSelectedPolicy(null);
@@ -699,6 +715,7 @@ export default function PricingPoliciesPage() {
     }
 
     const payload = {
+      buildingId: selectedPolicy?.buildingId || activeBuildingId,
       vehicleTypeId: form.vehicleTypeId || null,
       basePrice: Number(form.basePrice),
       hourlyRate: Number(form.hourlyRate || 0),
@@ -754,7 +771,7 @@ export default function PricingPoliciesPage() {
   return (
     <AdminLayout>
       <PageHero
-        total={pricingPolicies.length}
+        total={buildingPolicies.length}
         canManage={canManage}
         onAdd={openCreateModal}
       />

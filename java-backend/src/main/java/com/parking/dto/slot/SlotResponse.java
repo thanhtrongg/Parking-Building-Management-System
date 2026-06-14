@@ -22,4 +22,5 @@ public class SlotResponse {
     private SlotStatus status;
     private VehicleTypeEnum vehicleType;
     private String zone;
+    private UUID buildingId;
 }

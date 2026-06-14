@@ -46,6 +46,10 @@ public class User implements UserDetails {
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private String theme = "light";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -2,8 +2,10 @@ package com.parking.service.impl;
 
 import com.parking.dto.zone.ZoneRequest;
 import com.parking.dto.zone.ZoneResponse;
+import com.parking.entity.ParkingBuilding;
 import com.parking.entity.Zone;
 import com.parking.exception.ResourceNotFoundException;
+import com.parking.repository.ParkingBuildingRepository;
 import com.parking.repository.ZoneRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,16 +28,25 @@ public class ZoneServiceImplTest {
     @Mock
     private ZoneRepository zoneRepository;
 
+    @Mock
+    private ParkingBuildingRepository buildingRepository;
+
     @InjectMocks
     private ZoneServiceImpl zoneService;
 
     private UUID zoneId;
     private UUID vehicleTypeId;
+    private UUID buildingId;
+    private ParkingBuilding building;
 
     @BeforeEach
     void setUp() {
         zoneId = UUID.randomUUID();
         vehicleTypeId = UUID.randomUUID();
+        buildingId = UUID.randomUUID();
+        building = ParkingBuilding.builder().id(buildingId).name("Building A").build();
+
+        lenient().when(buildingRepository.findById(buildingId)).thenReturn(Optional.of(building));
     }
 
     @Test
@@ -45,6 +56,7 @@ public class ZoneServiceImplTest {
                 .zoneName("Zone A")
                 .vehicleTypeId(vehicleTypeId)
                 .totalCapacity(10)
+                .building(building)
                 .build();
 
         when(zoneRepository.findAll()).thenReturn(List.of(zone));
@@ -54,6 +66,7 @@ public class ZoneServiceImplTest {
         assertNotNull(response);
         assertEquals(1, response.size());
         assertEquals("Zone A", response.get(0).getZoneName());
+        assertEquals(buildingId, response.get(0).getBuildingId());
     }
 
     @Test
@@ -63,6 +76,7 @@ public class ZoneServiceImplTest {
                 .zoneName("Zone A")
                 .vehicleTypeId(vehicleTypeId)
                 .totalCapacity(10)
+                .building(building)
                 .build();
 
         when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(zone));
@@ -71,6 +85,7 @@ public class ZoneServiceImplTest {
 
         assertNotNull(response);
         assertEquals("Zone A", response.getZoneName());
+        assertEquals(buildingId, response.getBuildingId());
     }
 
     @Test
@@ -87,11 +102,13 @@ public class ZoneServiceImplTest {
                 .zoneName("Zone A")
                 .vehicleTypeId(vehicleTypeId)
                 .totalCapacity(10)
+                .building(building)
                 .build();
 
         when(zoneRepository.save(any(Zone.class))).thenReturn(zone);
 
         ZoneRequest request = ZoneRequest.builder()
+                .buildingId(buildingId)
                 .zoneName("Zone A")
                 .vehicleTypeId(vehicleTypeId)
                 .totalCapacity(10)
@@ -101,6 +118,7 @@ public class ZoneServiceImplTest {
 
         assertNotNull(response);
         assertEquals("Zone A", response.getZoneName());
+        assertEquals(buildingId, response.getBuildingId());
     }
 
     @Test
@@ -110,12 +128,14 @@ public class ZoneServiceImplTest {
                 .zoneName("Zone A")
                 .vehicleTypeId(vehicleTypeId)
                 .totalCapacity(10)
+                .building(building)
                 .build();
 
         when(zoneRepository.findById(zoneId)).thenReturn(Optional.of(zone));
         when(zoneRepository.save(any(Zone.class))).thenReturn(zone);
 
         ZoneRequest request = ZoneRequest.builder()
+                .buildingId(buildingId)
                 .zoneName("Zone B")
                 .vehicleTypeId(vehicleTypeId)
                 .totalCapacity(20)
@@ -125,6 +145,7 @@ public class ZoneServiceImplTest {
 
         assertNotNull(response);
         assertEquals("Zone B", response.getZoneName());
+        assertEquals(buildingId, response.getBuildingId());
     }
 
     @Test

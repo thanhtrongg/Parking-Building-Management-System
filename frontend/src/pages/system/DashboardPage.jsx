@@ -613,12 +613,38 @@ export default function DashboardPage() {
     });
   });
 
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
+
+  const filteredData = useMemo(() => {
+    const { parkingSlots, reservations, payments, vehicleTypes, parkingSessions } = dashboardData;
+    if (!activeBuildingId) {
+      return dashboardData;
+    }
+    return {
+      parkingSlots: parkingSlots.filter(s => s.buildingId === activeBuildingId),
+      reservations: reservations.filter(r => r.buildingId === activeBuildingId),
+      parkingSessions: parkingSessions.filter(s => s.buildingId === activeBuildingId),
+      payments: payments.filter(p => p.buildingId === activeBuildingId),
+      vehicleTypes
+    };
+  }, [dashboardData, activeBuildingId]);
+
   const summary = useMemo(() => {
-    const parkingSlots = dashboardData.parkingSlots;
-    const reservations = dashboardData.reservations;
-    const payments = dashboardData.payments;
-    const vehicleTypes = dashboardData.vehicleTypes;
-    const sessions = dashboardData.parkingSessions;
+    const parkingSlots = filteredData.parkingSlots;
+    const reservations = filteredData.reservations;
+    const payments = filteredData.payments;
+    const vehicleTypes = filteredData.vehicleTypes;
+    const sessions = filteredData.parkingSessions;
 
     const totalSlots = parkingSlots.length;
 
@@ -764,12 +790,12 @@ export default function DashboardPage() {
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
           <div className="xl:col-span-2">
-            <RecentSessions sessions={dashboardData.parkingSessions} />
+            <RecentSessions sessions={filteredData.parkingSessions} />
           </div>
 
           <ActivityPanel
-            reservations={dashboardData.reservations}
-            payments={dashboardData.payments}
+            reservations={filteredData.reservations}
+            payments={filteredData.payments}
           />
         </section>
       </div>

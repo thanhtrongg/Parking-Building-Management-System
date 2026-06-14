@@ -2,8 +2,10 @@ package com.parking.service.impl;
 
 import com.parking.dto.zone.ZoneRequest;
 import com.parking.dto.zone.ZoneResponse;
+import com.parking.entity.ParkingBuilding;
 import com.parking.entity.Zone;
 import com.parking.exception.ResourceNotFoundException;
+import com.parking.repository.ParkingBuildingRepository;
 import com.parking.repository.ZoneRepository;
 import com.parking.service.ZoneService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 public class ZoneServiceImpl implements ZoneService {
 
     private final ZoneRepository zoneRepository;
+    private final ParkingBuildingRepository buildingRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -39,10 +42,14 @@ public class ZoneServiceImpl implements ZoneService {
 
     @Override
     public ZoneResponse createZone(ZoneRequest request) {
+        ParkingBuilding building = buildingRepository.findById(request.getBuildingId())
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
+
         Zone zone = Zone.builder()
                 .zoneName(request.getZoneName())
                 .vehicleTypeId(request.getVehicleTypeId())
                 .totalCapacity(request.getTotalCapacity())
+                .building(building)
                 .build();
         zone = zoneRepository.save(zone);
         return mapToResponse(zone);
@@ -53,9 +60,13 @@ public class ZoneServiceImpl implements ZoneService {
         Zone zone = zoneRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Zone not found with id: " + id));
 
+        ParkingBuilding building = buildingRepository.findById(request.getBuildingId())
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
+
         zone.setZoneName(request.getZoneName());
         zone.setVehicleTypeId(request.getVehicleTypeId());
         zone.setTotalCapacity(request.getTotalCapacity());
+        zone.setBuilding(building);
 
         zone = zoneRepository.save(zone);
         return mapToResponse(zone);
@@ -75,6 +86,7 @@ public class ZoneServiceImpl implements ZoneService {
                 .zoneName(zone.getZoneName())
                 .vehicleTypeId(zone.getVehicleTypeId())
                 .totalCapacity(zone.getTotalCapacity())
+                .buildingId(zone.getBuilding() != null ? zone.getBuilding().getId() : null)
                 .build();
     }
 }

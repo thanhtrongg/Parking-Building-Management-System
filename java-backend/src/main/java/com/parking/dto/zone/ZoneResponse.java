@@ -17,4 +17,5 @@ public class ZoneResponse {
     private String zoneName;
     private UUID vehicleTypeId;
     private int totalCapacity;
+    private UUID buildingId;
 }

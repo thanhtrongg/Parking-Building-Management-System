@@ -32,5 +32,6 @@ public class PaymentResponse {
     private String slotCode;
     private LocalDateTime checkInTime;
     private LocalDateTime checkOutTime;
+    private UUID buildingId;
 }
 

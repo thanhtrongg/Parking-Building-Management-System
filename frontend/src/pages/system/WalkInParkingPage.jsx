@@ -77,6 +77,17 @@ export default function WalkInParkingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState({ type: "", message: "" });
   const [now, setNow] = useState(() => new Date());
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -120,23 +131,28 @@ export default function WalkInParkingPage() {
       slots.filter(
         (slot) =>
           slot.status === "AVAILABLE" &&
-          (!vehicleTypeId || slot.vehicleTypeId === vehicleTypeId),
+          (!vehicleTypeId || slot.vehicleTypeId === vehicleTypeId) &&
+          (!activeBuildingId || slot.buildingId === activeBuildingId),
       ),
-    [slots, vehicleTypeId],
+    [slots, vehicleTypeId, activeBuildingId],
   );
 
   const activeSessions = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    return sessions
-      .filter((session) => session.status === "ACTIVE")
-      .filter(
-        (session) =>
-          !keyword ||
-          session.licensePlate?.toLowerCase().includes(keyword) ||
-          session.ticketCode?.toLowerCase().includes(keyword) ||
-          session.parkingSlot?.slotName?.toLowerCase().includes(keyword),
-      );
-  }, [sessions, search]);
+    let result = sessions.filter((session) => session.status === "ACTIVE");
+    
+    if (activeBuildingId) {
+      result = result.filter((session) => session.buildingId === activeBuildingId);
+    }
+    
+    return result.filter(
+      (session) =>
+        !keyword ||
+        session.licensePlate?.toLowerCase().includes(keyword) ||
+        session.ticketCode?.toLowerCase().includes(keyword) ||
+        session.parkingSlot?.slotName?.toLowerCase().includes(keyword),
+    );
+  }, [sessions, search, activeBuildingId]);
 
   const handleVehicleTypeChange = (event) => {
     setVehicleTypeId(event.target.value);
@@ -158,6 +174,7 @@ export default function WalkInParkingPage() {
           licensePlate: licensePlate.trim().toUpperCase(),
           vehicleTypeId,
           parkingSlotId,
+          buildingId: activeBuildingId,
         }),
       });
       setNotice({

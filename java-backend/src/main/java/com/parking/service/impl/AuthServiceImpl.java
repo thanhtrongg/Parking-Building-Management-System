@@ -193,6 +193,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole())
                 .active(user.isActive())
                 .createdAt(user.getCreatedAt())
+                .theme(user.getTheme())
                 .build();
 
         return AuthResponse.builder()

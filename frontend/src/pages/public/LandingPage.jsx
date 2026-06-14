@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../../services/api";
 
 const navItems = [
-  ["Studio", "home"],
+  ["Home", "home"],
   ["Building", "building"],
   ["Rules", "rules"],
   ["Pricing", "pricing"],
@@ -23,25 +23,40 @@ const images = {
 
 const buildingFacts = [
   {
-    title: "Public visibility",
-    text: "Guests can review capacity, zones, vehicle types, rules, and pricing before login.",
+    title: "Real-time Access",
+    text: "Review active capacity, zones, and building rules before booking.",
   },
   {
-    title: "Operating flow",
-    text: "The building supports reservation, vehicle entry, assigned slot, active session, payment, and exit.",
+    title: "Operational Workflow",
+    text: "The system automates check-in, slot assignment, session tracking, and payments.",
   },
   {
-    title: "Slot clarity",
-    text: "Available slots and zone capacity are shown from the public parking data endpoint.",
+    title: "Capacity Transparency",
+    text: "See available slots and floor layouts instantly synced from the database.",
   },
 ];
 
 const parkingRules = [
-  "Reserve a slot before arrival when possible so the system can hold availability.",
-  "Use the registered license plate at check-in for faster ticket matching.",
-  "Follow the assigned zone and slot shown by staff or by your booking detail.",
-  "Night rate may apply based on the active pricing policy for your vehicle type.",
-  "Contact staff before leaving a vehicle in maintenance or restricted zones.",
+  {
+    title: "Reserve before arrival",
+    content: "Reserve a slot before arrival when possible so the system can hold availability."
+  },
+  {
+    title: "Use the registered plate",
+    content: "Use the registered license plate at check-in for faster ticket matching."
+  },
+  {
+    title: "Follow the assigned zone",
+    content: "Follow the assigned zone and slot shown by staff or by your booking detail."
+  },
+  {
+    title: "Check night rate rules",
+    content: "Night rate may apply based on the active pricing policy for your vehicle type."
+  },
+  {
+    title: "Ask before restricted parking",
+    content: "Contact staff before leaving a vehicle in maintenance or restricted zones."
+  }
 ];
 
 const fallbackInfo = {
@@ -57,6 +72,8 @@ const fallbackInfo = {
   zones: [],
   pricingPolicies: [],
   availableSlots: [],
+  buildings: [],
+  selectedBuildingId: null,
 };
 
 const focusRing =
@@ -80,6 +97,22 @@ function formatCurrency(value) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(Number(value || 0));
+}
+
+function formatBuildingHours(openingTime, closingTime) {
+  if (!openingTime || !closingTime) return "24/7";
+  
+  const openStr = openingTime.substring(0, 5);
+  const closeStr = closingTime.substring(0, 5);
+  
+  if (openStr === "00:00" && (closeStr === "00:00" || closeStr === "23:59" || closeStr === "24:00")) {
+    return "24/7";
+  }
+  if (openStr === closeStr) {
+    return "24/7";
+  }
+  
+  return `${openStr} - ${closeStr}`;
 }
 
 function ArrowGlyph() {
@@ -110,12 +143,17 @@ function PrimaryButton({ children, to, onClick }) {
   );
 }
 
-function GhostButton({ children, onClick }) {
+function GhostButton({ children, onClick, isLight = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-11 items-center justify-center whitespace-nowrap rounded-lg bg-white/[0.055] px-5 text-sm font-medium text-[#f7efe0] ring-1 ring-white/12 transition duration-300 hover:bg-white/[0.09] active:scale-[0.98] ${focusRing}`}
+      className={[
+        "inline-flex h-11 items-center justify-center whitespace-nowrap rounded-lg px-5 text-sm font-semibold ring-1 transition duration-300 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d7b46a]",
+        isLight
+          ? "bg-[#e2dacb] text-slate-800 ring-[#cbbfa6] hover:bg-[#d5ccbc] hover:text-slate-900"
+          : "bg-white/[0.055] text-[#f7efe0] ring-white/12 hover:bg-white/[0.09]"
+      ].join(" ")}
     >
       {children}
     </button>
@@ -289,7 +327,81 @@ function PublicHeader({ menuOpen, setMenuOpen, theme, onToggleTheme }) {
   );
 }
 
-function HeroSection() {
+function CustomDropdown({ options, value, onChange, isLight }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedOption = options.find((opt) => opt.id === value) || options[0];
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <button
+        type="button"
+        id="building-selector"
+        onClick={() => setIsOpen(!isOpen)}
+        className={[
+          "flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm font-semibold ring-1 transition duration-300 focus:outline-none focus:ring-[#d7b46a] focus:ring-1",
+          isLight
+            ? "bg-slate-100 text-slate-800 ring-slate-200 hover:bg-slate-200/60"
+            : "bg-white/[0.055] text-[#f7efe0] ring-white/10 hover:bg-white/[0.08]"
+        ].join(" ")}
+      >
+        <span>{selectedOption ? selectedOption.name : "Select Building"}</span>
+        <span className="material-symbols-outlined text-[20px] text-[#d7b46a] transition-transform duration-300" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+          keyboard_arrow_down
+        </span>
+      </button>
+
+      {isOpen && (
+        <ul
+          className={[
+            "absolute z-50 mt-1.5 max-h-60 w-full overflow-auto rounded-lg p-1 text-sm font-semibold ring-1 shadow-lg focus:outline-none",
+            isLight
+              ? "bg-white text-slate-800 ring-slate-200/80"
+              : "bg-[#11100d] text-[#f7efe0] ring-white/10"
+          ].join(" ")}
+        >
+          {options.map((opt) => {
+            const isSelected = opt.id === value;
+            return (
+              <li
+                key={opt.id}
+                onClick={() => {
+                  onChange(opt.id);
+                  setIsOpen(false);
+                }}
+                className={[
+                  "relative cursor-pointer select-none rounded-md px-4 py-2.5 transition duration-200",
+                  isSelected
+                    ? "bg-[#d7b46a] text-[#11100d]"
+                    : isLight
+                      ? "hover:bg-slate-100 text-slate-700"
+                      : "hover:bg-white/5 text-[#ddd4c4] hover:text-white"
+                ].join(" ")}
+              >
+                {opt.name}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function HeroSection({ totalSlots = 150, availableSlots = 42, buildings = [], selectedBuildingId = null, onBuildingChange, isLight }) {
+  const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
+
   return (
     <section
       id="home"
@@ -304,13 +416,66 @@ function HeroSection() {
             Smart parking for real building operations.
           </h1>
           <p className="mt-6 max-w-[40rem] text-base leading-7 text-[#c7beae] md:text-lg">
-            Guests can check building capacity, rules, slot context, and pricing
-            before signing in to reserve.
+            Check real-time capacity, pricing policies, and guidelines before booking your slot.
           </p>
+
+          {buildings && buildings.length > 0 ? (
+            <div className={[
+              "mt-8 max-w-md rounded-2xl p-5 ring-1 backdrop-blur-md",
+              isLight
+                ? "bg-white/80 ring-slate-200/80 shadow-md"
+                : "bg-white/[0.035] ring-white/10"
+            ].join(" ")}>
+              <label htmlFor="building-selector" className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#d7b46a] mb-2.5">
+                Active Parking Building
+              </label>
+              <div className="relative mb-4">
+                <CustomDropdown
+                  options={buildings}
+                  value={selectedBuildingId}
+                  onChange={onBuildingChange}
+                  isLight={isLight}
+                />
+              </div>
+              
+              {selectedBuilding && (
+                <div className={[
+                  "border-t pt-4 space-y-2 text-xs",
+                  isLight ? "border-slate-200 text-slate-500" : "border-white/5 text-[#b9af9d]"
+                ].join(" ")}>
+                  <p className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-[#d7b46a] shrink-0 mt-0.5">
+                      location_on
+                    </span>
+                    <span>{selectedBuilding.address}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    <p className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px] text-[#d7b46a] shrink-0">
+                        schedule
+                      </span>
+                      <span>
+                        {formatBuildingHours(selectedBuilding.openingTime, selectedBuilding.closingTime)}
+                      </span>
+                    </p>
+                    {selectedBuilding.phone && (
+                      <p className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-[#d7b46a] shrink-0">
+                          phone
+                        </span>
+                        <span>{selectedBuilding.phone}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <PrimaryButton to="/signup">Explore System</PrimaryButton>
-            <GhostButton onClick={() => scrollToSection("building")}>
-              View Guest Info
+            <GhostButton onClick={() => scrollToSection("building")} isLight={isLight}>
+              Check Availability
             </GhostButton>
           </div>
         </div>
@@ -328,20 +493,20 @@ function HeroSection() {
           />
           <div className="absolute bottom-10 right-3 w-56 rounded-2xl bg-[#090907]/90 p-5 ring-1 ring-white/12 md:right-10 md:w-64">
               <p className="text-[10px] font-semibold tracking-[0.18em] text-[#d7b46a]">
-                PUBLIC BUILDING LOGIC
+                LIVE CAPACITY
               </p>
               <div className="mt-5 grid grid-cols-2 gap-4">
                 <div>
                   <p className="font-mono text-3xl font-semibold text-[#fbf4e7] tabular-nums">
-                    24/7
+                    {String(totalSlots).padStart(2, "0")}
                   </p>
-                  <p className="mt-1 text-xs text-[#958b7b]">access flow</p>
+                  <p className="mt-1 text-xs text-[#958b7b]">total slots</p>
                 </div>
                 <div>
                   <p className="font-mono text-3xl font-semibold text-[#fbf4e7] tabular-nums">
-                    03
+                    {String(availableSlots).padStart(2, "0")}
                   </p>
-                  <p className="mt-1 text-xs text-[#958b7b]">guest checks</p>
+                  <p className="mt-1 text-xs text-[#958b7b]">free slots</p>
                 </div>
               </div>
           </div>
@@ -370,41 +535,63 @@ function PublicInfoState({ status }) {
   );
 }
 
-function BuildingInfoSection({ info }) {
+function BuildingInfoSection({ info, isLight }) {
   const summary = info.summary || fallbackInfo.summary;
+  const selectedBuilding = (info.buildings || []).find(b => b.id === info.selectedBuildingId);
+  const buildingName = selectedBuilding ? selectedBuilding.name : "";
+
   const stats = [
     ["Total slots", summary.totalSlots],
     ["Available now", summary.availableSlots],
-    ["Parking zones", summary.totalZones],
-    ["Vehicle types", summary.vehicleTypes],
+    ["Parking floors", summary.totalFloors || 0],
+    ["Supported vehicles", summary.vehicleTypes || 0],
   ];
 
   return (
     <section id="building" className="scroll-mt-28 px-4 py-20 md:px-8 md:py-32">
-      <div className="landing-building-shell mx-auto max-w-7xl rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
-        <div className="landing-building-panel relative overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b]">
+      <div className={[
+        "landing-building-shell mx-auto max-w-7xl rounded-2xl p-1 ring-1",
+        isLight ? "bg-slate-100 ring-slate-200" : "bg-white/[0.04] ring-white/10"
+      ].join(" ")}>
+        <div className={[
+          "landing-building-panel relative overflow-hidden rounded-[calc(1rem-0.25rem)]",
+          isLight ? "bg-white" : "bg-[#100f0b]"
+        ].join(" ")}>
           <img
             src={images.ramp}
             alt="Parking building ramp with architectural night lighting"
             className="landing-building-image absolute inset-0 h-full w-full object-cover opacity-32 saturate-[0.78]"
           />
-          <div className="landing-building-overlay absolute inset-0 bg-[radial-gradient(circle_at_76%_14%,rgba(215,180,106,0.22),transparent_30%),linear-gradient(90deg,rgba(7,7,5,0.96),rgba(7,7,5,0.76)_46%,rgba(7,7,5,0.42))]" />
+          <div className={[
+            "absolute inset-0",
+            isLight
+              ? "bg-[radial-gradient(circle_at_76%_14%,rgba(215,180,106,0.15),transparent_30%),linear-gradient(90deg,rgba(252,250,246,0.98),rgba(252,250,246,0.85)_46%,rgba(252,250,246,0.5))]"
+              : "landing-building-overlay absolute inset-0 bg-[radial-gradient(circle_at_76%_14%,rgba(215,180,106,0.22),transparent_30%),linear-gradient(90deg,rgba(7,7,5,0.96),rgba(7,7,5,0.76)_46%,rgba(7,7,5,0.42))]"
+          ].join(" ")} />
 
           <div className="relative grid gap-10 p-6 md:p-10 lg:grid-cols-[0.85fr_1.15fr] lg:p-12">
             <div className="flex min-h-[32rem] flex-col justify-between">
               <SectionIntro
-                eyebrow="Guest building check"
+                eyebrow={buildingName ? `Status: ${buildingName}` : "Building Status"}
                 title="Know the building before you arrive."
-                description="Public capacity and zone details help guests decide when to reserve and which vehicle flow to expect."
+                description={selectedBuilding 
+                  ? `Review occupied, reserved, and available slots for ${selectedBuilding.name} in real time to plan your visit.`
+                  : "Review occupied, reserved, and available slots across all floors in real time to plan your visit."
+                }
               />
 
               <div className="mt-10 grid gap-3 sm:grid-cols-2">
                 {stats.map(([label, value]) => (
                   <article
                     key={label}
-                    className="landing-building-stat rounded-[1.4rem] bg-[#080806]/68 p-5 ring-1 ring-white/10 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:bg-[#14110c]/78 hover:ring-[#d7b46a]/35"
+                    className={[
+                      "rounded-[1.4rem] p-5 ring-1 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:ring-[#d7b46a]/35",
+                      isLight
+                        ? "bg-slate-50 ring-slate-200/60 hover:bg-slate-100"
+                        : "bg-[#080806]/68 ring-white/10 hover:bg-[#14110c]/78"
+                    ].join(" ")}
                   >
-                    <p className="font-mono text-4xl font-semibold tracking-[-0.04em] text-[#fbf4e7] tabular-nums">
+                    <p className={["font-mono text-4xl font-semibold tracking-[-0.04em] tabular-nums", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                       {value}
                     </p>
                     <p className="mt-2 text-[10px] font-semibold tracking-[0.2em] text-[#d7b46a]/80">
@@ -419,16 +606,21 @@ function BuildingInfoSection({ info }) {
               {buildingFacts.map((fact, index) => (
                 <article
                   key={fact.title}
-                  className="landing-building-fact group grid gap-5 rounded-[1.75rem] bg-white/[0.055] p-1.5 ring-1 ring-white/10 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:translate-x-1 hover:ring-[#d7b46a]/35 sm:grid-cols-[4rem_1fr]"
+                  className={[
+                    "group flex items-start gap-4 rounded-2xl p-5 ring-1 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:translate-x-1 hover:ring-[#d7b46a]/35",
+                    isLight
+                      ? "bg-white ring-slate-200"
+                      : "bg-[#11100c] ring-white/10"
+                  ].join(" ")}
                 >
-                  <div className="flex items-center justify-center rounded-[calc(1.75rem-0.375rem)] bg-[#d7b46a] font-mono text-sm font-semibold text-[#11100d]">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#d7b46a] font-mono text-sm font-semibold text-[#11100d]">
                     {String(index + 1).padStart(2, "0")}
                   </div>
-                  <div className="landing-building-fact-body rounded-[calc(1.75rem-0.375rem)] bg-[#0c0b08]/78 p-5">
-                    <h3 className="text-xl font-semibold tracking-[-0.02em] text-[#fbf4e7]">
+                  <div>
+                    <h3 className={["text-xl font-semibold tracking-[-0.02em]", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                       {fact.title}
                     </h3>
-                    <p className="mt-2 max-w-[34rem] text-sm leading-7 text-[#b9af9d]">
+                    <p className={["mt-2 max-w-[34rem] text-sm leading-7", isLight ? "text-slate-600" : "text-[#b9af9d]"].join(" ")}>
                       {fact.text}
                     </p>
                   </div>
@@ -442,15 +634,17 @@ function BuildingInfoSection({ info }) {
   );
 }
 
-function RulesSection() {
+function RulesSection({ rules = [] }) {
+  const displayRules = rules && rules.length > 0 ? rules : parkingRules;
+
   return (
     <section id="rules" className="scroll-mt-28 px-4 py-20 md:px-8 md:py-32">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
         <div className="lg:sticky lg:top-32">
           <SectionIntro
             eyebrow="Parking rules"
-            title="Clear rules for a quiet arrival."
-            description="A short guest checklist for booking, check-in, assigned parking, overnight pricing, and restricted zones."
+            title="Clear guidelines for a smooth check-in."
+            description="A quick checklist for booking, check-in, assigned slots, and rate calculations."
           />
           <ImageShell
             src={images.gate}
@@ -462,9 +656,9 @@ function RulesSection() {
         <div className="rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
           <div className="relative overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#11100c] p-5 md:p-8">
             <div className="relative">
-              {parkingRules.map((rule, index) => (
+              {displayRules.map((rule, index) => (
                 <article
-                  key={rule}
+                  key={index}
                   className="group relative grid gap-5 border-b border-white/10 py-7 last:border-b-0 md:grid-cols-[7rem_1fr]"
                 >
                   <div className="flex items-start gap-4">
@@ -475,18 +669,10 @@ function RulesSection() {
                   </div>
                   <div>
                     <h3 className="text-2xl font-semibold tracking-[-0.025em] text-[#fbf4e7]">
-                      {
-                        [
-                          "Reserve before arrival",
-                          "Use the registered plate",
-                          "Follow the assigned zone",
-                          "Check night rate rules",
-                          "Ask before restricted parking",
-                        ][index]
-                      }
+                      {rule.title}
                     </h3>
                     <p className="mt-3 max-w-[42rem] text-base leading-8 text-[#b9af9d]">
-                      {rule}
+                      {rule.content}
                     </p>
                   </div>
                 </article>
@@ -513,7 +699,7 @@ function PricingSection({ policies }) {
       <div className="mx-auto max-w-7xl">
         <SectionIntro
           eyebrow="Public pricing"
-          title="Fees guests can check before booking."
+          title="Transparent rates and pricing policies."
         />
 
         <div className="mt-16 grid gap-5 lg:grid-cols-3">
@@ -527,20 +713,20 @@ function PricingSection({ policies }) {
                   <p className="text-xs font-medium tracking-[0.22em] text-[#d7b46a]">
                     {(policy.vehicleTypeName || "All vehicles").toUpperCase()}
                   </p>
-                  <h3 className="mt-6 font-mono text-4xl font-semibold tracking-[-0.04em] text-[#fbf4e7] tabular-nums">
+                  <h3 className="mt-6 font-sans text-4xl font-black tracking-tight text-[#fbf4e7] tabular-nums">
                     {formatCurrency(policy.basePrice)}
                   </h3>
 
                   <div className="mt-auto space-y-4 pt-10 text-sm text-[#b9af9d]">
                     <p className="flex items-center justify-between gap-4 border-t border-white/10 pt-4">
                       <span>Hourly rate</span>
-                      <strong className="font-mono font-semibold text-[#fbf4e7]">
+                      <strong className="font-sans font-bold text-[#fbf4e7] tabular-nums">
                         {formatCurrency(policy.hourlyRate)}
                       </strong>
                     </p>
                     <p className="flex items-center justify-between gap-4 border-t border-white/10 pt-4">
                       <span>Night rate</span>
-                      <strong className="font-mono font-semibold text-[#fbf4e7]">
+                      <strong className="font-sans font-bold text-[#fbf4e7] tabular-nums">
                         {formatCurrency(policy.nightRate)}
                       </strong>
                     </p>
@@ -561,7 +747,7 @@ function PricingSection({ policies }) {
   );
 }
 
-function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleType }) {
+function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleType, isLight }) {
   const zones = info.zones || [];
   const availableSlots = info.availableSlots || [];
   const vehicleTypes = Array.from(
@@ -590,70 +776,110 @@ function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleTy
     0,
   );
 
+  const vehicleMeta = {
+    "all": { label: "All Vehicles", icon: "grid_view" },
+    "Car": { label: "Cars", icon: "directions_car" },
+    "Motorbike": { label: "Motorbikes", icon: "two_wheeler" },
+    "Bicycle": { label: "Bicycles", icon: "pedal_bike" },
+    "Electric Vehicle": { label: "EVs", icon: "electric_car" },
+    "Light Truck": { label: "Trucks", icon: "local_shipping" }
+  };
+
   return (
     <section
       id="available-slots"
       className="scroll-mt-28 px-4 py-24 md:px-8 md:py-36"
     >
       <div className="mx-auto max-w-7xl">
-        <div className="rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
-          <div className="landing-slots-panel relative overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b] p-6 md:p-10 lg:p-12">
+        <div className={[
+          "rounded-2xl p-1 ring-1",
+          isLight ? "bg-slate-100 ring-slate-200" : "bg-white/[0.04] ring-white/10"
+        ].join(" ")}>
+          <div className={[
+            "landing-slots-panel relative overflow-hidden rounded-[calc(1rem-0.25rem)] p-6 md:p-10 lg:p-12",
+            isLight ? "bg-white" : "bg-[#100f0b]"
+          ].join(" ")}>
             <img
               src={images.entry}
               alt="Car entering a parking garage at night"
               className="landing-slots-image absolute inset-0 h-full w-full object-cover opacity-18 saturate-[0.72]"
             />
-            <div className="landing-slots-overlay absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(215,180,106,0.2),transparent_30%),linear-gradient(90deg,rgba(7,7,5,0.96),rgba(7,7,5,0.82)_48%,rgba(7,7,5,0.62))]" />
+            <div className={[
+              "absolute inset-0",
+              isLight
+                ? "bg-[radial-gradient(circle_at_78%_12%,rgba(215,180,106,0.12),transparent_30%),linear-gradient(90deg,rgba(252,250,246,0.96),rgba(252,250,246,0.9) 48%,rgba(252,250,246,0.74))]"
+                : "landing-slots-overlay absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(215,180,106,0.2),transparent_30%),linear-gradient(90deg,rgba(7,7,5,0.96),rgba(7,7,5,0.82)_48%,rgba(7,7,5,0.62))]"
+            ].join(" ")} />
 
             <div className="relative grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
               <div>
                 <SectionIntro
                   eyebrow="Available slots"
                   title="Choose vehicle type, then check openings."
-                  description="Guests can filter by vehicle type and preview live zone capacity before creating a reservation."
+                  description="Filter by vehicle type and check active capacity by zone before making a booking."
                 />
 
-                <div className="mt-8 rounded-[1.75rem] bg-[#070705]/70 p-1.5 ring-1 ring-white/10">
-                  <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedVehicleType("all")}
-                      className={`rounded-lg px-4 py-3 text-xs font-semibold transition duration-300 ${
-                        selectedVehicleType === "all"
-                          ? "bg-[#d7b46a] text-[#11100d]"
-                          : "bg-white/[0.055] text-[#c7beae] hover:bg-white/[0.09] hover:text-[#fbf4e7]"
-                      } ${focusRing}`}
-                    >
-                      All vehicles
-                    </button>
-                    {vehicleTypes.map((type) => (
+                <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVehicleType("all")}
+                    className={[
+                      "flex flex-col items-center justify-center rounded-2xl p-4 border transition duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d7b46a]",
+                      selectedVehicleType === "all"
+                        ? "bg-[#d7b46a]/12 border-[#d7b46a] text-[#d7b46a] shadow-[0_0_15px_rgba(215,180,106,0.15)]"
+                        : isLight
+                          ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 shadow-sm"
+                          : "bg-[#070705]/50 border-white/10 text-[#c7beae] hover:border-white/20 hover:text-[#fbf4e7]"
+                    ].join(" ")}
+                  >
+                    <span className="material-symbols-outlined text-[28px] mb-2 text-[#d7b46a]">
+                      grid_view
+                    </span>
+                    <span className="text-xs font-bold tracking-wide">All Vehicles</span>
+                  </button>
+                  {vehicleTypes.map((type) => {
+                    const meta = vehicleMeta[type] || { label: type, icon: "directions_car" };
+                    const isSelected = selectedVehicleType === type;
+                    return (
                       <button
                         key={type}
                         type="button"
                         onClick={() => setSelectedVehicleType(type)}
-                        className={`rounded-lg px-4 py-3 text-xs font-semibold transition duration-300 ${
-                          selectedVehicleType === type
-                            ? "bg-[#d7b46a] text-[#11100d]"
-                            : "bg-white/[0.055] text-[#c7beae] hover:bg-white/[0.09] hover:text-[#fbf4e7]"
-                        } ${focusRing}`}
+                        className={[
+                          "flex flex-col items-center justify-center rounded-2xl p-4 border transition duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d7b46a]",
+                          isSelected
+                            ? "bg-[#d7b46a]/12 border-[#d7b46a] text-[#d7b46a] shadow-[0_0_15px_rgba(215,180,106,0.15)]"
+                            : isLight
+                              ? "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 shadow-sm"
+                              : "bg-[#070705]/50 border-white/10 text-[#c7beae] hover:border-white/20 hover:text-[#fbf4e7]"
+                        ].join(" ")}
                       >
-                        {type}
+                        <span className="material-symbols-outlined text-[28px] mb-2 text-[#d7b46a]">
+                          {meta.icon}
+                        </span>
+                        <span className="text-xs font-bold tracking-wide">{meta.label}</span>
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  <article className="rounded-[1.35rem] bg-[#070705]/72 p-5 ring-1 ring-white/10">
-                    <p className="font-mono text-4xl font-semibold tracking-[-0.04em] text-[#fbf4e7] tabular-nums">
+                  <article className={[
+                    "rounded-[1.35rem] p-5 ring-1",
+                    isLight ? "bg-slate-50 ring-slate-200" : "bg-[#070705]/72 ring-white/10"
+                  ].join(" ")}>
+                    <p className={["font-mono text-4xl font-semibold tracking-[-0.04em] tabular-nums", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                       {totalAvailable}
                     </p>
                     <p className="mt-2 text-[10px] font-semibold tracking-[0.2em] text-[#d7b46a]/80">
                       AVAILABLE NOW
                     </p>
                   </article>
-                  <article className="rounded-[1.35rem] bg-[#070705]/72 p-5 ring-1 ring-white/10">
-                    <p className="font-mono text-4xl font-semibold tracking-[-0.04em] text-[#fbf4e7] tabular-nums">
+                  <article className={[
+                    "rounded-[1.35rem] p-5 ring-1",
+                    isLight ? "bg-slate-50 ring-slate-200" : "bg-[#070705]/72 ring-white/10"
+                  ].join(" ")}>
+                    <p className={["font-mono text-4xl font-semibold tracking-[-0.04em] tabular-nums", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                       {totalCapacity}
                     </p>
                     <p className="mt-2 text-[10px] font-semibold tracking-[0.2em] text-[#d7b46a]/80">
@@ -668,30 +894,60 @@ function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleTy
                   filteredZones.slice(0, 6).map((zone) => (
                     <article
                       key={zone.id}
-                      className="rounded-[1.5rem] bg-white/[0.055] p-1.5 ring-1 ring-white/10 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:ring-[#d7b46a]/30"
+                      className={[
+                        "rounded-[1.5rem] p-1.5 ring-1 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:ring-[#d7b46a]/30",
+                        isLight
+                          ? "bg-slate-100 ring-slate-200"
+                          : "bg-white/[0.055] ring-white/10"
+                      ].join(" ")}
                     >
-                      <div className="flex min-h-52 flex-col rounded-[calc(1.5rem-0.375rem)] bg-[#0b0a07]/82 p-5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                      <div className={[
+                        "flex min-h-[14.5rem] flex-col rounded-[calc(1.5rem-0.375rem)] p-5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]",
+                        isLight
+                          ? "bg-white shadow-sm"
+                          : "bg-[#0b0a07]/82"
+                      ].join(" ")}>
                         <div className="flex items-start justify-between gap-4">
                           <p className="max-w-[10rem] text-[10px] font-semibold tracking-[0.22em] text-[#d7b46a]/80">
                             {(zone.vehicleTypeName || "GENERAL").toUpperCase()}
                           </p>
-                          <p className="font-mono text-2xl font-semibold text-[#fbf4e7] tabular-nums">
+                          <p className={["font-mono text-2xl font-semibold tabular-nums", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                             {zone.availableSlots}/{zone.totalCapacity}
                           </p>
                         </div>
-                        <h3 className="mt-5 text-2xl font-semibold leading-tight tracking-[-0.025em] text-[#fbf4e7]">
+                        <h3 className={["mt-4 text-2xl font-semibold leading-tight tracking-[-0.025em]", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                           {zone.zoneName}
                         </h3>
-                        <p className="mt-auto pt-6 text-sm leading-7 text-[#b9af9d]">
-                          {zone.availableSlots} available from {zone.slotCount}{" "}
-                          configured slots.
+
+                        {/* Real-time occupancy progress bar */}
+                        <div className="mt-5">
+                          <div className={["h-2 w-full rounded-full overflow-hidden", isLight ? "bg-slate-100" : "bg-white/5"].join(" ")}>
+                            <div 
+                              className="h-full bg-[#d7b46a] rounded-full transition-all duration-500"
+                              style={{ width: `${Math.min(100, Math.max(0, (zone.availableSlots / zone.totalCapacity) * 100))}%` }}
+                            />
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-[10px] text-[#9b917f] font-semibold">
+                            <span>AVAILABLE: {zone.totalCapacity > 0 ? Math.round((zone.availableSlots / zone.totalCapacity) * 100) : 0}%</span>
+                            <span>{zone.totalCapacity - zone.availableSlots} OCCUPIED</span>
+                          </div>
+                        </div>
+
+                        <p className={["mt-auto pt-4 text-xs leading-5", isLight ? "text-slate-400" : "text-[#9b917f]"].join(" ")}>
+                          {zone.availableSlots} available out of {zone.slotCount} total slots configured.
                         </p>
                       </div>
                     </article>
                   ))
                 ) : (
-                  <article className="rounded-[1.5rem] bg-white/[0.055] p-1.5 ring-1 ring-white/10 sm:col-span-2 xl:col-span-3">
-                    <div className="rounded-[calc(1.5rem-0.375rem)] bg-[#0b0a07]/82 p-6 text-[#c7beae]">
+                  <article className={[
+                    "rounded-[1.5rem] p-1.5 ring-1 sm:col-span-2 xl:col-span-3",
+                    isLight ? "bg-slate-100 ring-slate-200" : "bg-white/[0.055] ring-white/10"
+                  ].join(" ")}>
+                    <div className={[
+                      "rounded-[calc(1.5rem-0.375rem)] p-6",
+                      isLight ? "bg-white text-slate-500" : "bg-[#0b0a07]/82 text-[#c7beae]"
+                    ].join(" ")}>
                       No zone is available for this vehicle type right now.
                     </div>
                   </article>
@@ -701,14 +957,20 @@ function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleTy
           </div>
         </div>
 
-        <div className="mt-16 rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
-          <div className="relative overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#11100c] p-5 md:p-8">
+        <div className={[
+          "mt-16 rounded-2xl p-1 ring-1",
+          isLight ? "bg-slate-100 ring-slate-200" : "bg-white/[0.04] ring-white/10"
+        ].join(" ")}>
+          <div className={[
+            "relative overflow-hidden rounded-[calc(1rem-0.25rem)] p-5 md:p-8",
+            isLight ? "bg-white" : "bg-[#11100c]"
+          ].join(" ")}>
             <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="font-serif text-xl italic leading-[1.2] text-[#d7b46a]">
                   Open slot preview
                 </p>
-                <h3 className="mt-2 text-3xl font-semibold leading-tight tracking-[-0.03em] text-[#fbf4e7]">
+                <h3 className={["mt-2 text-3xl font-semibold leading-tight tracking-[-0.03em]", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                   {selectedVehicleType === "all"
                     ? "All visible openings."
                     : `${selectedVehicleType} openings.`}
@@ -722,21 +984,32 @@ function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleTy
                 filteredSlots.slice(0, 18).map((slot) => (
                   <article
                     key={slot.id}
-                    className="rounded-[1.2rem] bg-[#070705]/72 p-4 ring-1 ring-white/10 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:ring-[#d7b46a]/35"
+                    className={[
+                      "rounded-xl p-3.5 ring-1 transition duration-300 hover:ring-[#d7b46a]/45 hover:scale-[1.02]",
+                      isLight
+                        ? "bg-slate-50 ring-slate-200 hover:bg-slate-100"
+                        : "bg-[#11100c] ring-white/5"
+                    ].join(" ")}
                   >
-                    <p className="font-mono text-lg font-semibold text-[#fbf4e7]">
-                      {slot.slotName}
-                    </p>
-                    <p className="mt-2 text-[10px] font-semibold tracking-[0.18em] text-[#d7b46a]/80">
-                      {(slot.zoneName || "NO ZONE").toUpperCase()}
-                    </p>
-                    <p className="mt-2 text-sm text-[#9b917f]">
-                      {slot.vehicleTypeName || "General"}
-                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={[
+                        "font-mono text-sm font-bold px-2 py-0.5 rounded-md",
+                        isLight ? "bg-slate-100 text-slate-800" : "bg-white/[0.045] text-[#fbf4e7]"
+                      ].join(" ")}>
+                        {slot.slotName}
+                      </span>
+                      <span className="text-[10px] font-semibold tracking-wider text-[#d7b46a]">
+                        {(slot.floorName || "Floor 1").toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-[11px] text-[#9b917f]">
+                      <span>{(slot.zoneName || "Zone A").split(" (")[0].toUpperCase()}</span>
+                      <span className="capitalize">{slot.vehicleTypeName || "General"}</span>
+                    </div>
                   </article>
                 ))
               ) : (
-                <p className="text-[#c7beae] sm:col-span-2 lg:col-span-4 xl:col-span-6">
+                <p className={["sm:col-span-2 lg:col-span-4 xl:col-span-6", isLight ? "text-slate-400" : "text-[#c7beae]"].join(" ")}>
                   No available slot preview for this vehicle type at the moment.
                 </p>
               )}
@@ -748,17 +1021,31 @@ function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleTy
   );
 }
 
-function FinalCtaSection() {
+function FinalCtaSection({ isLight }) {
   return (
     <section className="px-4 py-24 md:px-8 md:pb-36 md:pt-28">
-      <div className="mx-auto max-w-7xl rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
-        <div className="landing-cta-panel relative overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b] px-6 py-16 md:px-10 md:py-20">
+      <div className={[
+        "mx-auto max-w-7xl rounded-2xl p-1 ring-1",
+        isLight ? "bg-slate-100 ring-slate-200" : "bg-white/[0.04] ring-white/10"
+      ].join(" ")}>
+        <div className={[
+          "relative overflow-hidden rounded-[calc(1rem-0.25rem)] px-6 py-16 md:px-10 md:py-20",
+          isLight ? "bg-[#fbf6ea]" : "bg-[#100f0b]"
+        ].join(" ")}>
           <img
             src={images.hero}
             alt="Parking building interior with cinematic directional lighting"
-            className="landing-cta-image absolute inset-0 h-full w-full object-cover opacity-22 saturate-[0.75]"
+            className={[
+              "absolute inset-0 h-full w-full object-cover saturate-[0.75]",
+              isLight ? "opacity-72" : "opacity-22"
+            ].join(" ")}
           />
-          <div className="landing-cta-overlay absolute inset-0 bg-[radial-gradient(circle_at_24%_8%,rgba(215,180,106,0.22),transparent_34%),linear-gradient(90deg,rgba(6,6,5,0.92),rgba(6,6,5,0.55))]" />
+          <div className={[
+            "absolute inset-0",
+            isLight
+              ? "bg-[radial-gradient(circle_at_24%_8%,rgba(215,180,106,0.08),transparent_34%),linear-gradient(90deg,rgba(251,246,234,0.72),rgba(251,246,234,0.45))]"
+              : "bg-[radial-gradient(circle_at_24%_8%,rgba(215,180,106,0.22),transparent_34%),linear-gradient(90deg,rgba(6,6,5,0.92),rgba(6,6,5,0.55))]"
+          ].join(" ")} />
           <div className="relative max-w-4xl">
             <SectionIntro
               eyebrow="Entry to payment"
@@ -807,14 +1094,16 @@ export default function PublicLandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem("publicTheme") || "dark";
+      return localStorage.getItem("publicTheme") || "light";
     } catch {
-      return "dark";
+      return "light";
     }
   });
   const [publicInfo, setPublicInfo] = useState(fallbackInfo);
   const [status, setStatus] = useState("loading");
   const [selectedVehicleType, setSelectedVehicleType] = useState("all");
+  const [selectedBuildingId, setSelectedBuildingId] = useState(null);
+  const lastFetchedId = useRef(null);
   const isLight = theme === "light";
 
   const handleToggleTheme = () => {
@@ -835,12 +1124,25 @@ export default function PublicLandingPage() {
   }, [isLight]);
 
   useEffect(() => {
-    let isMounted = true;
+    if (selectedBuildingId && selectedBuildingId === lastFetchedId.current) {
+      return;
+    }
 
-    apiRequest("/api/public/landing-info")
+    let isMounted = true;
+    setStatus("loading");
+
+    const queryUrl = selectedBuildingId
+      ? `/api/public/landing-info?buildingId=${selectedBuildingId}`
+      : "/api/public/landing-info";
+
+    apiRequest(queryUrl)
       .then((result) => {
         if (!isMounted) return;
-        setPublicInfo(result.data || fallbackInfo);
+        const data = result.data || fallbackInfo;
+        setPublicInfo(data);
+        const resolvedId = data.selectedBuildingId || null;
+        lastFetchedId.current = resolvedId;
+        setSelectedBuildingId(resolvedId);
         setStatus("ready");
       })
       .catch(() => {
@@ -851,7 +1153,7 @@ export default function PublicLandingPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedBuildingId]);
 
   const normalizedInfo = useMemo(
     () => ({
@@ -907,17 +1209,25 @@ export default function PublicLandingPage() {
       />
 
       <main className="relative z-10">
-        <HeroSection />
+        <HeroSection
+          totalSlots={normalizedInfo.summary?.totalSlots}
+          availableSlots={normalizedInfo.summary?.availableSlots}
+          buildings={normalizedInfo.buildings || []}
+          selectedBuildingId={selectedBuildingId}
+          onBuildingChange={setSelectedBuildingId}
+          isLight={isLight}
+        />
         <PublicInfoState status={status} />
-        <BuildingInfoSection info={normalizedInfo} />
-        <RulesSection />
+        <BuildingInfoSection info={normalizedInfo} isLight={isLight} />
+        <RulesSection rules={normalizedInfo.parkingRules} />
         <PricingSection policies={normalizedInfo.pricingPolicies || []} />
         <AvailableSlotsSection
           info={normalizedInfo}
           selectedVehicleType={selectedVehicleType}
           setSelectedVehicleType={setSelectedVehicleType}
+          isLight={isLight}
         />
-        <FinalCtaSection />
+        <FinalCtaSection isLight={isLight} />
       </main>
 
       <PublicFooter />

@@ -16,6 +16,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ZoneRequest {
 
+    @NotNull(message = "Building ID is required")
+    private UUID buildingId;
+
     @NotBlank(message = "Zone name is required")
     private String zoneName;
 

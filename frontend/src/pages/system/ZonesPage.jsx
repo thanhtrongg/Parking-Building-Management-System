@@ -463,6 +463,7 @@ export default function ZonesPage() {
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
 
   // Filters & Sorting state
   const [keyword, setKeyword] = useState("");
@@ -476,6 +477,16 @@ export default function ZonesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   // Hàm gọi API nạp dữ liệu đồng thời từ server
   const fetchZonesData = async () => {
@@ -546,9 +557,14 @@ export default function ZonesPage() {
     };
   }, []);
 
+  const buildingZones = useMemo(() => {
+    if (!activeBuildingId) return zones;
+    return zones.filter((z) => z.buildingId === activeBuildingId);
+  }, [zones, activeBuildingId]);
+
   // Xử lý bộ lọc tìm kiếm và sắp xếp client-side
   const filteredZones = useMemo(() => {
-    let result = [...zones];
+    let result = [...buildingZones];
 
     if (keyword.trim()) {
       const lowTerm = keyword.toLowerCase();
@@ -569,7 +585,7 @@ export default function ZonesPage() {
     });
 
     return result;
-  }, [zones, keyword, sortBy]);
+  }, [buildingZones, keyword, sortBy]);
 
   // Các hàm đóng mở Modal Form
   const openCreateModal = () => {
@@ -591,10 +607,14 @@ export default function ZonesPage() {
   const handleFormSubmit = async (formData) => {
     try {
       setSubmitting(true);
+      const payload = {
+        ...formData,
+        buildingId: selectedZone?.buildingId || activeBuildingId,
+      };
       if (modalMode === "create") {
         await apiRequest("/api/zones", {
           method: "POST",
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
         setAlert({
           type: "success",
@@ -603,7 +623,7 @@ export default function ZonesPage() {
       } else if (modalMode === "edit") {
         await apiRequest(`/api/zones/${selectedZone.id}`, {
           method: "PUT",
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
         setAlert({
           type: "success",
@@ -649,7 +669,7 @@ export default function ZonesPage() {
   return (
     <AdminLayout>
       <PageHero
-        total={zones.length}
+        total={buildingZones.length}
         filteredTotal={filteredZones.length}
         onAdd={openCreateModal}
       />

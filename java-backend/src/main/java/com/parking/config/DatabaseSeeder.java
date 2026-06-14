@@ -78,6 +78,9 @@ public class DatabaseSeeder implements CommandLineRunner {
             String buildingId = "8b72da1f-50b3-4632-a5e2-632b8ac425f1";
             insertBuilding(buildingId, "Building A - Center", "123 Le Loi Street, District 1, Ho Chi Minh City", "02812345678", LocalTime.of(6, 0), LocalTime.of(23, 30));
 
+            String buildingBId = "9c83eb2a-61c4-5743-b6f3-743c9bd536f2";
+            insertBuilding(buildingBId, "Building B - East Gate", "456 Nguyen Hue Street, District 1, Ho Chi Minh City", "02887654321", LocalTime.of(5, 0), LocalTime.of(23, 0));
+
             log.info("Parking buildings seeded successfully.");
 
             // 4. Seed Pricing Policies
@@ -85,7 +88,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             insertPricing("e5cdba26-c078-4f48-8df8-3e9499f88fa8", buildingId, motoTypeId, new BigDecimal("3000.00"), new BigDecimal("50000.00"), new BigDecimal("100000.00"), new BigDecimal("1.5"), LocalDateTime.of(2026, 6, 1, 0, 0), new BigDecimal("5000.00"), new BigDecimal("5000.00"));
             insertPricing("fe60d9b7-9458-4d62-9870-e2852de35f3d", buildingId, bikeTypeId, new BigDecimal("1000.00"), new BigDecimal("15000.00"), new BigDecimal("50000.00"), new BigDecimal("1.5"), LocalDateTime.of(2026, 6, 1, 0, 0), new BigDecimal("3000.00"), new BigDecimal("2000.00"));
             insertPricing("33fde9df-43d1-4051-982a-c8fb035e796b", buildingId, electricTypeId, new BigDecimal("4000.00"), new BigDecimal("60000.00"), new BigDecimal("120000.00"), new BigDecimal("1.5"), LocalDateTime.of(2026, 6, 1, 0, 0), new BigDecimal("7000.00"), new BigDecimal("6000.00"));
-            insertPricing("89360edb-0e14-45a1-ac6a-a5010355a1db", buildingId, truckTypeId, new BigDecimal("15000.00"), new BigDecimal("200000.00"), new BigDecimal("300000.00"), new BigDecimal("1.5"), LocalDateTime.of(2026, 6, 1, 0, 0), new BigDecimal("30000.00"), new BigDecimal("20000.00"));
+            insertPricing("89360edb-0e14-45a1-ac6a-a5010355a1db", buildingId, truckTypeId, new BigDecimal("15000.00"), new BigDecimal("200000.00"), new BigDecimal("300000.00"), new BigDecimal("1.5"), LocalDateTime.of(2026, 6, 1, 0, 0), new BigDecimal("30000.00"), new BigDecimal("2000.00"));
+
+            insertPricing("cee917e1-4ebf-460c-b728-b6df8c4d5eb0", buildingBId, carTypeId, new BigDecimal("12000.00"), new BigDecimal("180000.00"), new BigDecimal("300000.00"), new BigDecimal("1.5"), LocalDateTime.of(2026, 6, 1, 0, 0), new BigDecimal("25000.00"), new BigDecimal("18000.00"));
+            insertPricing("e5cdba26-c078-4f48-8df8-3e9499f88fa9", buildingBId, motoTypeId, new BigDecimal("4000.00"), new BigDecimal("60000.00"), new BigDecimal("120000.00"), new BigDecimal("1.5"), LocalDateTime.of(2026, 6, 1, 0, 0), new BigDecimal("6000.00"), new BigDecimal("6000.00"));
 
             log.info("Pricing policies seeded successfully.");
 
@@ -101,6 +107,9 @@ public class DatabaseSeeder implements CommandLineRunner {
             insertFloor(floor3Id, buildingId, "Floor 3", 3, 10);
             insertFloor(floor4Id, buildingId, "Floor 4", 4, 5);
             insertFloor(floor5Id, buildingId, "Floor 5", 5, 5);
+
+            String floorB1Id = "1f3c1d9b-a48e-49b0-9b43-982823a0b12f";
+            insertFloor(floorB1Id, buildingBId, "Floor 1", 1, 5);
 
             log.info("Floors seeded successfully.");
 
@@ -123,6 +132,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                 if (i == 5) status = SlotStatus.LOCKED.name();
                 insertSlot(UUID.randomUUID().toString(), floor1Id, "1B-0" + i, status, VehicleTypeEnum.CAR.name(), "B");
             }
+
+            // Building B Floor 1 slots
+            insertSlot(UUID.randomUUID().toString(), floorB1Id, "1B-01", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
+            insertSlot(UUID.randomUUID().toString(), floorB1Id, "1B-02", SlotStatus.AVAILABLE.name(), VehicleTypeEnum.CAR.name(), "A");
 
             // MOTORBIKE Slots (Floor 2)
             String slotB01 = "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b01";
@@ -349,11 +362,12 @@ public class DatabaseSeeder implements CommandLineRunner {
             log.info("Reservations seeded successfully.");
 
             // Seed Zones
-            insertZone("11111111-2222-3333-4444-55555555555a", "Zone A", carTypeId, 10);
-            insertZone("11111111-2222-3333-4444-55555555555b", "Zone B", motoTypeId, 15);
-            insertZone("11111111-2222-3333-4444-55555555555c", "Zone C", bikeTypeId, 10);
-            insertZone("11111111-2222-3333-4444-55555555555d", "Zone D", electricTypeId, 5);
-            insertZone("11111111-2222-3333-4444-55555555555e", "Zone E", truckTypeId, 5);
+            insertZone("11111111-2222-3333-4444-55555555555a", "Zone A", carTypeId, 10, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555b", "Zone B", motoTypeId, 15, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555c", "Zone C", bikeTypeId, 10, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555d", "Zone D", electricTypeId, 5, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555e", "Zone E", truckTypeId, 5, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555f", "Zone A", carTypeId, 5, buildingBId);
 
             log.info("Zones seeded successfully.");
 
@@ -415,8 +429,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                               String licensePlate, String vehicleType, String ticketCode, LocalDateTime checkInTime,
                               LocalDateTime checkOutTime, LocalDateTime parkedAt, String status, String gateIn, String gateOut) {
         String query = "INSERT INTO parking_sessions (id, slot_id, driver_id, staff_in_id, staff_out_id, license_plate, " +
-                       "vehicle_type, ticket_code, check_in_time, check_out_time, parked_at, status, gate_in, gate_out) " +
-                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                       "vehicle_type, ticket_code, check_in_time, check_out_time, parked_at, status, gate_in, gate_out, building_id) " +
+                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         jdbcTemplate.update(query,
                 UUID.fromString(id),
                 slotId != null ? UUID.fromString(slotId) : null,
@@ -431,7 +445,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                 parkedAt,
                 status,
                 gateIn,
-                gateOut);
+                gateOut,
+                UUID.fromString("8b72da1f-50b3-4632-a5e2-632b8ac425f1"));
     }
 
     private void insertPayment(String id, String sessionId, BigDecimal amount, BigDecimal extraFee, String method, String status, LocalDateTime paidAt) {
@@ -467,8 +482,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                 createdAt);
     }
 
-    private void insertZone(String id, String zoneName, String vehicleTypeId, int totalCapacity) {
-        String query = "INSERT INTO zones (id, zone_name, vehicle_type_id, total_capacity) VALUES (?, ?, ?, ?)";
-        jdbcTemplate.update(query, UUID.fromString(id), zoneName, UUID.fromString(vehicleTypeId), totalCapacity);
+    private void insertZone(String id, String zoneName, String vehicleTypeId, int totalCapacity, String buildingId) {
+        String query = "INSERT INTO zones (id, zone_name, vehicle_type_id, total_capacity, building_id) VALUES (?, ?, ?, ?, ?)";
+        jdbcTemplate.update(query, UUID.fromString(id), zoneName, UUID.fromString(vehicleTypeId), totalCapacity, UUID.fromString(buildingId));
     }
 }

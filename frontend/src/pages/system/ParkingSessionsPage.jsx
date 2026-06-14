@@ -497,6 +497,17 @@ export default function ParkingSessionsPage() {
     // Filter State
     const [keyword, setKeyword] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+    useEffect(() => {
+        const handleBuildingChange = (e) => {
+            setActiveBuildingId(e.detail);
+        };
+        window.addEventListener("systemBuildingChanged", handleBuildingChange);
+        return () => {
+            window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+        };
+    }, []);
 
     // Modal State
     const [viewSession, setViewSession] = useState(null);
@@ -537,8 +548,13 @@ export default function ParkingSessionsPage() {
         setSessions(result.data || []);
     });
 
+    const buildingSessions = useMemo(() => {
+        if (!activeBuildingId) return sessions;
+        return sessions.filter((s) => s.buildingId === activeBuildingId);
+    }, [sessions, activeBuildingId]);
+
     const filteredSessions = useMemo(() => {
-        let result = [...sessions];
+        let result = [...buildingSessions];
 
         if (statusFilter !== "all") {
             result = result.filter((s) => s.status === statusFilter);
@@ -563,7 +579,7 @@ export default function ParkingSessionsPage() {
         });
 
         return result;
-    }, [sessions, keyword, statusFilter]);
+    }, [buildingSessions, keyword, statusFilter]);
 
     const handleCheckout = async () => {
         if (!checkoutSession) return;
@@ -605,12 +621,12 @@ export default function ParkingSessionsPage() {
         }
     };
 
-    const activeCount = useMemo(() => sessions.filter((s) => s.status === "ACTIVE").length, [sessions]);
+    const activeCount = useMemo(() => buildingSessions.filter((s) => s.status === "ACTIVE").length, [buildingSessions]);
 
     return (
         <AdminLayout>
             <div className="parking-sessions-page">
-            <PageHero total={sessions.length} activeCount={activeCount} />
+            <PageHero total={buildingSessions.length} activeCount={activeCount} />
 
             <Alert alert={alert} onClose={() => setAlert({ type: "", message: "" })} />
 

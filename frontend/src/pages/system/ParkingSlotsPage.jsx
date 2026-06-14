@@ -148,14 +148,65 @@ function EmptyState({ canManage, onCreate }) {
 }
 
 function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
+  const [buildings, setBuildings] = useState([]);
+  const [floors, setFloors] = useState([]);
+  const [selectedBuildingId, setSelectedBuildingId] = useState("");
+  const [loadingInfrastructure, setLoadingInfrastructure] = useState(false);
+
   const [form, setForm] = useState({
     slotCode: slot?.slotCode || "",
+    floorId: slot?.floorId || "",
     zoneId: getZoneId(slot, zones),
     status: slot?.status || "AVAILABLE",
     distanceToGate: getDistance(slot),
   });
 
   const isEdit = mode === "edit";
+
+  // Fetch buildings on mount
+  useEffect(() => {
+    async function loadBuildings() {
+      try {
+        setLoadingInfrastructure(true);
+        const res = await apiRequest("/api/buildings");
+        const buildingsList = res.data || [];
+        setBuildings(buildingsList);
+
+        // If editing, try to pre-select the building based on the slot's floor
+        if (isEdit && slot?.floorId) {
+          const floorRes = await apiRequest(`/api/floors/${slot.floorId}`);
+          if (floorRes.data && floorRes.data.buildingId) {
+            setSelectedBuildingId(floorRes.data.buildingId);
+          }
+        } else if (buildingsList.length > 0) {
+          setSelectedBuildingId(buildingsList[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to load buildings in SlotFormModal:", err);
+      } finally {
+        setLoadingInfrastructure(false);
+      }
+    }
+    loadBuildings();
+  }, [isEdit, slot]);
+
+  // Fetch floors when selected building changes
+  useEffect(() => {
+    if (!selectedBuildingId) {
+      setFloors([]);
+      return;
+    }
+
+    async function loadFloors() {
+      try {
+        const res = await apiRequest(`/api/floors/building/${selectedBuildingId}`);
+        setFloors(res.data || []);
+      } catch (err) {
+        console.error("Failed to load floors for building:", err);
+      }
+    }
+    loadFloors();
+  }, [selectedBuildingId]);
 
   const updateField = (field, value) => {
     setForm((current) => ({
@@ -166,9 +217,11 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!form.floorId) return;
 
     onSubmit({
       slotCode: form.slotCode.trim(),
+      floorId: form.floorId,
       zoneId: form.zoneId,
       status: form.status,
       distanceToGate: Number(form.distanceToGate || 0),
@@ -177,8 +230,8 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-md">
-      <div className="w-full max-w-xl overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/20">
-        <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 px-6 py-6 text-white">
+      <div className="w-full max-w-xl overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/20 dark:bg-[#11100c] dark:border dark:border-white/10">
+        <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 px-6 py-6 text-white dark:from-[#070705] dark:via-[#11100c] dark:to-[#1a1914] dark:border-white/5">
           <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-500/30 blur-3xl" />
 
           <div className="relative flex items-start justify-between gap-4">
@@ -190,14 +243,14 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
                 {isEdit ? "Edit Slot" : "Create New Slot"}
               </h3>
               <p className="mt-1 text-sm text-slate-300">
-                Connect slot data with zone, status and gate distance.
+                Connect slot data with floor, building, zone, status, and gate distance.
               </p>
             </div>
 
             <button
               onClick={onClose}
               type="button"
-              className="rounded-2xl p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+              className="rounded-2xl p-2 text-slate-300 transition hover:bg-white/10 hover:text-white dark:hover:bg-white/5"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
@@ -206,7 +259,7 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
 
         <form className="space-y-5 p-6" onSubmit={handleSubmit}>
           <div>
-            <label className="mb-2 block text-sm font-bold text-slate-700">
+            <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
               Slot Code
             </label>
             <input
@@ -215,19 +268,61 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
                 updateField("slotCode", event.target.value)
               }
               placeholder="Example: A-D1-001"
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
               required
             />
           </div>
 
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
+                Building
+              </label>
+              <select
+                value={selectedBuildingId}
+                onChange={(event) => setSelectedBuildingId(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
+                required
+                disabled={isEdit || loadingInfrastructure}
+              >
+                <option value="">Select building</option>
+                {buildings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
+                Floor
+              </label>
+              <select
+                value={form.floorId}
+                onChange={(event) => updateField("floorId", event.target.value)}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
+                required
+                disabled={isEdit}
+              >
+                <option value="">Select floor</option>
+                {floors.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.floorName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div>
-            <label className="mb-2 block text-sm font-bold text-slate-700">
+            <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
               Parking Zone
             </label>
             <select
               value={form.zoneId}
               onChange={(event) => updateField("zoneId", event.target.value)}
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
               required
             >
               <option value="">Select zone</option>
@@ -241,13 +336,13 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-700">
+              <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
                 Status
               </label>
               <select
                 value={form.status}
                 onChange={(event) => updateField("status", event.target.value)}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
               >
                 {SLOT_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -258,7 +353,7 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-700">
+              <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
                 Distance To Gate
               </label>
               <div className="flex items-center gap-2">
@@ -269,21 +364,21 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
                   }
                   type="number"
                   min="0"
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
                 />
-                <span className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-500">
+                <span className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-500 dark:bg-white/10 dark:text-[#b9af9d]">
                   m
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+          <div className="flex justify-end gap-3 border-t border-slate-100 pt-5 dark:border-white/5">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+              className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60 dark:border-white/10 dark:text-[#b9af9d] dark:hover:bg-white/5"
             >
               Cancel
             </button>
@@ -377,27 +472,50 @@ export default function ParkingSlotsPage() {
 
   useAutoRefresh(fetchData);
 
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
+
+  const filteredSlotsList = useMemo(() => {
+    if (!activeBuildingId) return parkingSlots;
+    return parkingSlots.filter(slot => slot.buildingId === activeBuildingId);
+  }, [parkingSlots, activeBuildingId]);
+
+  const filteredZonesList = useMemo(() => {
+    if (!activeBuildingId) return zones;
+    return zones.filter(zone => zone.buildingId === activeBuildingId);
+  }, [zones, activeBuildingId]);
+
   const zoneMap = useMemo(() => {
-    return zones.reduce((map, zone) => {
+    return filteredZonesList.reduce((map, zone) => {
       map[zone.id] = zone.zoneName || zone.zone_name;
       return map;
     }, {});
-  }, [zones]);
+  }, [filteredZonesList]);
+
   const summary = useMemo(() => {
     const countByStatus = (status) =>
-      parkingSlots.filter((slot) => slot.status === status).length;
+      filteredSlotsList.filter((slot) => slot.status === status).length;
 
     return {
-      total: parkingSlots.length,
+      total: filteredSlotsList.length,
       available: countByStatus("AVAILABLE"),
       occupied: countByStatus("OCCUPIED"),
       reserved: countByStatus("RESERVED"),
       maintenance: countByStatus("MAINTENANCE"),
     };
-  }, [parkingSlots]);
+  }, [filteredSlotsList]);
 
   const filteredSlots = useMemo(() => {
-    return parkingSlots.filter((slot) => {
+    return filteredSlotsList.filter((slot) => {
       const slotNumber = getSlotNumber(slot);
       const zoneName = slot.zone || "";
       const vehicleTypeName = slot.vehicleTypeName || slot.vehicleType?.typeName || "";
@@ -410,11 +528,11 @@ export default function ParkingSlotsPage() {
         selectedStatus === "ALL" || slot.status === selectedStatus;
 
       const matchesZone =
-        selectedZone === "ALL" || getZoneId(slot, zones) === selectedZone;
+        selectedZone === "ALL" || getZoneId(slot, filteredZonesList) === selectedZone;
 
       return matchesKeyword && matchesStatus && matchesZone;
     });
-  }, [parkingSlots, keyword, selectedStatus, selectedZone, zones]);
+  }, [filteredSlotsList, keyword, selectedStatus, selectedZone, filteredZonesList]);
 
   const showToast = (message) => {
     setToast(message);
@@ -670,7 +788,7 @@ export default function ParkingSlotsPage() {
             </span>{" "}
             of{" "}
             <span className="font-black text-slate-950">
-              {parkingSlots.length}
+              {filteredSlotsList.length}
             </span>{" "}
             slots
           </p>

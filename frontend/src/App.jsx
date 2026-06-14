@@ -17,12 +17,14 @@ import WalkInParkingPage from "./pages/system/WalkInParkingPage";
 import ParkingSlotsPage from "./pages/system/ParkingSlotsPage";
 import PaymentsPage from "./pages/system/PaymentsPage";
 import PricingPoliciesPage from "./pages/system/PricingPoliciesPage";
+import ParkingRulesPage from "./pages/system/ParkingRulesPage";
 import ReservationsPage from "./pages/system/ReservationsPage";
 import QrCheckInPage from "./pages/system/QrCheckInPage";
 import FeedbacksPage from "./pages/system/FeedbacksPage";
 import AdminUsersPage from "./pages/system/UsersPage";
 import AdminVehiclesPage from "./pages/system/VehiclesPage";
 import ZonesPage from "./pages/system/ZonesPage";
+import BuildingsPage from "./pages/system/BuildingsPage";
 import UserDashboardPage from "./pages/user/DashboardPage";
 import UserBookingHistoryPage from "./pages/user/BookingHistoryPage";
 import UserFeedbackPage from "./pages/user/FeedbackPage";
@@ -270,6 +272,24 @@ function App() {
         />
 
         {/* ADMIN / MANAGER only routes */}
+        <Route
+          path="/parking-rules"
+          element={
+            <ProtectedRoute allowedRoles={managementRoles}>
+              <ParkingRulesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin-buildings"
+          element={
+            <ProtectedRoute allowedRoles={managementRoles}>
+              <BuildingsPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/admin-zones"
           element={

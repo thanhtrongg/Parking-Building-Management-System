@@ -76,7 +76,7 @@ function PageHeader() {
   );
 }
 
-function ToggleRow({ icon, label, checked }) {
+function ToggleRow({ icon, label, checked, defaultChecked, onChange }) {
   return (
     <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100">
       <div className="flex items-center gap-3">
@@ -86,7 +86,13 @@ function ToggleRow({ icon, label, checked }) {
         <span className="text-sm font-black text-slate-700">{label}</span>
       </div>
       <label className="relative inline-flex cursor-pointer items-center">
-        <input className="peer sr-only" defaultChecked={checked} type="checkbox" />
+        <input 
+          className="peer sr-only" 
+          checked={checked} 
+          defaultChecked={defaultChecked} 
+          onChange={onChange} 
+          type="checkbox" 
+        />
         <span className="user-setting-switch h-6 w-11 rounded-full bg-slate-300 transition after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition peer-checked:bg-blue-600 peer-checked:after:translate-x-5" />
       </label>
     </div>
@@ -98,6 +104,28 @@ export default function UserSettingsPage() {
   const [form, setForm] = useState(() => getInitialForm(user));
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
+  const [systemTheme, setSystemTheme] = useState(() => {
+    return localStorage.getItem("systemTheme") || "light";
+  });
+
+  const handleThemeToggle = async (e) => {
+    const nextTheme = e.target.checked ? "dark" : "light";
+    localStorage.setItem("systemTheme", nextTheme);
+    localStorage.setItem("publicTheme", nextTheme);
+    setSystemTheme(nextTheme);
+    try {
+      const response = await apiRequest("/api/users/profile/theme", {
+        method: "PATCH",
+        body: JSON.stringify({ theme: nextTheme }),
+      });
+      if (response && response.success && response.data) {
+        localStorage.setItem("user", JSON.stringify(response.data));
+      }
+    } catch (error) {
+      console.error("Failed to save theme setting to database:", error);
+    }
+    window.location.reload();
+  };
   const [showPasswordForm, setShowPasswordForm] =
     useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -338,9 +366,10 @@ export default function UserSettingsPage() {
               Account Settings
             </h2>
             <div className="mt-4 space-y-3">
-              <ToggleRow checked icon="mail" label="Email notifications" />
-              <ToggleRow icon="sms" label="SMS reminders" />
-              <ToggleRow checked icon="calendar_month" label="Booking reminders" />
+              <ToggleRow checked={systemTheme === "dark"} icon="dark_mode" label="Dark Theme Mode" onChange={handleThemeToggle} />
+              <ToggleRow defaultChecked icon="mail" label="Email notifications" />
+              <ToggleRow defaultChecked={false} icon="sms" label="SMS reminders" />
+              <ToggleRow defaultChecked icon="calendar_month" label="Booking reminders" />
             </div>
           </section>
 

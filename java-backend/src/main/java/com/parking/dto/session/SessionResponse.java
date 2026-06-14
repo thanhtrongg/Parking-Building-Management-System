@@ -36,5 +36,7 @@ public class SessionResponse {
     private String staffOutName;
     private java.math.BigDecimal totalFee;
     private com.parking.dto.payment.PaymentResponse payment;
+    private UUID buildingId;
+    private String buildingName;
 }
 

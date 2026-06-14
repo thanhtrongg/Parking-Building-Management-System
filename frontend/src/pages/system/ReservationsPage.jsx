@@ -241,6 +241,7 @@ function normalizeSlot(slot) {
     status: slot.status || "UNKNOWN",
     zoneId: slot.zoneId || slot.zone_id || zone.id || "",
     zoneName: zone.zoneName || zone.zone_name || slot.zoneName || "No zone",
+    buildingId: slot.buildingId || slot.building_id || "",
     vehicleTypeId:
       slot.vehicleTypeId ||
       slot.vehicle_type_id ||
@@ -360,6 +361,7 @@ function normalizeReservation(reservation) {
       "",
     slotName,
     zoneName,
+    buildingId: reservation.buildingId || reservation.building_id || "",
     vehicleTypeId:
       reservation.vehicleTypeId ||
       reservation.vehicle_type_id ||
@@ -1297,6 +1299,7 @@ export default function ReservationsPage() {
   const [reservations, setReservations] = useState([]);
   const [parkingSlots, setParkingSlots] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -1314,6 +1317,16 @@ export default function ReservationsPage() {
 
   const currentUserRole = useMemo(() => getStoredUserRole(), []);
   const isStaff = currentUserRole === "STAFF";
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -1359,20 +1372,30 @@ export default function ReservationsPage() {
     setParkingSlots(getApiData(slotResult).map(normalizeSlot));
   });
 
+  const buildingReservations = useMemo(() => {
+    if (!activeBuildingId) return reservations;
+    return reservations.filter((r) => r.buildingId === activeBuildingId);
+  }, [reservations, activeBuildingId]);
+
+  const buildingParkingSlots = useMemo(() => {
+    if (!activeBuildingId) return parkingSlots;
+    return parkingSlots.filter((s) => s.buildingId === activeBuildingId);
+  }, [parkingSlots, activeBuildingId]);
+
   const filterVehicleTypes = useMemo(() => {
-    return [...new Set(reservations.map((item) => item.vehicleTypeName))]
+    return [...new Set(buildingReservations.map((item) => item.vehicleTypeName))]
       .filter(Boolean)
       .sort();
-  }, [reservations]);
+  }, [buildingReservations]);
 
   const zones = useMemo(() => {
-    return [...new Set(reservations.map((item) => item.zoneName))]
+    return [...new Set(buildingReservations.map((item) => item.zoneName))]
       .filter(Boolean)
       .sort();
-  }, [reservations]);
+  }, [buildingReservations]);
 
   const filteredReservations = useMemo(() => {
-    return reservations.filter((reservation) => {
+    return buildingReservations.filter((reservation) => {
       const searchText = `
         ${reservation.id || ""}
         ${reservation.displayId || ""}
@@ -1402,7 +1425,7 @@ export default function ReservationsPage() {
       );
     });
   }, [
-    reservations,
+    buildingReservations,
     keyword,
     selectedStatus,
     selectedVehicleType,
@@ -1620,9 +1643,9 @@ export default function ReservationsPage() {
       <Alert type="error" message={error} onClose={() => setError("")} />
       <Alert type="success" message={notice} onClose={() => setNotice("")} />
 
-      <StatsGrid reservations={reservations} />
+      <StatsGrid reservations={buildingReservations} />
 
-      <ReservationInsight reservations={reservations} />
+      <ReservationInsight reservations={buildingReservations} />
 
       <FilterToolbar
         keyword={keyword}
@@ -1653,7 +1676,7 @@ export default function ReservationsPage() {
           mode={modalMode}
           form={form}
           setForm={setForm}
-          slots={parkingSlots}
+          slots={buildingParkingSlots}
           vehicleTypes={vehicleTypes}
           submitting={submitting}
           isStaffEdit={modalMode === "edit" && isStaff}

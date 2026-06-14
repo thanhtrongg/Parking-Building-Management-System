@@ -9,6 +9,7 @@ import com.parking.entity.VehicleType;
 import com.parking.enums.VehicleTypeEnum;
 import com.parking.repository.PricingRepository;
 import com.parking.repository.VehicleTypeRepository;
+import com.parking.repository.ParkingBuildingRepository;
 import com.parking.dto.session.CheckInRequest;
 import com.parking.dto.session.SessionResponse;
 import com.parking.entity.User;
@@ -67,6 +68,9 @@ public class ParkingSessionServiceImplTest {
     private PaymentRepository paymentRepository;
 
     @Mock
+    private ParkingBuildingRepository buildingRepository;
+
+    @Mock
     private AuditService auditService;
 
     @InjectMocks
@@ -74,16 +78,18 @@ public class ParkingSessionServiceImplTest {
 
     private ParkingSession session;
     private UUID buildingId;
+    private ParkingBuilding building;
 
     @BeforeEach
     void setUp() {
         buildingId = UUID.randomUUID();
-        ParkingBuilding building = ParkingBuilding.builder().id(buildingId).name("Building A").build();
+        building = ParkingBuilding.builder().id(buildingId).name("Building A").build();
         Floor floor = Floor.builder().building(building).build();
         ParkingSlot slot = ParkingSlot.builder().floor(floor).build();
 
         session = ParkingSession.builder()
                 .slot(slot)
+                .building(building)
                 .vehicleType(VehicleTypeEnum.CAR)
                 .build();
 
@@ -92,6 +98,7 @@ public class ParkingSessionServiceImplTest {
         vehicleType.setName("CAR");
 
         lenient().when(vehicleTypeRepository.findByName("CAR")).thenReturn(Optional.of(vehicleType));
+        lenient().when(buildingRepository.findById(buildingId)).thenReturn(Optional.of(building));
     }
 
     @Test
@@ -220,6 +227,7 @@ public class ParkingSessionServiceImplTest {
     @DisplayName("Check-in success with optional null slot ID")
     void testCheckIn_OptionalNullSlot() {
         CheckInRequest request = new CheckInRequest();
+        request.setBuildingId(buildingId);
         request.setLicensePlate("30A-99999");
         request.setVehicleType(VehicleTypeEnum.CAR);
         request.setGateIn("Gate A");
@@ -241,9 +249,16 @@ public class ParkingSessionServiceImplTest {
     @DisplayName("Check-in success with valid slot ID")
     void testCheckIn_WithSlot() {
         UUID slotId = UUID.randomUUID();
-        ParkingSlot slot = ParkingSlot.builder().id(slotId).status(SlotStatus.AVAILABLE).vehicleType(VehicleTypeEnum.CAR).build();
+        ParkingSlot slot = ParkingSlot.builder()
+                .id(slotId)
+                .status(SlotStatus.AVAILABLE)
+                .vehicleType(VehicleTypeEnum.CAR)
+                .floor(Floor.builder().building(building).build())
+                .slotCode("1A-01")
+                .build();
         
         CheckInRequest request = new CheckInRequest();
+        request.setBuildingId(buildingId);
         request.setLicensePlate("30A-99999");
         request.setVehicleType(VehicleTypeEnum.CAR);
         request.setSlotId(slotId);
@@ -431,6 +446,7 @@ public class ParkingSessionServiceImplTest {
     @DisplayName("Check in - vehicle already has active session - throws BadRequestException")
     void testCheckIn_DuplicateActiveSession_ThrowsBadRequestException() {
         CheckInRequest request = new CheckInRequest();
+        request.setBuildingId(buildingId);
         request.setLicensePlate("30A-99999");
         request.setVehicleType(VehicleTypeEnum.CAR);
         request.setGateIn("Gate A");

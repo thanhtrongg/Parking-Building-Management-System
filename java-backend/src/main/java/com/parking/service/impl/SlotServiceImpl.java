@@ -290,6 +290,7 @@ public class SlotServiceImpl implements SlotService {
                 .status(slot.getStatus())
                 .vehicleType(slot.getVehicleType())
                 .zone(slot.getZone())
+                .buildingId(slot.getFloor().getBuilding() != null ? slot.getFloor().getBuilding().getId() : null)
                 .build();
     }
 }

@@ -58,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/slots/floor/{floorId}", "/slots/floor/{floorId}/available").permitAll()
                         .requestMatchers("/sessions/public/lookup").permitAll()
                         .requestMatchers("/payments/vnpay/create-guest").permitAll()
+                        .requestMatchers("/rules/building/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

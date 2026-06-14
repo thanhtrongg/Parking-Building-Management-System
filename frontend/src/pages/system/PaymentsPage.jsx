@@ -118,6 +118,7 @@ function normalizePayment(payment) {
     sepayReferenceCode: payment.sepayReferenceCode,
     reservationId: payment.reservationId,
     parkingSessionId: payment.parkingSessionId,
+    buildingId: payment.buildingId || payment.building_id || "",
 
     ticketCode:
       session?.ticketCode ||
@@ -819,6 +820,17 @@ export default function PaymentsPage() {
   const [alert, setAlert] = useState("");
   const [detailPayment, setDetailPayment] = useState(null);
   const [printPayment, setPrintPayment] = useState(null);
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   const fetchPayments = async () => {
     try {
@@ -876,8 +888,13 @@ export default function PaymentsPage() {
     }
   };
 
+  const buildingPayments = useMemo(() => {
+    if (!activeBuildingId) return payments;
+    return payments.filter((p) => p.buildingId === activeBuildingId);
+  }, [payments, activeBuildingId]);
+
   const filteredPayments = useMemo(() => {
-    return payments.filter((payment) => {
+    return buildingPayments.filter((payment) => {
       const data = normalizePayment(payment);
 
       const searchText = `
@@ -901,7 +918,7 @@ export default function PaymentsPage() {
 
       return matchesKeyword && matchesStatus && matchesMethod;
     });
-  }, [payments, keyword, selectedStatus, selectedMethod]);
+  }, [buildingPayments, keyword, selectedStatus, selectedMethod]);
 
   const resetFilters = () => {
     setKeyword("");
@@ -929,7 +946,7 @@ export default function PaymentsPage() {
           {alert}
         </div>
       )}
-      <OverviewGrid payments={payments} />
+      <OverviewGrid payments={buildingPayments} />
 
       <FilterToolbar
         keyword={keyword}
@@ -951,7 +968,7 @@ export default function PaymentsPage() {
         onView={setDetailPayment}
         onPrint={handlePrintReceipt}
       />
-      <MethodBreakdown payments={payments} />
+      <MethodBreakdown payments={buildingPayments} />
       <PaymentDetailModal
         payment={detailPayment}
         onClose={() => setDetailPayment(null)}

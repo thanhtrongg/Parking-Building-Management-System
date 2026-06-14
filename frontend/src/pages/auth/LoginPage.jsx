@@ -33,10 +33,11 @@ function AuthInput({
   placeholder,
   rightSlot,
   required = true,
+  isLight = false,
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold text-[#efe4cf]">
+      <label className={["mb-2 block text-sm font-semibold", isLight ? "text-slate-700" : "text-[#efe4cf]"].join(" ")}>
         {label}
       </label>
       <div className="relative">
@@ -49,7 +50,12 @@ function AuthInput({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           required={required}
-          className="h-12 w-full rounded-lg border border-white/10 bg-white/[0.055] pl-11 pr-12 text-sm text-[#fbf4e7] outline-none transition duration-300 placeholder:text-[#746b5e] focus:border-[#d7b46a]/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-[#d7b46a]/10"
+          className={[
+            "h-12 w-full rounded-lg border pl-11 pr-12 text-sm outline-none transition duration-300 placeholder:text-[#746b5e] focus:border-[#d7b46a]/60 focus:bg-[#d7b46a]/5 focus:ring-4 focus:ring-[#d7b46a]/10",
+            isLight
+              ? "border-slate-200 bg-white text-slate-900 focus:bg-slate-50"
+              : "border-white/10 bg-white/[0.055] text-[#fbf4e7] focus:bg-white/[0.08]"
+          ].join(" ")}
         />
         {rightSlot}
       </div>
@@ -59,11 +65,28 @@ function AuthInput({
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("admin@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem("systemTheme") || "light";
+    } catch {
+      return "light";
+    }
+  });
+  const isLight = theme === "light";
+
+  const handleToggleTheme = () => {
+    setTheme((current) => {
+      const nextTheme = current === "light" ? "dark" : "light";
+      localStorage.setItem("systemTheme", nextTheme);
+      localStorage.setItem("publicTheme", nextTheme);
+      return nextTheme;
+    });
+  };
 
 
   const handleLogin = async (e) => {
@@ -98,6 +121,10 @@ export default function LoginPage() {
 
       localStorage.setItem("accessToken", result.data.accessToken);
       localStorage.setItem("user", JSON.stringify(user));
+      if (user && user.theme) {
+        localStorage.setItem("systemTheme", user.theme);
+        localStorage.setItem("publicTheme", user.theme);
+      }
       localStorage.setItem("rememberMe", String(rememberMe));
       localStorage.setItem(
         "authExpiresAt",
@@ -122,7 +149,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#070705] px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] text-[#fbf4e7] md:px-8">
+    <div className={[
+      "relative min-h-[100dvh] overflow-hidden px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] md:px-8 transition-colors duration-300",
+      isLight ? "bg-[#fcfaf6] text-slate-900" : "bg-[#070705] text-[#fbf4e7]"
+    ].join(" ")}>
       <div className="pointer-events-none fixed inset-0 opacity-[0.035] [background-image:radial-gradient(circle_at_1px_1px,#ffffff_1px,transparent_0)] [background-size:24px_24px]" />
 
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between">
@@ -131,7 +161,7 @@ export default function LoginPage() {
             P
           </span>
           <span>
-            <span className="block text-sm font-semibold tracking-[0.12em]">
+            <span className={["block text-sm font-semibold tracking-[0.12em]", isLight ? "text-slate-900" : "text-white"].join(" ")}>
               PARKMASTER
             </span>
             <span className="block text-[10px] tracking-[0.22em] text-[#d7b46a]/80">
@@ -139,36 +169,59 @@ export default function LoginPage() {
             </span>
           </span>
         </Link>
-        <Link
-          to="/signup"
-          className={`hidden rounded-lg bg-white/[0.055] px-4 py-2.5 text-xs font-medium text-[#ddd4c4] ring-1 ring-white/12 transition duration-300 hover:bg-white/[0.09] hover:text-white md:inline-flex ${focusRing}`}
-        >
-          Create account
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleToggleTheme}
+            aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"}
+            className={["inline-flex h-10 w-10 items-center justify-center rounded-lg ring-1 transition duration-300", isLight ? "bg-slate-100 text-slate-700 ring-slate-200 hover:bg-slate-200" : "bg-white/[0.055] text-[#f7efe0] ring-white/10 hover:bg-white/[0.09]"].join(" ")}
+          >
+            <span className="material-symbols-outlined text-[20px] leading-none">
+              {isLight ? "dark_mode" : "light_mode"}
+            </span>
+          </button>
+          <Link
+            to="/signup"
+            className={["hidden rounded-lg px-4 py-2.5 text-xs font-medium ring-1 transition duration-300 md:inline-flex", isLight ? "bg-slate-100 text-slate-700 ring-slate-200 hover:bg-slate-200 hover:text-slate-900" : "bg-white/[0.055] text-[#ddd4c4] ring-white/12 hover:bg-white/[0.09] hover:text-white"].join(" ")}
+          >
+            Create account
+          </Link>
+        </div>
       </header>
 
       <main className="relative z-10 mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-center gap-8 py-10 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="hidden lg:block">
-          <div className="rounded-2xl bg-white/[0.035] p-1 ring-1 ring-white/10">
-            <div className="relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b]">
+          <div className={[
+            "rounded-2xl p-1 ring-1",
+            isLight ? "bg-slate-100 ring-slate-200/60" : "bg-white/[0.035] ring-white/10"
+          ].join(" ")}>
+            <div className={["relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)]", isLight ? "bg-slate-50" : "bg-[#100f0b]"].join(" ")}>
               <img
                 src={authImage}
                 alt="Underground parking garage with cinematic lighting"
-                className="absolute inset-0 h-full w-full object-cover opacity-62 saturate-[0.78]"
+                className={["absolute inset-0 h-full w-full object-cover saturate-[0.78]", isLight ? "opacity-90" : "opacity-62"].join(" ")}
               />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,5,0.12),rgba(6,6,5,0.86))]" />
+              <div className={[
+                "absolute inset-0",
+                isLight
+                  ? "bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(252,250,246,0.38))]"
+                  : "bg-[linear-gradient(180deg,rgba(6,6,5,0.12),rgba(6,6,5,0.86))]"
+              ].join(" ")} />
               <div className="absolute inset-x-0 bottom-0 p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
                   Secure building access
                 </p>
-                <h1 className="mt-4 max-w-xl text-4xl font-bold leading-tight tracking-[-0.025em] text-[#fbf4e7]">
+                <h1 className={["mt-4 max-w-xl text-4xl font-bold leading-tight tracking-[-0.025em]", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
                   Sign in to manage parking operations.
                 </h1>
                 <div className="mt-8 grid grid-cols-3 gap-3">
                   {["Slots", "Sessions", "Payments"].map((item) => (
                     <div
                       key={item}
-                      className="rounded-lg bg-[#080806]/72 p-4 ring-1 ring-white/10"
+                      className={[
+                        "rounded-lg p-4 ring-1",
+                        isLight ? "bg-white/85 ring-slate-200/60" : "bg-[#080806]/72 ring-white/10"
+                      ].join(" ")}
                     >
                       <p className="text-xs font-medium tracking-[0.18em] text-[#d7b46a]/80">
                         {item.toUpperCase()}
@@ -181,15 +234,15 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
-          <div className="rounded-[calc(1rem-0.25rem)] bg-[#11100c] p-6 sm:p-8 md:p-10">
+        <section className={["rounded-2xl p-1 ring-1", isLight ? "bg-slate-100 ring-slate-200" : "bg-white/[0.04] ring-white/10"].join(" ")}>
+          <div className={["rounded-[calc(1rem-0.25rem)] p-6 sm:p-8 md:p-10", isLight ? "bg-white" : "bg-[#11100c]"].join(" ")}>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
               Welcome back
             </p>
-            <h2 className="mt-4 text-3xl font-bold leading-tight tracking-[-0.025em] text-[#fbf4e7] md:text-4xl">
+            <h2 className={["mt-4 text-3xl font-bold leading-tight tracking-[-0.025em]", isLight ? "text-slate-900" : "text-[#fbf4e7]"].join(" ")}>
               Sign in to your account.
             </h2>
-            <p className="mt-4 max-w-md text-sm leading-7 text-[#b9af9d]">
+            <p className={["mt-4 max-w-md text-sm leading-7", isLight ? "text-slate-500" : "text-[#b9af9d]"].join(" ")}>
               Continue to reservations, slots, sessions, payments, and building
               operations.
             </p>
@@ -207,7 +260,8 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={setEmail}
-                placeholder="admin@gmail.com"
+                placeholder="Enter your email"
+                isLight={isLight}
               />
 
               <AuthInput
@@ -217,6 +271,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={setPassword}
                 placeholder="Enter your password"
+                isLight={isLight}
                 rightSlot={
                   <button
                     type="button"
@@ -231,13 +286,13 @@ export default function LoginPage() {
               />
 
               <div className="flex items-center justify-between">
-                <label className="flex cursor-pointer items-center gap-3 text-sm text-[#b9af9d]">
+                <label className={["flex cursor-pointer items-center gap-3 text-sm", isLight ? "text-slate-600" : "text-[#b9af9d]"].join(" ")}>
                   <input
                     id="remember"
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(event) => setRememberMe(event.target.checked)}
-                    className="h-4 w-4 rounded border-white/20 bg-white/[0.06] accent-[#d7b46a]"
+                    className={["h-4 w-4 rounded accent-[#d7b46a]", isLight ? "border-slate-300 bg-slate-50" : "border-white/20 bg-white/[0.06]"].join(" ")}
                   />
                   Remember me
                 </label>
@@ -268,12 +323,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 rounded-lg bg-white/[0.045] p-4 text-sm ring-1 ring-white/10">
-              <p className="font-semibold text-[#efe4cf]">Test account</p>
-              <p className="mt-1 text-[#9b917f]">admin@gmail.com / 123456</p>
-            </div>
-
-            <p className="mt-6 text-center text-sm text-[#9b917f]">
+            <p className={["mt-6 text-center text-sm", isLight ? "text-slate-400" : "text-[#9b917f]"].join(" ")}>
               Do not have an account?{" "}
               <Link
                 to="/signup"

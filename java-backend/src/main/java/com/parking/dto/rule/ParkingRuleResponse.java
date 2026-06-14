@@ -1,6 +1,5 @@
-package com.parking.dto.user;
+package com.parking.dto.rule;
 
-import com.parking.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,14 +12,14 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponse {
-
+public class ParkingRuleResponse {
     private UUID id;
-    private String email;
-    private String fullName;
-    private String phone;
-    private UserRole role;
-    private boolean active;
+    private UUID buildingId;
+    private String buildingName;
+    private String title;
+    private String content;
+    private int displayOrder;
+    private boolean isActive;
     private LocalDateTime createdAt;
-    private String theme;
+    private LocalDateTime updatedAt;
 }

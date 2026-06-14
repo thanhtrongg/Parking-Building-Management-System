@@ -120,6 +120,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .slotCode(slot != null ? slot.getSlotCode() : null)
                 .checkInTime(session != null ? session.getCheckInTime() : null)
                 .checkOutTime(session != null ? session.getCheckOutTime() : null)
+                .buildingId(session != null && session.getBuilding() != null ? session.getBuilding().getId() : null)
                 .build();
     }
 }

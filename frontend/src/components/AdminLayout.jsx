@@ -1,6 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FeedbackNotifications from "./FeedbackNotifications";
+import { apiRequest } from "../services/api";
 
 const navItems = [
   {
@@ -8,6 +9,12 @@ const navItems = [
     label: "Dashboard",
     path: "/dashboard",
     roles: ["ADMIN", "MANAGER", "STAFF"],
+  },
+  {
+    icon: "apartment",
+    label: "Buildings",
+    path: "/admin-buildings",
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     icon: "grid_view",
@@ -63,6 +70,12 @@ const navItems = [
     label: "Pricing Policies",
     path: "/pricing-policies",
     roles: ["ADMIN", "MANAGER", "STAFF"],
+  },
+  {
+    icon: "policy",
+    label: "Parking Rules",
+    path: "/parking-rules",
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     icon: "forum",
@@ -251,6 +264,43 @@ function Header({ theme, onToggleTheme, onLogout, onToggleMenu }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
+  const [buildings, setBuildings] = useState([]);
+  const [selectedBuildingId, setSelectedBuildingId] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBuildings = async () => {
+      try {
+        const res = await apiRequest("buildings");
+        if (!isMounted) return;
+        const list = res.data || [];
+        setBuildings(list);
+        if (list.length > 0) {
+          const stored = localStorage.getItem("activeSystemBuildingId");
+          const found = list.find((b) => b.id === stored);
+          const initialId = found ? found.id : list[0].id;
+          setSelectedBuildingId(initialId);
+          localStorage.setItem("activeSystemBuildingId", initialId);
+          // Dispatch initial event
+          window.dispatchEvent(new CustomEvent("systemBuildingChanged", { detail: initialId }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch buildings", error);
+      }
+    };
+    fetchBuildings();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleBuildingChange = (e) => {
+    const val = e.target.value;
+    setSelectedBuildingId(val);
+    localStorage.setItem("activeSystemBuildingId", val);
+    window.dispatchEvent(new CustomEvent("systemBuildingChanged", { detail: val }));
+  };
+
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -284,6 +334,27 @@ function Header({ theme, onToggleTheme, onLogout, onToggleMenu }) {
       </div>
 
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        {buildings.length > 0 && (
+          <div className="relative flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm transition hover:border-blue-200">
+            <span className="material-symbols-outlined text-[19px] text-slate-500">apartment</span>
+            <select
+              value={selectedBuildingId}
+              onChange={handleBuildingChange}
+              className="bg-transparent pr-4 font-['Inter'] text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none"
+              style={{ background: "none", border: "none" }}
+            >
+              {buildings.map((b) => (
+                <option key={b.id} value={b.id} className="text-slate-950 font-semibold bg-white text-xs">
+                  {b.name}
+                </option>
+              ))}
+            </select>
+            <span className="material-symbols-outlined pointer-events-none absolute right-1.5 text-base text-slate-400">
+              unfold_more
+            </span>
+          </div>
+        )}
+
         <FeedbackNotifications audience="system" />
 
         <button

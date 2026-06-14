@@ -109,6 +109,7 @@ public class AdminServiceImpl implements AdminService {
                 .role(user.getRole())
                 .active(user.isActive())
                 .createdAt(user.getCreatedAt())
+                .theme(user.getTheme())
                 .build();
     }
 }

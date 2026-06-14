@@ -39,6 +39,9 @@ export const API_URL = getBrowserApiUrl(import.meta.env.VITE_API_URL);
 
 const refineVehicleTypeName = (typeStr) => {
   if (!typeStr) return "N/A";
+  if (typeof typeStr === "object") {
+    typeStr = typeStr.typeName || typeStr.name || "N/A";
+  }
   const str = String(typeStr).toUpperCase().trim();
   const mapping = {
     "CAR": "Car",
@@ -144,6 +147,74 @@ export const apiRequest = async (path, options = {}) => {
           };
           cleanOptions.body = JSON.stringify(backendFeedback);
         }
+      } else if ((basePath === "parking-sessions/check-in" || basePath === "sessions/check-in" || basePath === "sessions/active/check-in") && method === "POST") {
+        const slotId = bodyObj.parkingSlotId || bodyObj.assignedSlotId || bodyObj.slotId || null;
+        let buildingId = bodyObj.buildingId;
+        let vehicleType = "CAR";
+        let driverId = bodyObj.driverId || null;
+        let licensePlate = bodyObj.licensePlate || "";
+
+        if (bodyObj.reservationId) {
+          const resRes = await apiRequest(`reservations/${bodyObj.reservationId}`);
+          const resData = resRes.data;
+          if (resData) {
+            buildingId = buildingId || resData.buildingId;
+            vehicleType = resData.vehicleType || vehicleType;
+            driverId = driverId || resData.driverId;
+            if (resData.raw) {
+              buildingId = buildingId || resData.raw.buildingId;
+              driverId = driverId || resData.raw.driverId;
+            }
+          }
+        }
+
+        if (slotId && (!buildingId || !vehicleType || vehicleType === "CAR")) {
+          const slotRes = await apiRequest(`slots/${slotId}`);
+          const slot = slotRes.data;
+          if (slot) {
+            if (slot.floorId) {
+              const floorRes = await apiRequest(`floors/${slot.floorId}`);
+              const floor = floorRes.data;
+              if (floor && floor.buildingId) {
+                buildingId = buildingId || floor.buildingId;
+              }
+            }
+            if (slot.vehicleType) {
+              vehicleType = slot.vehicleType;
+            } else if (slot.vehicleTypeId) {
+              const typesRes = await apiRequest("vehicle-types");
+              const types = typesRes.data || [];
+              const matchedType = types.find(t => t.id === slot.vehicleTypeId);
+              if (matchedType) {
+                vehicleType = (matchedType.name || "").toUpperCase();
+              }
+            }
+          }
+        }
+
+        if (bodyObj.vehicleTypeId) {
+          const typesRes = await apiRequest("vehicle-types");
+          const types = typesRes.data || [];
+          const matchedType = types.find(t => t.id === bodyObj.vehicleTypeId);
+          if (matchedType) {
+            vehicleType = (matchedType.name || "").toUpperCase();
+          }
+        }
+
+        if (!buildingId) {
+          const buildingsRes = await apiRequest("buildings");
+          buildingId = buildingsRes.data?.[0]?.id || "8b72da1f-50b3-4632-a5e2-632b8ac425f1";
+        }
+
+        const mappedBody = {
+          buildingId,
+          licensePlate,
+          vehicleType,
+          slotId,
+          gateIn: bodyObj.gateIn || "Gate 1",
+          driverId
+        };
+        cleanOptions.body = JSON.stringify(mappedBody);
       } else {
         cleanOptions.body = JSON.stringify(bodyObj);
       }
@@ -198,7 +269,7 @@ export const apiRequest = async (path, options = {}) => {
   }
 
   // Intercept GET /public/landing-info
-  if (cleanPath === "public/landing-info" && method === "GET") {
+  if (basePath === "public/landing-info" && method === "GET") {
     const localFallback = {
       summary: {
         totalSlots: 0,
@@ -212,6 +283,8 @@ export const apiRequest = async (path, options = {}) => {
       zones: [],
       pricingPolicies: [],
       availableSlots: [],
+      buildings: [],
+      selectedBuildingId: null
     };
 
     try {
@@ -221,13 +294,25 @@ export const apiRequest = async (path, options = {}) => {
       if (buildings.length === 0) {
         return { success: true, data: localFallback };
       }
-      const firstBuilding = buildings[0];
 
-      // 2. Fetch pricing, floors, and vehicle types in parallel
-      const [pricingRes, floorsRes, vehicleTypesRes] = await Promise.all([
-        apiRequest(`pricing/building/${firstBuilding.id}`).catch(() => ({ data: [] })),
-        apiRequest(`floors/building/${firstBuilding.id}`).catch(() => ({ data: [] })),
-        apiRequest("vehicle-types").catch(() => ({ data: [] }))
+      // Extract buildingId from query parameter
+      const params = new URLSearchParams(queryString);
+      const requestedBuildingId = params.get("buildingId");
+
+      let targetBuilding = buildings[0];
+      if (requestedBuildingId) {
+        const matched = buildings.find(b => b.id === requestedBuildingId);
+        if (matched) {
+          targetBuilding = matched;
+        }
+      }
+
+      // 2. Fetch pricing, floors, vehicle types, and rules in parallel
+      const [pricingRes, floorsRes, vehicleTypesRes, rulesRes] = await Promise.all([
+        apiRequest(`pricing/building/${targetBuilding.id}`).catch(() => ({ data: [] })),
+        apiRequest(`floors/building/${targetBuilding.id}`).catch(() => ({ data: [] })),
+        apiRequest("vehicle-types").catch(() => ({ data: [] })),
+        apiRequest(`rules/building/${targetBuilding.id}/active`).catch(() => ({ data: [] }))
       ]);
 
       const pricingPolicies = (pricingRes.data || []).map(p => ({
@@ -242,6 +327,13 @@ export const apiRequest = async (path, options = {}) => {
 
       const floors = floorsRes.data || [];
       const vehicleTypes = vehicleTypesRes.data || [];
+      const parkingRules = (rulesRes.data || []).map(r => ({
+        id: r.id,
+        title: r.title,
+        content: r.content,
+        displayOrder: r.displayOrder,
+        isActive: r.isActive
+      }));
 
       // 3. Fetch slots for all floors in parallel
       const slotsPromises = floors.map(floor =>
@@ -257,40 +349,48 @@ export const apiRequest = async (path, options = {}) => {
       const reservedCount = allSlots.filter(s => s.status === "RESERVED").length;
       const maintenanceCount = allSlots.filter(s => s.status === "MAINTENANCE").length;
 
-      // 5. Group slots by zone to build zones summary
+      // 5. Group slots by zone and vehicle type to build zones summary
       const zonesMap = {};
       allSlots.forEach(slot => {
         const zoneName = slot.zone || "Zone A";
-        if (!zonesMap[zoneName]) {
-          zonesMap[zoneName] = {
-            id: `zone-${zoneName.toLowerCase().replace(/\s+/g, "-")}`,
-            zoneName: zoneName,
+        const vehicleTypeName = slot.vehicleTypeName || refineVehicleTypeName(slot.vehicleType);
+        const key = `${zoneName}_${vehicleTypeName}`;
+
+        if (!zonesMap[key]) {
+          zonesMap[key] = {
+            id: `zone-${zoneName.toLowerCase().replace(/\s+/g, "-")}-${vehicleTypeName.toLowerCase().replace(/\s+/g, "-")}`,
+            zoneName: `${zoneName} (${vehicleTypeName})`,
             totalCapacity: 0,
             vehicleTypeId: null,
-            vehicleTypeName: refineVehicleTypeName(slot.vehicleType),
+            vehicleTypeName: vehicleTypeName,
             slotCount: 0,
             availableSlots: 0
           };
         }
-        zonesMap[zoneName].totalCapacity += 1;
-        zonesMap[zoneName].slotCount += 1;
+        zonesMap[key].totalCapacity += 1;
+        zonesMap[key].slotCount += 1;
         if (slot.status === "AVAILABLE") {
-          zonesMap[zoneName].availableSlots += 1;
+          zonesMap[key].availableSlots += 1;
         }
       });
       const zones = Object.values(zonesMap);
 
       // 6. Map available slots to landing page expected format
-      const mappedAvailableSlots = availableSlots.map(slot => ({
-        id: slot.id,
-        slotName: slot.slotCode,
-        status: slot.status,
-        distanceToGate: slot.distanceToGate || 10,
-        zoneId: `zone-${(slot.zone || "A").toLowerCase().replace(/\s+/g, "-")}`,
-        zoneName: slot.zone || "Zone A",
-        vehicleTypeId: null,
-        vehicleTypeName: refineVehicleTypeName(slot.vehicleType)
-      }));
+      const mappedAvailableSlots = availableSlots.map(slot => {
+        const vehicleTypeName = slot.vehicleTypeName || refineVehicleTypeName(slot.vehicleType);
+        const zoneName = slot.zone || "Zone A";
+        return {
+          id: slot.id,
+          slotName: slot.slotCode,
+          status: slot.status,
+          distanceToGate: slot.distanceToGate || 10,
+          zoneId: `zone-${zoneName.toLowerCase().replace(/\s+/g, "-")}-${vehicleTypeName.toLowerCase().replace(/\s+/g, "-")}`,
+          zoneName: `${zoneName} (${vehicleTypeName})`,
+          vehicleTypeId: null,
+          vehicleTypeName: vehicleTypeName,
+          floorName: slot.floorName || "Floor 1"
+        };
+      });
 
       const summary = {
         totalSlots,
@@ -299,7 +399,8 @@ export const apiRequest = async (path, options = {}) => {
         reservedSlots: reservedCount,
         maintenanceSlots: maintenanceCount,
         totalZones: zones.length,
-        vehicleTypes: vehicleTypes.length
+        vehicleTypes: vehicleTypes.length,
+        totalFloors: floors.length
       };
 
       return {
@@ -309,7 +410,10 @@ export const apiRequest = async (path, options = {}) => {
           summary,
           zones,
           availableSlots: mappedAvailableSlots,
-          pricingPolicies
+          pricingPolicies,
+          parkingRules,
+          buildings,
+          selectedBuildingId: targetBuilding.id
         }
       };
     } catch (error) {
@@ -318,38 +422,6 @@ export const apiRequest = async (path, options = {}) => {
     }
   }
 
-  // Intercept GET /users/profile to return stored user profile
-  if (cleanPath === "users/profile" && method === "GET") {
-    const userStr = localStorage.getItem("user");
-    const currentUser = userStr ? JSON.parse(userStr) : {
-      fullName: "Parking User",
-      email: "user@parkmaster.local",
-      phone: "0123456789",
-      username: "user"
-    };
-    return { success: true, data: currentUser };
-  }
-
-  // Intercept PUT /users/profile to save profile changes locally
-  if (cleanPath === "users/profile" && method === "PUT") {
-    const bodyObj = JSON.parse(cleanOptions.body || "{}");
-    const userStr = localStorage.getItem("user");
-    const currentUser = userStr ? JSON.parse(userStr) : {};
-    const updatedUser = {
-      ...currentUser,
-      fullName: bodyObj.fullName !== undefined ? bodyObj.fullName : currentUser.fullName,
-      phone: bodyObj.phone !== undefined ? bodyObj.phone : currentUser.phone,
-      email: bodyObj.email !== undefined ? bodyObj.email : currentUser.email,
-      username: bodyObj.email ? bodyObj.email.split("@")[0] : currentUser.username
-    };
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    return { success: true, message: "Profile updated successfully", data: updatedUser };
-  }
-
-  // Intercept PATCH /users/profile/password to mock password changes
-  if (cleanPath === "users/profile/password" && method === "PATCH") {
-    return { success: true, message: "Password updated successfully" };
-  }
 
   // Intercept GET /pricing-policies to get all pricing by building
   if (cleanPath === "pricing-policies" && method === "GET") {
@@ -374,7 +446,7 @@ export const apiRequest = async (path, options = {}) => {
     try {
       const bodyObj = JSON.parse(cleanOptions.body);
       const mappedBody = {
-        buildingId: defaultBuildingId,
+        buildingId: bodyObj.buildingId || defaultBuildingId,
         vehicleTypeId: bodyObj.vehicleTypeId,
         hourlyRate: bodyObj.hourlyRate !== undefined ? bodyObj.hourlyRate : 5000,
         basePrice: bodyObj.basePrice !== undefined ? bodyObj.basePrice : 0,

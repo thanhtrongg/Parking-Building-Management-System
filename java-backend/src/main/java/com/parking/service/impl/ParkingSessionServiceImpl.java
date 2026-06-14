@@ -37,11 +37,15 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     private final VehicleTypeRepository vehicleTypeRepository;
     private final PricingRepository pricingRepository;
     private final PaymentRepository paymentRepository;
+    private final ParkingBuildingRepository buildingRepository;
     private final AuditService auditService;
 
 
     @Override
     public SessionResponse checkIn(CheckInRequest request, String currentUserEmail) {
+        ParkingBuilding building = buildingRepository.findById(request.getBuildingId())
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
+
         boolean activeExists = sessionRepository.existsByLicensePlateAndStatusIn(
                 request.getLicensePlate(), List.of(SessionStatus.ACTIVE, SessionStatus.LOST_TICKET)
         );
@@ -64,6 +68,12 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
                         " is not allowed in slot designed for " + slot.getVehicleType());
             }
 
+            // Validate slot's building
+            if (slot.getFloor() == null || slot.getFloor().getBuilding() == null ||
+                    !slot.getFloor().getBuilding().getId().equals(building.getId())) {
+                throw new BadRequestException("Parking slot " + slot.getSlotCode() + " does not belong to building " + building.getName());
+            }
+
             // Mark slot as occupied
             slot.setStatus(SlotStatus.OCCUPIED);
             slotRepository.save(slot);
@@ -83,6 +93,7 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
         LocalDateTime checkInTime = LocalDateTime.now();
         ParkingSession session = ParkingSession.builder()
+                .building(building)
                 .licensePlate(request.getLicensePlate())
                 .vehicleType(request.getVehicleType())
                 .ticketCode(ticketCode)
@@ -97,7 +108,7 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
         session = sessionRepository.save(session);
         auditService.log(currentUserEmail, "CHECK_IN", "ParkingSession", session.getId(),
-                "License: " + session.getLicensePlate() + ", Gate: " + session.getGateIn());
+                "License: " + session.getLicensePlate() + ", Gate: " + session.getGateIn() + ", Building: " + building.getName());
         return mapToResponse(session);
     }
 
@@ -256,9 +267,15 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     }
 
     private BigDecimal getLostTicketFee(ParkingSession session) {
-        UUID buildingId = session.getSlot().getFloor().getBuilding().getId();
+        UUID buildingId = session.getBuilding() != null ? session.getBuilding().getId() : 
+                (session.getSlot() != null && session.getSlot().getFloor() != null && session.getSlot().getFloor().getBuilding() != null
+                ? session.getSlot().getFloor().getBuilding().getId() : null);
         VehicleTypeEnum vehicleTypeEnum = session.getVehicleType();
         BigDecimal defaultLostFee = new BigDecimal("200000"); // Default 200k VND
+
+        if (buildingId == null) {
+            return defaultLostFee;
+        }
 
         VehicleType vehicleType = vehicleTypeRepository.findByName(vehicleTypeEnum.name()).orElse(null);
         if (vehicleType != null) {
@@ -321,6 +338,8 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
                 .staffOutName(session.getStaffOut() != null ? session.getStaffOut().getFullName() : null)
                 .totalFee(totalFee)
                 .payment(paymentRes)
+                .buildingId(session.getBuilding() != null ? session.getBuilding().getId() : null)
+                .buildingName(session.getBuilding() != null ? session.getBuilding().getName() : null)
                 .build();
     }
 
