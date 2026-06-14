@@ -49,9 +49,6 @@ function combineDateAndTime(dateKey, timeValue) {
   return date;
 }
 
-function toIsoString(localDate) {
-  return localDate ? new Date(localDate).toISOString() : "";
-}
 
 function roundUpToMinute(date) {
   const next = new Date(date);
