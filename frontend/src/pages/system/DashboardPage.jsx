@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 
@@ -572,6 +573,45 @@ export default function DashboardPage() {
       ignore = true;
     };
   }, []);
+
+  useAutoRefresh(async () => {
+    const [
+      parkingSlotsResult,
+      reservationsResult,
+      paymentsResult,
+      vehicleTypesResult,
+      sessionsResult,
+    ] = await Promise.allSettled([
+      fetchApi("/parking-slots"),
+      fetchApi("/reservations"),
+      fetchApi("/payments"),
+      fetchApi("/vehicle-types"),
+      fetchApi("/parking-sessions"),
+    ]);
+
+    setDashboardData({
+      parkingSlots:
+        parkingSlotsResult.status === "fulfilled"
+          ? normalizeArray(parkingSlotsResult.value)
+          : [],
+      reservations:
+        reservationsResult.status === "fulfilled"
+          ? normalizeArray(reservationsResult.value)
+          : [],
+      payments:
+        paymentsResult.status === "fulfilled"
+          ? normalizeArray(paymentsResult.value)
+          : [],
+      vehicleTypes:
+        vehicleTypesResult.status === "fulfilled"
+          ? normalizeArray(vehicleTypesResult.value)
+          : [],
+      parkingSessions:
+        sessionsResult.status === "fulfilled"
+          ? normalizeArray(sessionsResult.value)
+          : [],
+    });
+  });
 
   const summary = useMemo(() => {
     const parkingSlots = dashboardData.parkingSlots;

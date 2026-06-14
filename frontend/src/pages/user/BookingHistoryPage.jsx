@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
+import { getReservationCode } from "../../utils/reservation";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const statusStyles = {
   CONFIRMED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
@@ -24,23 +26,22 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(Number(amount || 0));
-}
-
 function normalizeBookings(value) {
   if (Array.isArray(value)) return value;
   if (Array.isArray(value?.data)) return value.data;
   return [];
 }
 
-export function getReservationCode(reservationId) {
-  return reservationId
-    ? `RSV-${String(reservationId).slice(0, 8).toUpperCase()}`
-    : "RSV-N/A";
+function buildQrImageUrl(qrText) {
+  if (!qrText) return "";
+
+  const params = new URLSearchParams({
+    size: "280x280",
+    data: qrText,
+    margin: "16",
+  });
+
+  return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`;
 }
 
 function StatusBadge({ status }) {
@@ -145,6 +146,7 @@ function BookingCard({ booking, cancelling, onCancel }) {
   const reservationCode = getReservationCode(booking.id);
   const status = String(booking.status || "").toUpperCase();
   const canCancel = cancellableStatuses.includes(status);
+  const qrImageUrl = buildQrImageUrl(booking.qr?.text);
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -172,10 +174,32 @@ function BookingCard({ booking, cancelling, onCancel }) {
         <Info label="Slot" value={slotName} />
         <Info label="Vehicle" value={vehicleType} />
         <Info label="Start" value={formatDateTime(booking.startTime)} />
-        <Info label="End" value={formatDateTime(booking.endTime)} />
-        <Info label="Estimated fee" value={formatCurrency(booking.estimatedFee)} />
         <Info label="Payment" value="Pay when checkout" />
       </div>
+
+      {qrImageUrl && (
+        <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 sm:flex-row sm:items-center">
+          <div className="grid h-72 w-72 shrink-0 place-items-center rounded-2xl bg-white p-2 ring-1 ring-blue-100">
+            <img
+              src={qrImageUrl}
+              alt={`${reservationCode} check-in QR`}
+              className="h-68 w-68"
+            />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-wider text-blue-500">
+              Check-in QR
+            </p>
+            <p className="mt-1 font-['Geist'] text-lg font-black text-slate-950">
+              Scan at entrance
+            </p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+              Show this QR to staff camera when you arrive. After scan, this
+              booking moves from CONFIRMED to CHECKED_IN.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
         {canCancel ? (
@@ -253,6 +277,11 @@ export default function BookingHistoryPage() {
       ignore = true;
     };
   }, []);
+
+  useAutoRefresh(async () => {
+    const result = await apiRequest("/api/reservations");
+    setBookings(normalizeBookings(result));
+  });
 
   const handleCancelReservation = async (booking) => {
     const slotName = booking.parkingSlot?.slotName || "this slot";

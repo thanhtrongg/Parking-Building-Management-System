@@ -1,4 +1,41 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
+function isLocalHostname(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function getBrowserApiUrl(configuredApiUrl) {
+  if (typeof window === "undefined") {
+    return configuredApiUrl || "http://localhost:8080/api/v1";
+  }
+
+  const { hostname, protocol } = window.location;
+
+  if (configuredApiUrl) {
+    try {
+      const parsedUrl = new URL(configuredApiUrl);
+
+      if (isLocalHostname(parsedUrl.hostname) && !isLocalHostname(hostname)) {
+        if (protocol === "https:") {
+          return "";
+        }
+
+        parsedUrl.hostname = hostname;
+        return parsedUrl.toString().replace(/\/$/, "");
+      }
+
+      return configuredApiUrl.replace(/\/$/, "");
+    } catch {
+      return configuredApiUrl.replace(/\/$/, "");
+    }
+  }
+
+  if (!hostname || isLocalHostname(hostname)) {
+    return "http://localhost:8080/api/v1";
+  }
+
+  return `${protocol}//${hostname}:8080/api/v1`;
+}
+
+export const API_URL = getBrowserApiUrl(import.meta.env.VITE_API_URL);
 
 const refineVehicleTypeName = (typeStr) => {
   if (!typeStr) return "N/A";
@@ -362,14 +399,19 @@ export const apiRequest = async (path, options = {}) => {
 
   cleanPath = basePath + queryString;
 
-  const response = await fetch(`${API_URL}/${cleanPath}`, {
-    ...cleanOptions,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(cleanOptions.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${API_URL}/${cleanPath}`, {
+      ...cleanOptions,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(cleanOptions.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error(`Cannot connect to API server at ${API_URL}`);
+  }
 
   const contentType = response.headers.get("content-type") || "";
   let result;

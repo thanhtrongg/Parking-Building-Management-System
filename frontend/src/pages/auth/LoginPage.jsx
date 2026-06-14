@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { API_URL } from "../../services/api";
 
 const REMEMBER_ME_DAYS = 30;
 const DEFAULT_SESSION_DAYS = 1;
@@ -64,7 +65,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1";
 
   const handleLogin = async (e) => {
     e.preventDefault();

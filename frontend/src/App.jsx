@@ -13,10 +13,12 @@ import SignUpPage from "./pages/auth/SignUpPage";
 import PublicLandingPage from "./pages/public/LandingPage";
 import DashboardPage from "./pages/system/DashboardPage";
 import ParkingSessionsPage from "./pages/system/ParkingSessionsPage";
+import WalkInParkingPage from "./pages/system/WalkInParkingPage";
 import ParkingSlotsPage from "./pages/system/ParkingSlotsPage";
 import PaymentsPage from "./pages/system/PaymentsPage";
 import PricingPoliciesPage from "./pages/system/PricingPoliciesPage";
 import ReservationsPage from "./pages/system/ReservationsPage";
+import QrCheckInPage from "./pages/system/QrCheckInPage";
 import FeedbacksPage from "./pages/system/FeedbacksPage";
 import AdminUsersPage from "./pages/system/UsersPage";
 import AdminVehiclesPage from "./pages/system/VehiclesPage";
@@ -218,6 +220,24 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={systemRoles}>
               <ReservationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/parking-sessions/create"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <WalkInParkingPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/qr-check-in"
+          element={
+            <ProtectedRoute allowedRoles={systemRoles}>
+              <QrCheckInPage />
             </ProtectedRoute>
           }
         />

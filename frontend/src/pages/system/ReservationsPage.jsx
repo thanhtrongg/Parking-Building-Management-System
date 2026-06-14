@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const RESERVATION_STATUSES = [
   "CONFIRMED",
@@ -1348,6 +1349,15 @@ export default function ReservationsPage() {
       isMounted = false;
     };
   }, []);
+
+  useAutoRefresh(async () => {
+    const [reservationResult, slotResult] = await Promise.all([
+      apiRequest("/api/reservations"),
+      apiRequest("/api/parking-slots"),
+    ]);
+    setReservations(getApiData(reservationResult).map(normalizeReservation));
+    setParkingSlots(getApiData(slotResult).map(normalizeSlot));
+  });
 
   const filterVehicleTypes = useMemo(() => {
     return [...new Set(reservations.map((item) => item.vehicleTypeName))]

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const quickActions = [
   ["add_circle", "New Booking", "/user-bookings"],
@@ -29,13 +30,6 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(Number(amount || 0));
 }
 
 function normalizeBookings(value) {
@@ -141,7 +135,7 @@ function PageHero({ nextBooking }) {
                   <span className="material-symbols-outlined text-[20px]">
                     payments
                   </span>
-                  {formatCurrency(nextBooking.estimatedFee)}
+                  Pay when you checkout
                 </div>
               </div>
             </>
@@ -251,9 +245,8 @@ function UpcomingBookings({ bookings }) {
                   {booking.parkingSlot?.slotName || "Unassigned"}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {booking.vehicleType?.typeName || "Vehicle"} -{" "}
-                  {formatDateTime(booking.startTime)} to{" "}
-                  {formatDateTime(booking.endTime)}
+                  {booking.vehicleType?.typeName || "Vehicle"} - Arrive at{" "}
+                  {formatDateTime(booking.startTime)}
                 </p>
               </div>
               <Link
@@ -337,6 +330,11 @@ export default function UserDashboardPage() {
       ignore = true;
     };
   }, []);
+
+  useAutoRefresh(async () => {
+    const result = await apiRequest("/api/reservations");
+    setBookings(normalizeBookings(result));
+  });
 
   const sortedBookings = useMemo(() => {
     return [...bookings].sort((a, b) => {

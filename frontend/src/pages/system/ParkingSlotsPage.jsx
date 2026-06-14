@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const SLOT_STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"];
 
@@ -374,6 +375,14 @@ export default function ParkingSlotsPage() {
     }
   };
 
+  useAutoRefresh(fetchData);
+
+  const zoneMap = useMemo(() => {
+    return zones.reduce((map, zone) => {
+      map[zone.id] = zone.zoneName || zone.zone_name;
+      return map;
+    }, {});
+  }, [zones]);
   const summary = useMemo(() => {
     const countByStatus = (status) =>
       parkingSlots.filter((slot) => slot.status === status).length;
