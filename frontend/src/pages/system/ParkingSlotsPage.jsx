@@ -147,7 +147,7 @@ function EmptyState({ canManage, onCreate }) {
   );
 }
 
-function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
+function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit, defaultBuildingId }) {
   const [buildings, setBuildings] = useState([]);
   const [floors, setFloors] = useState([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState("");
@@ -179,7 +179,10 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
             setSelectedBuildingId(floorRes.data.buildingId);
           }
         } else if (buildingsList.length > 0) {
-          setSelectedBuildingId(buildingsList[0].id);
+          const defaultId = defaultBuildingId && buildingsList.some(b => b.id === defaultBuildingId)
+            ? defaultBuildingId
+            : buildingsList[0].id;
+          setSelectedBuildingId(defaultId);
         }
       } catch (err) {
         console.error("Failed to load buildings in SlotFormModal:", err);
@@ -742,18 +745,18 @@ export default function ParkingSlotsPage() {
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder="Search slot number, zone, vehicle type..."
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
             />
           </div>
 
           <select
             value={selectedStatus}
             onChange={(event) => setSelectedStatus(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
           >
-            <option value="ALL">All Status</option>
+            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Status</option>
             {SLOT_STATUSES.map((status) => (
-              <option key={status} value={status}>
+              <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                 {status}
               </option>
             ))}
@@ -762,11 +765,11 @@ export default function ParkingSlotsPage() {
           <select
             value={selectedZone}
             onChange={(event) => setSelectedZone(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
           >
-            <option value="ALL">All Zones</option>
+            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Zones</option>
             {zones.map((zone) => (
-              <option key={zone.id} value={zone.id}>
+              <option key={zone.id} value={zone.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                 {zone.zoneName || zone.zone_name}
               </option>
             ))}
@@ -774,7 +777,7 @@ export default function ParkingSlotsPage() {
 
           <button
             onClick={resetFilters}
-            className="h-12 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-600 transition hover:bg-slate-50"
+            className="h-12 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-[#b9af9d] dark:hover:bg-white/10"
           >
             Reset
           </button>
@@ -953,6 +956,7 @@ export default function ParkingSlotsPage() {
           slot={selectedSlot}
           zones={zones}
           saving={saving}
+          defaultBuildingId={activeBuildingId}
           onClose={closeModal}
           onSubmit={handleSubmitSlot}
         />

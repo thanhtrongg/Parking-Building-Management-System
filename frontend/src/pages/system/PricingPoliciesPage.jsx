@@ -142,7 +142,7 @@ function Toolbar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
             value={keyword}
             onChange={(event) => onKeywordChange(event.target.value)}
             placeholder="Search vehicle type or policy id..."
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
           />
         </div>
 
@@ -150,12 +150,12 @@ function Toolbar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
           <select
             value={sortBy}
             onChange={(event) => onSortChange(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
           >
-            <option value="newest">Newest effective date</option>
-            <option value="oldest">Oldest effective date</option>
-            <option value="base-high">Base price high-low</option>
-            <option value="base-low">Base price low-high</option>
+            <option value="newest" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Newest effective date</option>
+            <option value="oldest" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Oldest effective date</option>
+            <option value="base-high" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Base price high-low</option>
+            <option value="base-low" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Base price low-high</option>
           </select>
 
           <div className="inline-flex h-12 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 px-4 text-sm text-blue-700">
@@ -321,11 +321,11 @@ function PolicyModal({
               onChange={(event) =>
                 onChange("vehicleTypeId", event.target.value)
               }
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
             >
-              <option value="">All vehicle types / no vehicle type</option>
+              <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All vehicle types / no vehicle type</option>
               {vehicleTypes.map((vehicleType) => (
-                <option key={vehicleType.id} value={vehicleType.id}>
+                <option key={vehicleType.id} value={vehicleType.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                   {vehicleType.typeName || vehicleType.type_name}
                 </option>
               ))}

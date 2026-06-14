@@ -490,13 +490,13 @@ export default function UserFeedbackPage() {
                 value={form.bookingId}
                 onChange={(event) => updateField("bookingId", event.target.value)}
                 disabled={loadingBookings || bookingOptions.length === 0}
-                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:disabled:bg-white/5 dark:disabled:text-slate-500"
               >
-                <option value="">
+                <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                   {loadingBookings ? "Loading bookings..." : "Select booking ID"}
                 </option>
                 {bookingOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <option key={option.value} value={option.value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                     {option.label}
                   </option>
                 ))}
@@ -510,10 +510,10 @@ export default function UserFeedbackPage() {
               <select
                 value={form.category}
                 onChange={(event) => updateField("category", event.target.value)}
-                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
               >
                 {feedbackCategories.map((category) => (
-                  <option key={category.value} value={category.value}>
+                  <option key={category.value} value={category.value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                     {category.label}
                   </option>
                 ))}

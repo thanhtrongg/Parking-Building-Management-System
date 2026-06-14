@@ -144,7 +144,7 @@ function FilterBar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
             value={keyword}
             onChange={(event) => onKeywordChange(event.target.value)}
             placeholder="Search by zone name or vehicle type..."
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
           />
         </div>
 
@@ -152,12 +152,12 @@ function FilterBar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
           <select
             value={sortBy}
             onChange={(event) => onSortChange(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
           >
-            <option value="name-asc">Zone Name A-Z</option>
-            <option value="name-desc">Zone Name Z-A</option>
-            <option value="capacity-desc">Capacity High to Low</option>
-            <option value="capacity-asc">Capacity Low to High</option>
+            <option value="name-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Zone Name A-Z</option>
+            <option value="name-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Zone Name Z-A</option>
+            <option value="capacity-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity High to Low</option>
+            <option value="capacity-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity Low to High</option>
           </select>
 
           <div className="inline-flex h-12 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 px-4 font-['Inter'] text-sm text-blue-700">
@@ -249,52 +249,51 @@ function ZoneFormModal({
   onSubmit,
 }) {
   const [form, setForm] = useState(() => ({
-    zoneName: initialData?.zoneName || "",
-    vehicleTypeId: initialData?.vehicleTypeId || "",
-    totalCapacity: initialData?.totalCapacity || "",
+    zoneName: initialData?.zoneName || initialData?.zone_name || "",
+    vehicleTypeId: initialData?.vehicleTypeId || initialData?.vehicle_type_id || "",
+    totalCapacity: initialData?.totalCapacity || initialData?.total_capacity || 10,
   }));
 
   const isEdit = mode === "edit";
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!form.zoneName.trim() || !form.vehicleTypeId || !form.totalCapacity)
-      return;
-
     onSubmit({
       zoneName: form.zoneName.trim(),
       vehicleTypeId: form.vehicleTypeId,
-      totalCapacity: parseInt(form.totalCapacity, 10),
+      totalCapacity: Number(form.totalCapacity || 0),
     });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl overflow-hidden rounded-[28px] bg-white shadow-2xl shadow-slate-950/30">
-        <div className="relative overflow-hidden border-b border-blue-100 bg-gradient-to-br from-white via-blue-50 to-sky-50 px-6 py-6">
+      <div className="w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl shadow-slate-950/30 dark:bg-[#11100c] dark:border dark:border-white/10">
+        <div className="relative overflow-hidden border-b border-blue-100 bg-gradient-to-br from-white via-blue-50 to-sky-50 px-6 py-6 dark:from-[#070705] dark:via-[#11100c] dark:to-[#1a1914] dark:border-white/5">
           <div className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-blue-200/60 blur-2xl" />
 
           <div className="relative flex items-start justify-between gap-4">
             <div>
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
                 <span className="material-symbols-outlined text-3xl">
-                  {isEdit ? "edit_note" : "add_box"}
+                  {isEdit ? "edit" : "add"}
                 </span>
               </div>
 
-              <h3 className="mt-4 font-['Geist'] text-2xl font-black text-slate-950">
-                {isEdit ? "Edit Parking Zone" : "Create Parking Zone"}
+              <h3 className="mt-4 font-['Geist'] text-2xl font-black text-slate-950 dark:text-[#fbf4e7]">
+                {isEdit ? "Edit Parking Zone" : "Add Parking Zone"}
               </h3>
 
-              <p className="mt-1 font-['Inter'] text-sm text-slate-500">
-                Specify details to partition your physical slots layout.
+              <p className="mt-1 font-['Inter'] text-sm text-slate-500 dark:text-[#b9af9d]">
+                {isEdit
+                  ? "Update capacity and vehicle categories allowed in this zone."
+                  : "Create a new physical zoning boundary for parking structures."}
               </p>
             </div>
 
             <button
               onClick={onClose}
               disabled={submitting}
-              className="rounded-2xl bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-2xl bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:bg-white/10"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
@@ -303,22 +302,21 @@ function ZoneFormModal({
 
         <form onSubmit={handleSubmit} className="space-y-5 p-6">
           <div>
-            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700">
-              Zone Name <span className="text-red-500">*</span>
+            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700 dark:text-[#b9af9d]">
+              Zone name <span className="text-red-500">*</span>
             </label>
             <input
-              required
               value={form.zoneName}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, zoneName: e.target.value }))
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, zoneName: event.target.value }))
               }
               placeholder="Example: Zone A, Block B..."
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700">
+            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700 dark:text-[#b9af9d]">
               Allowed Vehicle Type <span className="text-red-500">*</span>
             </label>
             <select
@@ -327,11 +325,11 @@ function ZoneFormModal({
               onChange={(e) =>
                 setForm((p) => ({ ...p, vehicleTypeId: e.target.value }))
               }
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
             >
-              <option value="">-- Choose a Vehicle Category --</option>
+              <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">-- Choose a Vehicle Category --</option>
               {vehicleTypes.map((type) => (
-                <option key={type.id} value={type.id}>
+                <option key={type.id} value={type.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                   {type.typeName}
                 </option>
               ))}

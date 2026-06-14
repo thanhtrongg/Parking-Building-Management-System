@@ -335,21 +335,21 @@ function Header({ theme, onToggleTheme, onLogout, onToggleMenu }) {
 
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {buildings.length > 0 && (
-          <div className="relative flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm transition hover:border-blue-200">
-            <span className="material-symbols-outlined text-[19px] text-slate-500">apartment</span>
+          <div className="relative flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm transition hover:border-blue-200 dark:border-white/10 dark:bg-white/5 dark:hover:border-blue-500/30">
+            <span className="material-symbols-outlined text-[19px] text-slate-500 dark:text-slate-400">apartment</span>
             <select
               value={selectedBuildingId}
               onChange={handleBuildingChange}
-              className="bg-transparent pr-4 font-['Inter'] text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none"
+              className="bg-transparent pr-4 font-['Inter'] text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none dark:text-[#fbf4e7]"
               style={{ background: "none", border: "none" }}
             >
               {buildings.map((b) => (
-                <option key={b.id} value={b.id} className="text-slate-950 font-semibold bg-white text-xs">
+                <option key={b.id} value={b.id} className="text-slate-950 font-semibold bg-white text-xs dark:bg-[#11100c] dark:text-[#fbf4e7]">
                   {b.name}
                 </option>
               ))}
             </select>
-            <span className="material-symbols-outlined pointer-events-none absolute right-1.5 text-base text-slate-400">
+            <span className="material-symbols-outlined pointer-events-none absolute right-1.5 text-base text-slate-400 dark:text-slate-500">
               unfold_more
             </span>
           </div>

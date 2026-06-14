@@ -339,10 +339,10 @@ export default function ParkingRulesPage() {
                   localStorage.setItem("activeSystemBuildingId", val);
                   window.dispatchEvent(new CustomEvent("systemBuildingChanged", { detail: val }));
                 }}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
               >
                 {buildings.map((b) => (
-                  <option key={b.id} value={b.id}>
+                  <option key={b.id} value={b.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                     {b.name} ({b.address})
                   </option>
                 ))}
@@ -498,10 +498,10 @@ export default function ParkingRulesPage() {
                     value={formData.buildingId}
                     onChange={handleFormChange}
                     disabled={!!editingRule}
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
                   >
                     {buildings.map((b) => (
-                      <option key={b.id} value={b.id}>
+                      <option key={b.id} value={b.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                         {b.name}
                       </option>
                     ))}

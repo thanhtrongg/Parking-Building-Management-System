@@ -585,18 +585,18 @@ function FilterToolbar({
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             placeholder="Search customer, email, phone, slot..."
-            className="h-11 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] pl-11 pr-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+            className="h-11 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] pl-11 pr-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
           />
         </div>
 
         <select
           value={selectedStatus}
           onChange={(event) => setSelectedStatus(event.target.value)}
-          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
+          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
         >
-          <option value="ALL">All Status</option>
+          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Status</option>
           {RESERVATION_STATUSES.map((status) => (
-            <option key={status} value={status}>
+            <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
               {getStatusMeta(status).label}
             </option>
           ))}
@@ -605,11 +605,11 @@ function FilterToolbar({
         <select
           value={selectedVehicleType}
           onChange={(event) => setSelectedVehicleType(event.target.value)}
-          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
+          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
         >
-          <option value="ALL">All Vehicle Types</option>
+          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Vehicle Types</option>
           {vehicleTypes.map((vehicleType) => (
-            <option key={vehicleType} value={vehicleType}>
+            <option key={vehicleType} value={vehicleType} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
               {vehicleType}
             </option>
           ))}
@@ -618,11 +618,11 @@ function FilterToolbar({
         <select
           value={selectedZone}
           onChange={(event) => setSelectedZone(event.target.value)}
-          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
+          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
         >
-          <option value="ALL">All Zones</option>
+          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Zones</option>
           {zones.map((zone) => (
-            <option key={zone} value={zone}>
+            <option key={zone} value={zone} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
               {zone}
             </option>
           ))}
@@ -630,7 +630,7 @@ function FilterToolbar({
 
         <button
           onClick={onResetFilters}
-          className="h-11 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-semibold text-[#374151] transition hover:bg-[#f8f9fc]"
+          className="h-11 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-semibold text-[#374151] transition hover:bg-[#f8f9fc] dark:border-white/10 dark:bg-white/5 dark:text-[#b9af9d] dark:hover:bg-white/10"
         >
           Reset
         </button>
@@ -1533,6 +1533,7 @@ export default function ReservationsPage() {
               vehicleTypeId: form.vehicleTypeId,
               startTime: toIsoDateTime(form.startTime),
               endTime: toIsoDateTime(form.endTime),
+              buildingId: activeBuildingId,
               ...(modalMode === "edit" && { status: form.status }),
             };
 

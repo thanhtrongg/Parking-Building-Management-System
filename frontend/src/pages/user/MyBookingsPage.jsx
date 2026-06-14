@@ -628,12 +628,12 @@ export default function UserMyBookingsPage() {
                   updateField("vehicleTypeId", event.target.value)
                 }
                 disabled={loadingTypes}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
                 required
               >
-                <option value="">Select vehicle type</option>
+                <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Select vehicle type</option>
                 {vehicleTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
+                  <option key={type.id} value={type.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                     {type.typeName}
                   </option>
                 ))}

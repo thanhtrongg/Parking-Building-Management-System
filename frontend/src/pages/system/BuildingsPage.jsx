@@ -410,10 +410,10 @@ export default function BuildingsPage() {
               onChange={(e) => setSortBy(e.target.value)}
               className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition duration-200 focus:border-blue-500 dark:border-white/10 dark:bg-[#11100c] dark:text-[#fbf4e7]"
             >
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
-              <option value="slots-desc">Capacity (High-Low)</option>
-              <option value="slots-asc">Capacity (Low-High)</option>
+              <option value="name-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Name (A-Z)</option>
+              <option value="name-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Name (Z-A)</option>
+              <option value="slots-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity (High-Low)</option>
+              <option value="slots-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity (Low-High)</option>
             </select>
           </div>
         </div>

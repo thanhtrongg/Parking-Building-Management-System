@@ -136,11 +136,11 @@ function FilterBar({ keyword, onKeywordChange, statusFilter, onStatusChange, tot
                     <select
                         value={statusFilter}
                         onChange={(event) => onStatusChange(event.target.value)}
-                        className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                        className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
                     >
-                        <option value="all">All Statuses</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="COMPLETED">Completed</option>
+                        <option value="all" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Statuses</option>
+                        <option value="ACTIVE" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Active</option>
+                        <option value="COMPLETED" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Completed</option>
                     </select>
 
                     <div className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-500">
@@ -424,10 +424,10 @@ function CheckoutModal({
                             value={paymentMethod}
                             onChange={(event) => onPaymentMethodChange(event.target.value)}
                             disabled={processing}
-                            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
                         >
                             {paymentMethods.map((method) => (
-                                <option key={method.value} value={method.value}>
+                                <option key={method.value} value={method.value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                                     {method.label}
                                 </option>
                             ))}

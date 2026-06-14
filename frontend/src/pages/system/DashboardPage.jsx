@@ -697,7 +697,7 @@ export default function DashboardPage() {
       vehicleTypeCount: vehicleTypes.length,
       occupancyRate,
     };
-  }, [dashboardData]);
+  }, [filteredData]);
 
   if (loading) {
     return <DashboardSkeleton />;

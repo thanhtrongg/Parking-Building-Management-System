@@ -158,7 +158,7 @@ function TableToolbar({
           value={keyword}
           onChange={(event) => onKeywordChange(event.target.value)}
           placeholder="Search name, username, email, or phone..."
-          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
         />
       </div>
 
@@ -166,11 +166,11 @@ function TableToolbar({
         <select
           value={roleFilter}
           onChange={(event) => onRoleFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+          className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
         >
-          <option value="ALL">All Roles</option>
+          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Roles</option>
           {roleOptions.map((role) => (
-            <option key={role} value={role}>
+            <option key={role} value={role} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
               {role}
             </option>
           ))}
@@ -179,11 +179,11 @@ function TableToolbar({
         <select
           value={statusFilter}
           onChange={(event) => onStatusFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+          className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
         >
-          <option value="ALL">All Statuses</option>
+          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Statuses</option>
           {statusOptions.map((status) => (
-            <option key={status} value={status}>
+            <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
               {status}
             </option>
           ))}

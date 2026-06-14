@@ -99,6 +99,7 @@ public class FeedbackServiceImpl implements FeedbackService {
                 .driverPhone(feedback.getDriver().getPhone())
                 .sessionId(feedback.getSession() != null ? feedback.getSession().getId() : null)
                 .ticketCode(feedback.getSession() != null ? feedback.getSession().getTicketCode() : null)
+                .buildingId(feedback.getSession() != null && feedback.getSession().getBuilding() != null ? feedback.getSession().getBuilding().getId() : null)
                 .build();
     }
 }

@@ -26,4 +26,5 @@ public class FeedbackResponse {
     private String driverPhone;
     private UUID sessionId;
     private String ticketCode;
+    private UUID buildingId;
 }

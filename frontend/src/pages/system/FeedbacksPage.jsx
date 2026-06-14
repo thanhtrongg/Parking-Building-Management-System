@@ -269,11 +269,11 @@ function FeedbackTable({
                       onChange={(event) =>
                         onStatusChange(feedback, event.target.value)
                       }
-                      className="h-10 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-10 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
                       aria-label={`Update status for ${feedback.subject}`}
                     >
                       {feedbackStatuses.map((status) => (
-                        <option key={status} value={status}>
+                        <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                           {getStatusMeta(status).label}
                         </option>
                       ))}
@@ -428,10 +428,10 @@ function DetailPage({
               value={feedback.status || "OPEN"}
               disabled={updatingId === feedback.id}
               onChange={(event) => onStatusChange(feedback, event.target.value)}
-              className="h-11 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
             >
               {feedbackStatuses.map((status) => (
-                <option key={status} value={status}>
+                <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                   {getStatusMeta(status).label}
                 </option>
               ))}
@@ -461,6 +461,22 @@ function DetailPage({
 export default function FeedbacksPage() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
+
+  const buildingFeedbacks = useMemo(() => {
+    if (!activeBuildingId) return feedbacks;
+    return feedbacks.filter((f) => !f.buildingId || f.buildingId === activeBuildingId);
+  }, [feedbacks, activeBuildingId]);
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -510,7 +526,7 @@ export default function FeedbacksPage() {
   const filteredFeedbacks = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return feedbacks.filter((feedback) => {
+    return buildingFeedbacks.filter((feedback) => {
       const matchesStatus =
         statusFilter === "ALL" || feedback.status === statusFilter;
       const matchesCategory =
@@ -534,7 +550,7 @@ export default function FeedbacksPage() {
 
       return matchesStatus && matchesCategory && matchesKeyword;
     });
-  }, [feedbacks, keyword, statusFilter, categoryFilter]);
+  }, [buildingFeedbacks, keyword, statusFilter, categoryFilter]);
 
   const handleStatusChange = async (feedback, status) => {
     try {
@@ -637,7 +653,7 @@ export default function FeedbacksPage() {
     <AdminLayout>
       <div className="feedback-management-page">
         <PageHeader />
-        <OverviewGrid feedbacks={feedbacks} />
+        <OverviewGrid feedbacks={buildingFeedbacks} />
 
         <div className="feedback-panel mb-6 rounded-2xl border border-amber-200 bg-[#fffaf0] p-4 shadow-sm shadow-amber-900/10">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -656,22 +672,22 @@ export default function FeedbacksPage() {
             <select
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
-              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
             >
-              <option value="ALL">All Categories</option>
+              <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Categories</option>
               {Object.entries(feedbackCategories).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">{label}</option>
               ))}
             </select>
 
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
             >
-              <option value="ALL">All Statuses</option>
+              <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Statuses</option>
               {feedbackStatuses.map((status) => (
-                <option key={status} value={status}>
+                <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                   {getStatusMeta(status).label}
                 </option>
               ))}

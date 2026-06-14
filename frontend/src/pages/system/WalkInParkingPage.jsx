@@ -266,11 +266,11 @@ export default function WalkInParkingPage() {
                 <select
                   value={vehicleTypeId}
                   onChange={handleVehicleTypeChange}
-                  className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                  className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
                 >
-                  <option value="">Select vehicle type</option>
+                  <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Select vehicle type</option>
                   {vehicleTypes.map((type) => (
-                    <option key={type.id} value={type.id}>{type.typeName}</option>
+                    <option key={type.id} value={type.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">{type.typeName}</option>
                   ))}
                 </select>
               </Field>
@@ -280,11 +280,11 @@ export default function WalkInParkingPage() {
                   value={parkingSlotId}
                   onChange={(event) => setParkingSlotId(event.target.value)}
                   disabled={!vehicleTypeId}
-                  className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-semibold text-slate-800 outline-none transition disabled:cursor-not-allowed disabled:opacity-55 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                  className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-semibold text-slate-800 outline-none transition disabled:cursor-not-allowed disabled:opacity-55 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
                 >
-                  <option value="">{vehicleTypeId ? "Select available slot" : "Select vehicle type first"}</option>
+                  <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">{vehicleTypeId ? "Select available slot" : "Select vehicle type first"}</option>
                   {availableSlots.map((slot) => (
-                    <option key={slot.id} value={slot.id}>
+                    <option key={slot.id} value={slot.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
                       {slot.slotName} - {slot.zoneName || "Unknown zone"}
                     </option>
                   ))}

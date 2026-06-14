@@ -298,34 +298,34 @@ function FilterToolbar({
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder="Search ticket, plate, user, slot..."
-              className="h-11 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] pl-11 pr-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
+              className="h-11 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] pl-11 pr-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
             />
           </div>
 
           <select
             value={selectedStatus}
             onChange={(event) => setSelectedStatus(event.target.value)}
-            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
           >
-            <option value="ALL">All Status</option>
-            <option value="SUCCESS">Success</option>
-            <option value="PENDING">Pending</option>
-            <option value="FAILED">Failed</option>
-            <option value="REFUNDED">Refunded</option>
+            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Status</option>
+            <option value="SUCCESS" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Success</option>
+            <option value="PENDING" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Pending</option>
+            <option value="FAILED" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Failed</option>
+            <option value="REFUNDED" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Refunded</option>
           </select>
 
           <select
             value={selectedMethod}
             onChange={(event) => setSelectedMethod(event.target.value)}
-            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb]"
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
           >
-            <option value="ALL">All Methods</option>
-            <option value="CASH">Cash</option>
-            <option value="TRANSFER">Bank Transfer</option>
-            <option value="VNPAY">VNPay QR</option>
-            <option value="EWALLET">E-Wallet</option>
-            <option value="CARD">Card</option>
-            <option value="SEPAY">SePay</option>
+            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Methods</option>
+            <option value="CASH" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Cash</option>
+            <option value="TRANSFER" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Bank Transfer</option>
+            <option value="VNPAY" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">VNPay QR</option>
+            <option value="EWALLET" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">E-Wallet</option>
+            <option value="CARD" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Card</option>
+            <option value="SEPAY" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">SePay</option>
           </select>
 
           <button
