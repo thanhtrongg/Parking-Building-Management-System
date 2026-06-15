@@ -56,8 +56,9 @@ public class ParkingSessionController {
     @Operation(summary = "Get all active parking sessions")
     @GetMapping("/active")
     @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<List<SessionResponse>>> getActiveSessions() {
-        List<SessionResponse> response = sessionService.getActiveSessions();
+    public ResponseEntity<ApiResponse<List<SessionResponse>>> getActiveSessions(
+            @RequestParam(required = false) UUID buildingId) {
+        List<SessionResponse> response = sessionService.getActiveSessions(buildingId);
         return ResponseEntity.ok(ApiResponse.success("Active sessions retrieved successfully", response));
     }
 
@@ -65,9 +66,10 @@ public class ParkingSessionController {
     @GetMapping("/my")
     @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<ApiResponse<Page<SessionResponse>>> getMySessions(
+            @RequestParam(required = false) UUID buildingId,
             Principal principal,
             @PageableDefault(size = 10, sort = "checkInTime", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<SessionResponse> response = sessionService.getMySessions(principal.getName(), pageable);
+        Page<SessionResponse> response = sessionService.getMySessions(principal.getName(), buildingId, pageable);
         return ResponseEntity.ok(ApiResponse.success("Your sessions retrieved successfully", response));
     }
 

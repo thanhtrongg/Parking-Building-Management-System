@@ -32,4 +32,8 @@ public interface ParkingSlotRepository extends JpaRepository<ParkingSlot, UUID> 
         @Param("buildingId") UUID buildingId,
         @Param("vehicleType") VehicleTypeEnum vehicleType
     );
+
+    @Query("SELECT s FROM ParkingSlot s LEFT JOIN FETCH s.floor f LEFT JOIN FETCH f.building b " +
+           "WHERE (:buildingId IS NULL OR b.id = :buildingId)")
+    List<ParkingSlot> findByBuildingId(@Param("buildingId") UUID buildingId);
 }

@@ -15,7 +15,7 @@ public interface SlotService {
 
     List<SlotResponse> getAvailableSlotsByFloor(UUID floorId);
 
-    List<SlotResponse> getAllSlots();
+    List<SlotResponse> getAllSlots(UUID buildingId);
 
     SlotResponse updateSlotStatus(UUID id, SlotStatusUpdateRequest request);
 

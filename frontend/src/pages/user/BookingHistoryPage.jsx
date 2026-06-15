@@ -245,6 +245,17 @@ export default function BookingHistoryPage() {
   const [error, setError] = useState("");
   const [alert, setAlert] = useState({ type: "", message: "" });
   const [cancellingId, setCancellingId] = useState("");
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -276,7 +287,7 @@ export default function BookingHistoryPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [activeBuildingId]);
 
   useAutoRefresh(async () => {
     const result = await apiRequest("/api/reservations");

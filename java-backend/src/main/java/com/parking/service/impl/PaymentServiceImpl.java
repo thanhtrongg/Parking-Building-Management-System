@@ -93,8 +93,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PaymentResponse> getAllPayments() {
-        return paymentRepository.findAll().stream()
+    public List<PaymentResponse> getAllPayments(UUID buildingId) {
+        List<Payment> payments = (buildingId != null)
+                ? paymentRepository.findByBuildingId(buildingId)
+                : paymentRepository.findAll();
+        return payments.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

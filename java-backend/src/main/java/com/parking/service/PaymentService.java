@@ -12,5 +12,5 @@ public interface PaymentService {
 
     List<PaymentResponse> getPaymentsBySession(UUID sessionId);
 
-    List<PaymentResponse> getAllPayments();
+    List<PaymentResponse> getAllPayments(UUID buildingId);
 }

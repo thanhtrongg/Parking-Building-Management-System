@@ -383,7 +383,7 @@ public class ParkingSessionServiceImplTest {
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
         when(sessionRepository.findByDriverIdWithFetch(driverId, pageable)).thenReturn(page);
 
-        Page<SessionResponse> response = sessionService.getMySessions(email, pageable);
+        Page<SessionResponse> response = sessionService.getMySessions(email, null, pageable);
 
         assertNotNull(response);
         assertEquals(1, response.getTotalElements());

@@ -141,32 +141,40 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ReservationResponse> getMyReservations(String currentUserEmail) {
+    public List<ReservationResponse> getMyReservations(String currentUserEmail, UUID buildingId) {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
 
-        return reservationRepository.findByDriverId(driver.getId()).stream()
+        List<Reservation> reservations = (buildingId != null)
+                ? reservationRepository.findByDriverIdAndBuildingId(driver.getId(), buildingId)
+                : reservationRepository.findByDriverId(driver.getId());
+
+        return reservations.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ReservationResponse> getReservationsByStatus(String statusStr) {
+    public List<ReservationResponse> getReservationsByStatus(String statusStr, UUID buildingId) {
+        List<Reservation> reservations;
         if (statusStr == null || statusStr.trim().isEmpty()) {
-            return reservationRepository.findAll().stream()
-                    .map(this::mapToResponse)
-                    .collect(Collectors.toList());
+            reservations = (buildingId != null)
+                    ? reservationRepository.findByBuildingId(buildingId)
+                    : reservationRepository.findAll();
+        } else {
+            try {
+                ReservationStatus status = ReservationStatus.valueOf(statusStr.toUpperCase());
+                reservations = (buildingId != null)
+                        ? reservationRepository.findByStatusAndBuildingId(status, buildingId)
+                        : reservationRepository.findByStatus(status);
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid reservation status: " + statusStr);
+            }
         }
-
-        try {
-            ReservationStatus status = ReservationStatus.valueOf(statusStr.toUpperCase());
-            return reservationRepository.findByStatus(status).stream()
-                    .map(this::mapToResponse)
-                    .collect(Collectors.toList());
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid reservation status: " + statusStr);
-        }
+        return reservations.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     private ReservationResponse mapToResponse(Reservation reservation) {

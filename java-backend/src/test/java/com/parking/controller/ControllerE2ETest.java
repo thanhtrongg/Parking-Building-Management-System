@@ -468,7 +468,7 @@ public class ControllerE2ETest {
 
         PageImpl<SessionResponse> page = new PageImpl<>(List.of(sessionResponse));
 
-        when(parkingSessionService.getMySessions(eq("driver@parking.com"), any())).thenReturn(page);
+        when(parkingSessionService.getMySessions(eq("driver@parking.com"), any(), any())).thenReturn(page);
 
         mockMvc.perform(get("/sessions/my"))
                 .andExpect(status().isOk())

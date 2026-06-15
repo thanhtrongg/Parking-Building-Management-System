@@ -12,7 +12,7 @@ public interface ReservationService {
 
     ReservationResponse cancelReservation(UUID id, String currentUserEmail);
 
-    List<ReservationResponse> getMyReservations(String currentUserEmail);
+    List<ReservationResponse> getMyReservations(String currentUserEmail, UUID buildingId);
 
-    List<ReservationResponse> getReservationsByStatus(String status);
+    List<ReservationResponse> getReservationsByStatus(String status, UUID buildingId);
 }

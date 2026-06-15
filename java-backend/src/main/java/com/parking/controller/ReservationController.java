@@ -49,8 +49,10 @@ public class ReservationController {
     @Operation(summary = "Get current driver's reservations")
     @GetMapping("/my")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<ApiResponse<List<ReservationResponse>>> getMyReservations(Principal principal) {
-        List<ReservationResponse> response = reservationService.getMyReservations(principal.getName());
+    public ResponseEntity<ApiResponse<List<ReservationResponse>>> getMyReservations(
+            @RequestParam(required = false) UUID buildingId,
+            Principal principal) {
+        List<ReservationResponse> response = reservationService.getMyReservations(principal.getName(), buildingId);
         return ResponseEntity.ok(ApiResponse.success("Your reservations retrieved successfully", response));
     }
 
@@ -58,8 +60,9 @@ public class ReservationController {
     @GetMapping
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'STAFF')")
     public ResponseEntity<ApiResponse<List<ReservationResponse>>> getReservationsByStatus(
-            @RequestParam(required = false) String status) {
-        List<ReservationResponse> response = reservationService.getReservationsByStatus(status);
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID buildingId) {
+        List<ReservationResponse> response = reservationService.getReservationsByStatus(status, buildingId);
         return ResponseEntity.ok(ApiResponse.success("Reservations retrieved successfully", response));
     }
 }

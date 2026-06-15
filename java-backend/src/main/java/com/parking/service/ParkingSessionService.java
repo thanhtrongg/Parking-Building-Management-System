@@ -17,9 +17,9 @@ public interface ParkingSessionService {
 
     CheckOutResponse checkOut(UUID sessionId, String gateOut, String currentUserEmail);
 
-    List<SessionResponse> getActiveSessions();
+    List<SessionResponse> getActiveSessions(UUID buildingId);
 
-    Page<SessionResponse> getMySessions(String currentUserEmail, Pageable pageable);
+    Page<SessionResponse> getMySessions(String currentUserEmail, UUID buildingId, Pageable pageable);
 
     CheckOutResponse lostTicket(UUID sessionId, String currentUserEmail);
 

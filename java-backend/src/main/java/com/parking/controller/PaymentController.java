@@ -34,8 +34,9 @@ public class PaymentController {
     @Operation(summary = "Get all payments")
     @GetMapping
     @PreAuthorize("hasAnyRole('MANAGER', 'STAFF', 'ADMIN')")
-    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getAllPayments() {
-        List<PaymentResponse> response = paymentService.getAllPayments();
+    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getAllPayments(
+            @RequestParam(required = false) UUID buildingId) {
+        List<PaymentResponse> response = paymentService.getAllPayments(buildingId);
         return ResponseEntity.ok(ApiResponse.success("All payments retrieved successfully", response));
     }
 

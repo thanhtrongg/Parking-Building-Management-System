@@ -67,8 +67,11 @@ public class SlotServiceImpl implements SlotService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SlotResponse> getAllSlots() {
-        return slotRepository.findAll().stream()
+    public List<SlotResponse> getAllSlots(UUID buildingId) {
+        List<ParkingSlot> slots = (buildingId != null)
+                ? slotRepository.findByBuildingId(buildingId)
+                : slotRepository.findAll();
+        return slots.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

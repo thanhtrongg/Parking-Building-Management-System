@@ -609,6 +609,18 @@ export const apiRequest = async (path, options = {}) => {
     basePath = "sessions/my";
   }
 
+  const scopedPaths = ["slots", "reservations", "reservations/my", "sessions/active", "sessions/my", "payments"];
+  if (scopedPaths.includes(basePath) && method === "GET") {
+    const params = new URLSearchParams(queryString);
+    if (!params.has("buildingId")) {
+      const activeBuildingId = localStorage.getItem("activeSystemBuildingId");
+      if (activeBuildingId) {
+        params.set("buildingId", activeBuildingId);
+        queryString = "?" + params.toString();
+      }
+    }
+  }
+
   cleanPath = basePath + queryString;
 
   let response;

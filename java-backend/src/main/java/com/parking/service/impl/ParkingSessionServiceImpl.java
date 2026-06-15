@@ -150,19 +150,26 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SessionResponse> getActiveSessions() {
-        return sessionRepository.findByStatus(SessionStatus.ACTIVE).stream()
+    public List<SessionResponse> getActiveSessions(UUID buildingId) {
+        List<ParkingSession> sessions = (buildingId != null) 
+                ? sessionRepository.findByBuildingIdAndStatus(buildingId, SessionStatus.ACTIVE)
+                : sessionRepository.findByStatus(SessionStatus.ACTIVE);
+        return sessions.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<SessionResponse> getMySessions(String currentUserEmail, Pageable pageable) {
+    public Page<SessionResponse> getMySessions(String currentUserEmail, UUID buildingId, Pageable pageable) {
         User driver = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserEmail));
-        return sessionRepository.findByDriverIdWithFetch(driver.getId(), pageable)
-                .map(this::mapToResponse);
+        
+        Page<ParkingSession> sessionsPage = (buildingId != null)
+                ? sessionRepository.findByDriverIdWithFetchAndBuilding(driver.getId(), buildingId, pageable)
+                : sessionRepository.findByDriverIdWithFetch(driver.getId(), pageable);
+                
+        return sessionsPage.map(this::mapToResponse);
     }
 
     @Override

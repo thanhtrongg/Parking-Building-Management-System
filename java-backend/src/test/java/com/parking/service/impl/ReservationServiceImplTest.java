@@ -206,7 +206,7 @@ public class ReservationServiceImplTest {
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
         when(reservationRepository.findByDriverId(driver.getId())).thenReturn(Collections.emptyList());
 
-        List<ReservationResponse> responses = reservationService.getMyReservations(email);
+        List<ReservationResponse> responses = reservationService.getMyReservations(email, null);
         assertNotNull(responses);
         assertTrue(responses.isEmpty());
     }

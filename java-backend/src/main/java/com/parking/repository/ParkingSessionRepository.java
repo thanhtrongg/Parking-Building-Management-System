@@ -30,7 +30,22 @@ public interface ParkingSessionRepository extends JpaRepository<ParkingSession, 
            countQuery = "SELECT COUNT(s) FROM ParkingSession s WHERE s.driver.id = :driverId")
     Page<ParkingSession> findByDriverIdWithFetch(@Param("driverId") UUID driverId, Pageable pageable);
 
+    @Query(value = "SELECT s FROM ParkingSession s " +
+           "LEFT JOIN FETCH s.slot sl " +
+           "LEFT JOIN FETCH s.driver d " +
+           "LEFT JOIN FETCH s.staffIn si " +
+           "LEFT JOIN FETCH s.staffOut so " +
+           "WHERE d.id = :driverId AND (:buildingId IS NULL OR s.building.id = :buildingId)",
+           countQuery = "SELECT COUNT(s) FROM ParkingSession s WHERE s.driver.id = :driverId AND (:buildingId IS NULL OR s.building.id = :buildingId)")
+    Page<ParkingSession> findByDriverIdWithFetchAndBuilding(
+        @Param("driverId") UUID driverId,
+        @Param("buildingId") UUID buildingId,
+        Pageable pageable
+    );
+
     List<ParkingSession> findByStatus(SessionStatus status);
+
+    List<ParkingSession> findByBuildingIdAndStatus(UUID buildingId, SessionStatus status);
 
     long countByStatus(SessionStatus status);
 

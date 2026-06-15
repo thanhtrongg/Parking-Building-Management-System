@@ -45,6 +45,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
 
     List<Reservation> findByStatus(ReservationStatus status);
 
+    List<Reservation> findByBuildingId(UUID buildingId);
+
+    List<Reservation> findByStatusAndBuildingId(ReservationStatus status, UUID buildingId);
+
+    List<Reservation> findByDriverIdAndBuildingId(UUID driverId, UUID buildingId);
+
     @Query("SELECT r FROM Reservation r LEFT JOIN FETCH r.slot WHERE r.status IN ('PENDING', 'CONFIRMED') AND r.reservedTo < :now")
     List<Reservation> findExpiredActiveReservations(@Param("now") LocalDateTime now);
 }

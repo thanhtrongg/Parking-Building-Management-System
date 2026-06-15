@@ -233,6 +233,17 @@ export default function UserParkingSessionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => new Date());
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -270,7 +281,7 @@ export default function UserParkingSessionsPage() {
     return () => {
       ignore = true;
     };
-  }, [status]);
+  }, [status, activeBuildingId]);
 
   useAutoRefresh(async () => {
     const query = status ? `?status=${status}` : "";

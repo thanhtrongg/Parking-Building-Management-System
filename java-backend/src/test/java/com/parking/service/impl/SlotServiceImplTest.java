@@ -113,7 +113,7 @@ public class SlotServiceImplTest {
 
         when(slotRepository.findAll()).thenReturn(List.of(slot));
 
-        List<SlotResponse> response = slotService.getAllSlots();
+        List<SlotResponse> response = slotService.getAllSlots(null);
 
         assertNotNull(response);
         assertEquals(1, response.size());

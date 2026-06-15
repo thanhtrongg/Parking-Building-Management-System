@@ -30,8 +30,9 @@ public class SlotController {
     @Operation(summary = "Get all slots")
     @GetMapping
     @PreAuthorize("hasAnyRole('MANAGER', 'STAFF', 'ADMIN')")
-    public ResponseEntity<ApiResponse<List<SlotResponse>>> getAllSlots() {
-        List<SlotResponse> response = slotService.getAllSlots();
+    public ResponseEntity<ApiResponse<List<SlotResponse>>> getAllSlots(
+            @RequestParam(required = false) UUID buildingId) {
+        List<SlotResponse> response = slotService.getAllSlots(buildingId);
         return ResponseEntity.ok(ApiResponse.success("All slots retrieved successfully", response));
     }
 
