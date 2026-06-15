@@ -174,6 +174,38 @@ select option:disabled {
   z-index: 2;
 }
 
+.app-shell > main:has(.app-page-stage .fixed.inset-0) {
+  z-index: 100;
+}
+
+/* Keep modal dismiss actions visibly interactive across both system themes. */
+body .fixed.inset-0 button[class*="border"]:not(:disabled):hover {
+  border-color: rgb(185 133 41 / 0.55) !important;
+  background-color: #f4ead7 !important;
+  color: #6f4c13 !important;
+  box-shadow: 0 8px 20px rgb(89 62 17 / 0.12);
+  transform: translateY(-2px);
+}
+
+body
+  .fixed.inset-0
+  button:has(> .material-symbols-outlined:only-child):not(:disabled):hover {
+  background-color: #f4ead7 !important;
+  color: #9a6a16 !important;
+  box-shadow: 0 8px 20px rgb(89 62 17 / 0.14);
+  transform: translateY(-2px) rotate(3deg);
+}
+
+.system-dark .fixed.inset-0 button[class*="border"]:not(:disabled):hover,
+.system-dark
+  .fixed.inset-0
+  button:has(> .material-symbols-outlined:only-child):not(:disabled):hover {
+  border-color: rgb(215 180 106 / 0.42) !important;
+  background-color: rgb(215 180 106 / 0.16) !important;
+  color: #e2c579 !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.2);
+}
+
 .app-ambient,
 .app-grid-glow {
   pointer-events: none;
@@ -216,11 +248,11 @@ select option:disabled {
 }
 
 .app-page-stage {
-  animation: app-page-enter 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: app-page-enter 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 .app-page-stage > * {
-  animation: app-content-rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: app-content-rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 .app-page-stage > :nth-child(2) {
@@ -301,22 +333,18 @@ select option:disabled {
 @keyframes app-page-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes app-content-rise {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.992);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 

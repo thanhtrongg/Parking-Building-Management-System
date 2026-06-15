@@ -125,7 +125,83 @@ function normalizePayment(payment) {
   };
 }
 
-function PageHeader({ onRefresh, refreshing }) {
+function escapeXml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function exportPaymentsToExcel(payments) {
+  const columns = [
+    ["Payment ID", "id"],
+    ["Ticket", "ticketCode"],
+    ["Customer", "userFullName"],
+    ["Email", "userEmail"],
+    ["License Plate", "licensePlate"],
+    ["Vehicle Type", "vehicleTypeName"],
+    ["Slot", "slotName"],
+    ["Zone", "zoneName"],
+    ["Payment Method", "paymentMethod"],
+    ["Amount (VND)", "amount"],
+    ["Status", "status"],
+    ["Payment Time", "paymentTime"],
+    ["Entry Time", "entryTime"],
+    ["Exit Time", "exitTime"],
+    ["Session Status", "sessionStatus"],
+  ];
+
+  const rows = payments.map(normalizePayment);
+  const headerCells = columns
+    .map(([label]) => `<Cell><Data ss:Type="String">${escapeXml(label)}</Data></Cell>`)
+    .join("");
+  const dataRows = rows
+    .map((row) => {
+      const cells = columns
+        .map(([, key]) => {
+          const isAmount = key === "amount";
+          const isDate = ["paymentTime", "entryTime", "exitTime"].includes(key);
+          const value = isDate ? formatDateTime(row[key]) : row[key] ?? "";
+          const type = isAmount ? "Number" : "String";
+
+          return `<Cell><Data ss:Type="${type}">${escapeXml(value)}</Data></Cell>`;
+        })
+        .join("");
+
+      return `<Row>${cells}</Row>`;
+    })
+    .join("");
+
+  const workbook = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="Filtered Payments">
+  <Table>
+   <Row>${headerCells}</Row>
+   ${dataRows}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+  const blob = new Blob([workbook], {
+    type: "application/vnd.ms-excel;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+
+  link.href = url;
+  link.download = `payments-filtered-${date}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function PageHeader({ onExport, exportDisabled }) {
   return (
     <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
       <div>
@@ -141,18 +217,9 @@ function PageHeader({ onRefresh, refreshing }) {
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={onRefresh}
-          disabled={refreshing}
-          className="flex h-11 items-center gap-2 rounded-xl border border-[#d7d9e4] bg-white px-4 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <span className="material-symbols-outlined text-xl">
-            refresh
-          </span>
-          {refreshing ? "Refreshing..." : "Refresh"}
-        </button>
-        <button
-          type="button"
-          className="flex h-11 items-center gap-2 rounded-xl bg-[#2563eb] px-5 font-['Inter'] text-sm font-semibold text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95"
+          onClick={onExport}
+          disabled={exportDisabled}
+          className="flex h-11 items-center gap-2 rounded-xl bg-[#2563eb] px-5 font-['Inter'] text-sm font-semibold text-white shadow-md shadow-blue-900/20 transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-xl">download</span>
           Export Data
@@ -268,6 +335,7 @@ function FilterToolbar({
   setSelectedMethod,
   filteredCount,
   onResetFilters,
+  onExport,
 }) {
   return (
     <div className="mb-6 rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
@@ -325,7 +393,12 @@ function FilterToolbar({
             payment(s)
           </span>
 
-          <button className="rounded-xl border border-[#d7d9e4] bg-white px-4 py-2.5 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc]">
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={filteredCount === 0}
+            className="rounded-xl border border-[#d7d9e4] bg-white px-4 py-2.5 font-['Inter'] text-sm font-medium text-[#374151] transition hover:bg-[#f8f9fc] disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Export
           </button>
         </div>
@@ -509,6 +582,14 @@ function PaymentPrintStyles() {
             position: absolute !important;
             inset: 0 auto auto 0 !important;
             width: 100% !important;
+            opacity: 1 !important;
+            animation: none !important;
+            transform: none !important;
+          }
+
+          .payment-receipt-print * {
+            opacity: 1 !important;
+            animation: none !important;
           }
         }
       `}
@@ -885,11 +966,17 @@ export default function PaymentsPage() {
     setSelectedMethod("ALL");
   };
 
+  const handleExportPayments = () => {
+    exportPaymentsToExcel(filteredPayments);
+  };
+
   const handlePrintReceipt = (payment) => {
     setPrintPayment(payment);
-    window.setTimeout(() => {
-      window.print();
-    }, 0);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.print();
+      });
+    });
   };
 
   return (
@@ -899,7 +986,10 @@ export default function PaymentsPage() {
     >
       <PaymentPrintStyles />
       <PaymentReceiptPrint payment={printPayment} />
-      <PageHeader onRefresh={fetchPayments} refreshing={loading} />
+      <PageHeader
+        onExport={handleExportPayments}
+        exportDisabled={filteredPayments.length === 0}
+      />
       {alert && (
         <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 font-['Inter'] text-sm font-semibold text-blue-700">
           {alert}
@@ -916,6 +1006,7 @@ export default function PaymentsPage() {
         setSelectedMethod={setSelectedMethod}
         filteredCount={filteredPayments.length}
         onResetFilters={resetFilters}
+        onExport={handleExportPayments}
       />
 
       <PaymentsTable
