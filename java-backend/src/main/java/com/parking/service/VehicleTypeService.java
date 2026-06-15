@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface VehicleTypeService {
 
-    List<VehicleTypeResponse> getAllVehicleTypes();
+    List<VehicleTypeResponse> getAllVehicleTypes(UUID buildingId);
 
     VehicleTypeResponse getVehicleTypeById(UUID id);
 

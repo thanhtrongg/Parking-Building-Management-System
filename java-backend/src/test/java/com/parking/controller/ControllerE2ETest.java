@@ -153,7 +153,7 @@ public class ControllerE2ETest {
                 .description("Private cars")
                 .build();
 
-        when(vehicleTypeService.getAllVehicleTypes()).thenReturn(List.of(response));
+        when(vehicleTypeService.getAllVehicleTypes(any())).thenReturn(List.of(response));
 
         mockMvc.perform(get("/vehicle-types"))
                 .andExpect(status().isOk())

@@ -402,14 +402,15 @@ export default function UserMyBookingsPage() {
     let ignore = false;
 
     async function loadVehicleTypes() {
+      if (!form.buildingId) return;
       try {
         setLoadingTypes(true);
-        const typesResult = await apiRequest("/api/vehicle-types");
+        const typesResult = await apiRequest(`/api/vehicle-types?buildingId=${form.buildingId}`);
 
         if (!ignore) {
           const types = normalizeArray(typesResult);
           const defaultVehicleTypeId = types[0]?.id || "";
-          const defaultBuildingId = localStorage.getItem("activeSystemBuildingId") || "";
+          const defaultBuildingId = form.buildingId;
           const defaultStart = getDefaultStartDateTime();
           const defaultDateKey = toDateKey(defaultStart);
           const defaultTimeValue = toTimeValue(defaultStart);
@@ -475,7 +476,7 @@ export default function UserMyBookingsPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [form.buildingId]);
 
   const selectedStartDateTime = useMemo(() => {
     return combineDateAndTime(form.startDate, form.startTime);

@@ -26,8 +26,9 @@ public class VehicleTypeController {
 
     @Operation(summary = "Get all vehicle types")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<VehicleTypeResponse>>> getAllVehicleTypes() {
-        List<VehicleTypeResponse> response = vehicleTypeService.getAllVehicleTypes();
+    public ResponseEntity<ApiResponse<List<VehicleTypeResponse>>> getAllVehicleTypes(
+            @RequestParam(required = false) UUID buildingId) {
+        List<VehicleTypeResponse> response = vehicleTypeService.getAllVehicleTypes(buildingId);
         return ResponseEntity.ok(ApiResponse.success("Vehicle types retrieved successfully", response));
     }
 

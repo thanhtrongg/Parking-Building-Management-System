@@ -94,7 +94,7 @@ export default function WalkInParkingPage() {
     setLoading(true);
     try {
       const [vehicleResult, slotResult, sessionResult] = await Promise.all([
-        apiRequest("/api/vehicle-types"),
+        apiRequest(`/api/vehicle-types?buildingId=${activeBuildingId}`),
         apiRequest("/api/parking-slots"),
         apiRequest("/api/parking-sessions"),
       ]);
@@ -109,9 +109,8 @@ export default function WalkInParkingPage() {
   };
 
   useEffect(() => {
-    const initialLoad = window.setTimeout(loadData, 0);
-    return () => window.clearTimeout(initialLoad);
-  }, []);
+    loadData();
+  }, [activeBuildingId]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);

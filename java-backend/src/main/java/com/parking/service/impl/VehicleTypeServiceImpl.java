@@ -24,8 +24,11 @@ public class VehicleTypeServiceImpl implements VehicleTypeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<VehicleTypeResponse> getAllVehicleTypes() {
-        return vehicleTypeRepository.findAll().stream()
+    public List<VehicleTypeResponse> getAllVehicleTypes(UUID buildingId) {
+        List<VehicleType> types = (buildingId != null)
+                ? vehicleTypeRepository.findByBuildingId(buildingId)
+                : vehicleTypeRepository.findAll();
+        return types.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

@@ -389,18 +389,18 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void insertUser(String id, String email, String password, String fullName, String phone, String role) {
         String query = "INSERT INTO users (id, email, password_hash, full_name, phone, role, is_active, created_at, updated_at) " +
-                       "VALUES (?, ?, ?, ?, ?, ?, true, NOW(), NOW())";
+                       "VALUES (?, ?, ?, ?, ?, ?, true, NOW(), NOW()) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), email, passwordEncoder.encode(password), fullName, phone, role);
     }
 
     private void insertVehicleType(String id, String name, String description) {
-        String query = "INSERT INTO vehicle_types (id, name, description) VALUES (?, ?, ?)";
+        String query = "INSERT INTO vehicle_types (id, name, description) VALUES (?, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), name, description);
     }
 
     private void insertBuilding(String id, String name, String address, String phone, LocalTime openingTime, LocalTime closingTime) {
         String query = "INSERT INTO parking_buildings (id, name, address, phone, opening_time, closing_time, is_active, created_at, updated_at) " +
-                       "VALUES (?, ?, ?, ?, ?, ?, true, NOW(), NOW())";
+                       "VALUES (?, ?, ?, ?, ?, ?, true, NOW(), NOW()) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), name, address, phone, openingTime, closingTime);
     }
 
@@ -409,19 +409,19 @@ public class DatabaseSeeder implements CommandLineRunner {
                                BigDecimal basePrice, BigDecimal nightRate) {
         String query = "INSERT INTO pricing (id, building_id, vehicle_type_id, hourly_rate, daily_rate, lost_ticket_fee, " +
                        "overtime_fee_multiplier, effective_from, effective_to, base_price, night_rate) " +
-                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, null, ?, ?)";
+                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, null, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), UUID.fromString(buildingId), UUID.fromString(vehicleTypeId),
                 hourlyRate, dailyRate, lostTicketFee, overtimeFeeMultiplier, effectiveFrom, basePrice, nightRate);
     }
 
     private void insertFloor(String id, String buildingId, String floorName, int floorNumber, int totalSlots) {
         String query = "INSERT INTO floors (id, building_id, floor_name, floor_number, total_slots, is_active) " +
-                       "VALUES (?, ?, ?, ?, ?, true)";
+                       "VALUES (?, ?, ?, ?, ?, true) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), UUID.fromString(buildingId), floorName, floorNumber, totalSlots);
     }
 
     private void insertSlot(String id, String floorId, String slotCode, String status, String vehicleType, String zone) {
-        String query = "INSERT INTO parking_slots (id, floor_id, slot_code, status, vehicle_type, zone) VALUES (?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO parking_slots (id, floor_id, slot_code, status, vehicle_type, zone) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), UUID.fromString(floorId), slotCode, status, vehicleType, zone);
     }
 
@@ -430,7 +430,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                               LocalDateTime checkOutTime, LocalDateTime parkedAt, String status, String gateIn, String gateOut) {
         String query = "INSERT INTO parking_sessions (id, slot_id, driver_id, staff_in_id, staff_out_id, license_plate, " +
                        "vehicle_type, ticket_code, check_in_time, check_out_time, parked_at, status, gate_in, gate_out, building_id) " +
-                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query,
                 UUID.fromString(id),
                 slotId != null ? UUID.fromString(slotId) : null,
@@ -450,14 +450,14 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void insertPayment(String id, String sessionId, BigDecimal amount, BigDecimal extraFee, String method, String status, LocalDateTime paidAt) {
-        String query = "INSERT INTO payments (id, session_id, amount, extra_fee, method, status, paid_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO payments (id, session_id, amount, extra_fee, method, status, paid_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), UUID.fromString(sessionId), amount, extraFee, method, status, paidAt);
     }
 
     private void insertReservation(String id, String driverId, String slotId, String vehicleType, LocalDateTime reservedFrom,
                                    LocalDateTime reservedTo, String status, LocalDateTime createdAt, String buildingId) {
         String query = "INSERT INTO reservations (id, driver_id, slot_id, vehicle_type, reserved_from, reserved_to, status, created_at, building_id) " +
-                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query,
                 UUID.fromString(id),
                 UUID.fromString(driverId),
@@ -471,7 +471,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void insertFeedback(String id, String driverId, String sessionId, String category, String content, String status, LocalDateTime createdAt) {
-        String query = "INSERT INTO feedbacks (id, driver_id, session_id, category, content, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO feedbacks (id, driver_id, session_id, category, content, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query,
                 UUID.fromString(id),
                 UUID.fromString(driverId),
@@ -483,7 +483,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void insertZone(String id, String zoneName, String vehicleTypeId, int totalCapacity, String buildingId) {
-        String query = "INSERT INTO zones (id, zone_name, vehicle_type_id, total_capacity, building_id) VALUES (?, ?, ?, ?, ?)";
+        String query = "INSERT INTO zones (id, zone_name, vehicle_type_id, total_capacity, building_id) VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING";
         jdbcTemplate.update(query, UUID.fromString(id), zoneName, UUID.fromString(vehicleTypeId), totalCapacity, UUID.fromString(buildingId));
     }
 }
