@@ -1,8 +1,42 @@
-# Parking Building Management System
+<div align="center">
+  <h1>ParkMaster Building System</h1>
+  <p><strong>Smart parking operations, from reservation to checkout.</strong></p>
+  <p>
+    A full-stack parking building management platform with live slot availability,
+    QR check-in, parking sessions, SePay payments, role-based dashboards, and a
+    Gemini-powered assistant.
+  </p>
 
-Full-stack parking management application for reservations, QR check-in, live
-parking sessions, checkout payments, feedback, role-based operations, and an AI
-assistant powered by Gemini.
+  <p>
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111827" alt="React 19" />
+    <img src="https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 5" />
+    <img src="https://img.shields.io/badge/Node.js-Express_5-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js and Express 5" />
+    <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma ORM" />
+    <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  </p>
+
+  <p>
+    <img src="https://img.shields.io/badge/Gemini-3.1_Flash--Lite-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini 3.1 Flash-Lite" />
+    <img src="https://img.shields.io/badge/QR-Check--in-17140F?style=flat-square" alt="QR Check-in" />
+    <img src="https://img.shields.io/badge/Payment-SePay-00A651?style=flat-square" alt="SePay" />
+    <img src="https://img.shields.io/badge/Theme-Light_%2F_Dark-D7B46A?style=flat-square" alt="Light and Dark Theme" />
+    <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License" />
+  </p>
+
+  <p>
+    <a href="#main-features"><strong>Features</strong></a>
+    &nbsp;&middot;&nbsp;
+    <a href="#quick-start"><strong>Quick Start</strong></a>
+    &nbsp;&middot;&nbsp;
+    <a href="#environment-variable-reference"><strong>Environment</strong></a>
+    &nbsp;&middot;&nbsp;
+    <a href="#database-commands"><strong>Database</strong></a>
+    &nbsp;&middot;&nbsp;
+    <a href="#troubleshooting"><strong>Troubleshooting</strong></a>
+  </p>
+</div>
+
+---
 
 ## Main Features
 
