@@ -1,6 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import FeedbackNotifications from "./FeedbackNotifications";
+import { getStoredTheme, storeTheme } from "../utils/theme";
 
 const navItems = [
   {
@@ -283,19 +284,13 @@ export default function UserLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem("systemTheme") || "light";
-    } catch {
-      return "light";
-    }
-  });
+  const [theme, setTheme] = useState(() => getStoredTheme("light"));
   const isDark = theme === "dark";
 
   const handleToggleTheme = () => {
     setTheme((current) => {
       const nextTheme = current === "dark" ? "light" : "dark";
-      localStorage.setItem("systemTheme", nextTheme);
+      storeTheme(nextTheme);
       return nextTheme;
     });
   };

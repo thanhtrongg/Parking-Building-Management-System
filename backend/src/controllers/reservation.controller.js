@@ -32,6 +32,7 @@ const ACTIVE_PARKING_SESSION_STATUSES = ["ACTIVE"];
 const QR_PURPOSE = "RESERVATION_CHECK_IN";
 const CHECK_IN_GRACE_PERIOD_MINUTES = 15;
 const RESERVATION_HOLD_WINDOW_MINUTES = 15;
+const MAX_LICENSE_PLATE_LENGTH = 20;
 
 const getJwtSecret = () => {
   return process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || "your-secret-key";
@@ -43,6 +44,7 @@ const buildReservationQrToken = (reservation) => {
       purpose: QR_PURPOSE,
       reservationId: reservation.id,
       userId: reservation.user_id,
+      licensePlate: reservation.license_plate,
     },
     getJwtSecret(),
     {
@@ -94,6 +96,7 @@ const mapReservationResponse = (reservation) => {
       : null,
 
     vehicleTypeId: reservation.vehicle_type_id,
+    licensePlate: reservation.license_plate,
     vehicleType: reservation.vehicle_types
       ? {
           id: reservation.vehicle_types.id,
@@ -390,13 +393,22 @@ export const getReservationById = async (req, res) => {
 
 export const createReservation = async (req, res) => {
   try {
-    const { parkingSlotId, vehicleTypeId, userId, startTime, endTime } =
+    const { parkingSlotId, vehicleTypeId, userId, startTime, endTime, licensePlate } =
       req.body;
+    const normalizedLicensePlate = String(licensePlate || "")
+      .trim()
+      .toUpperCase()
+      .slice(0, MAX_LICENSE_PLATE_LENGTH);
 
-    if (!parkingSlotId || !vehicleTypeId || !startTime) {
+    if (
+      !parkingSlotId ||
+      !vehicleTypeId ||
+      !startTime ||
+      (req.user.role === "USER" && !normalizedLicensePlate)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Missing required fields, including license plate",
       });
     }
 
@@ -527,6 +539,7 @@ export const createReservation = async (req, res) => {
       data: {
         user_id: finalUserId,
         vehicle_type_id: vehicleTypeId,
+        license_plate: normalizedLicensePlate || null,
         parking_slot_id: parkingSlotId,
         expected_start_time: parsedStartTime,
         expected_end_time: parsedEndTime,
@@ -941,7 +954,7 @@ export const cancelMyReservation = async (req, res) => {
 
 export const checkInReservationByQr = async (req, res) => {
   try {
-    const { token, qrText, licensePlate } = req.body;
+    const { token, qrText } = req.body;
     const rawToken = token || (() => {
       if (!qrText) return "";
 
@@ -1019,6 +1032,17 @@ export const checkInReservationByQr = async (req, res) => {
       });
     }
 
+    if (
+      payload.licensePlate &&
+      reservation.license_plate &&
+      payload.licensePlate !== reservation.license_plate
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "QR license plate does not match reservation",
+      });
+    }
+
     if (reservation.status === "CHECKED_IN") {
       return res.status(409).json({
         success: false,
@@ -1078,12 +1102,17 @@ export const checkInReservationByQr = async (req, res) => {
       });
     }
 
-    const normalizedLicensePlate = String(
-      licensePlate || `QR-${reservation.id.slice(0, 8)}`,
-    )
+    const normalizedLicensePlate = String(reservation.license_plate || "")
       .trim()
       .toUpperCase()
-      .slice(0, 20);
+      .slice(0, MAX_LICENSE_PLATE_LENGTH);
+
+    if (!normalizedLicensePlate) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation does not have a license plate",
+      });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const session = await tx.parking_sessions.create({

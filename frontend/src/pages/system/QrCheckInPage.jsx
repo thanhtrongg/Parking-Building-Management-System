@@ -65,6 +65,7 @@ function ResultPanel({ result }) {
         <Info label="Customer" value={reservation?.user?.fullName || "N/A"} />
         <Info label="Slot" value={reservation?.parkingSlot?.slotName || "N/A"} />
         <Info label="Zone" value={reservation?.parkingSlot?.zone?.zoneName || "N/A"} />
+        <Info label="License plate" value={session?.license_plate || session?.licensePlate || reservation?.licensePlate || "N/A"} />
         <Info label="Ticket" value={session?.ticket_code || session?.ticketCode || "N/A"} />
       </div>
     </div>
@@ -185,7 +186,6 @@ export default function QrCheckInPage() {
   const [detectionBox, setDetectionBox] = useState(null);
   const [scannedText, setScannedText] = useState("");
   const [manualText, setManualText] = useState("");
-  const [licensePlate, setLicensePlate] = useState("");
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null);
   const [alert, setAlert] = useState({ type: "", message: "" });
@@ -219,7 +219,6 @@ export default function QrCheckInPage() {
         body: JSON.stringify({
           token,
           qrText,
-          licensePlate: licensePlate.trim(),
         }),
       });
 
@@ -230,7 +229,6 @@ export default function QrCheckInPage() {
       });
       setManualText("");
       setScannedText("");
-      setLicensePlate("");
       return true;
     } catch (error) {
       setAlert({
@@ -500,19 +498,11 @@ export default function QrCheckInPage() {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <label className="block">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-400">
-              License plate
-            </span>
-            <input
-              value={licensePlate}
-              onChange={(event) => setLicensePlate(event.target.value)}
-              placeholder="Example: 51A12345"
-              className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-            />
-          </label>
+          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold text-blue-700">
+            The license plate is read automatically from the reservation QR.
+          </div>
 
-          <label className="mt-4 block">
+          <label className="block">
             <span className="text-xs font-black uppercase tracking-wider text-slate-400">
               QR payload
             </span>

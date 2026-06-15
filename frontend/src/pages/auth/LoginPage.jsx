@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { API_URL } from "../../services/api";
+import { getStoredTheme } from "../../utils/theme";
 
 const REMEMBER_ME_DAYS = 30;
 const DEFAULT_SESSION_DAYS = 1;
@@ -14,14 +15,6 @@ const focusRing =
 function getExpiryTimestamp(rememberMe) {
   const days = rememberMe ? REMEMBER_ME_DAYS : DEFAULT_SESSION_DAYS;
   return Date.now() + days * 24 * 60 * 60 * 1000;
-}
-
-function ArrowGlyph() {
-  return (
-    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center transition duration-300 group-hover:translate-x-0.5">
-      <span className="h-2 w-2 rotate-45 border-r-2 border-t-2 border-current" />
-    </span>
-  );
 }
 
 function AuthInput({
@@ -58,12 +51,23 @@ function AuthInput({
 }
 
 export default function LoginPage() {
+  const [theme] = useState(() => getStoredTheme("dark"));
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("123456");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isLight = theme === "light";
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("landing-light", isLight);
+    document.documentElement.classList.toggle("landing-dark", !isLight);
+
+    return () => {
+      document.documentElement.classList.remove("landing-light", "landing-dark");
+    };
+  }, [isLight]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -86,7 +90,7 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        setError(result.message || "Login failed");
+        setError(result.message || "Sign in failed");
         return;
       }
 
@@ -116,10 +120,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#070705] px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] text-[#fbf4e7] md:px-8">
+    <div className={`auth-page relative min-h-[100dvh] overflow-hidden bg-[#070705] px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] text-[#fbf4e7] md:px-8 ${isLight ? "landing-light" : "landing-dark"}`}>
       <div className="pointer-events-none fixed inset-0 opacity-[0.035] [background-image:radial-gradient(circle_at_1px_1px,#ffffff_1px,transparent_0)] [background-size:24px_24px]" />
 
-      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between">
+      <header className="auth-header relative z-10 mx-auto flex max-w-6xl items-center justify-between">
         <Link to="/" className={`group flex items-center gap-3 rounded-full ${focusRing}`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#d7b46a] text-sm font-black text-[#11100d] transition duration-300 group-hover:bg-[#e7c77f]">
             P
@@ -135,7 +139,7 @@ export default function LoginPage() {
         </Link>
         <Link
           to="/signup"
-          className={`hidden rounded-lg bg-white/[0.055] px-4 py-2.5 text-xs font-medium text-[#ddd4c4] ring-1 ring-white/12 transition duration-300 hover:bg-white/[0.09] hover:text-white md:inline-flex ${focusRing}`}
+          className={`hidden rounded-lg border border-transparent bg-white/[0.055] px-4 py-2.5 text-xs font-semibold text-[#ddd4c4] ring-1 ring-white/12 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d7b46a]/45 hover:bg-[#d7b46a]/15 hover:text-[#d7b46a] hover:shadow-md md:inline-flex ${focusRing}`}
         >
           Create account
         </Link>
@@ -144,14 +148,14 @@ export default function LoginPage() {
       <main className="relative z-10 mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-center gap-8 py-10 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="hidden lg:block">
           <div className="rounded-2xl bg-white/[0.035] p-1 ring-1 ring-white/10">
-            <div className="relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b]">
+            <div className="auth-image-panel relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#100f0b]">
               <img
                 src={authImage}
                 alt="Underground parking garage with cinematic lighting"
                 className="absolute inset-0 h-full w-full object-cover opacity-62 saturate-[0.78]"
               />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,5,0.12),rgba(6,6,5,0.86))]" />
-              <div className="absolute inset-x-0 bottom-0 p-8">
+              <div className="auth-image-overlay absolute inset-0 bg-[linear-gradient(180deg,rgba(6,6,5,0.12),rgba(6,6,5,0.86))]" />
+              <div className="auth-image-content absolute inset-x-0 bottom-0 p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
                   Secure building access
                 </p>
@@ -162,7 +166,7 @@ export default function LoginPage() {
                   {["Slots", "Sessions", "Payments"].map((item) => (
                     <div
                       key={item}
-                      className="rounded-lg bg-[#080806]/72 p-4 ring-1 ring-white/10"
+                      className="auth-image-stat rounded-lg bg-[#080806]/72 p-4 ring-1 ring-white/10"
                     >
                       <p className="text-xs font-medium tracking-[0.18em] text-[#d7b46a]/80">
                         {item.toUpperCase()}
@@ -246,7 +250,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#d7b46a] px-5 text-sm font-semibold text-[#11100d] transition duration-300 hover:bg-[#e7c77f] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing}`}
+                className={`flex h-11 w-full items-center justify-center rounded-lg bg-[#d7b46a] px-5 text-sm font-bold text-[#11100d] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#f0d89c] hover:font-black hover:shadow-lg hover:shadow-[#d7b46a]/30 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing}`}
               >
                 {loading ? (
                   <>
@@ -254,10 +258,7 @@ export default function LoginPage() {
                     Signing in
                   </>
                 ) : (
-                  <>
-                    Sign in
-                    <ArrowGlyph />
-                  </>
+                  "Sign in"
                 )}
               </button>
             </form>
@@ -271,7 +272,7 @@ export default function LoginPage() {
               Do not have an account?{" "}
               <Link
                 to="/signup"
-                className="font-semibold text-[#d7b46a] transition hover:text-[#f0d89c]"
+                className="rounded-md px-2 py-1 font-semibold text-[#d7b46a] transition-all duration-300 hover:bg-[#d7b46a]/15 hover:text-[#f0d89c] hover:underline hover:underline-offset-4"
               >
                 Sign up
               </Link>

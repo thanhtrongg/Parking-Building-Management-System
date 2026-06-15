@@ -18,6 +18,7 @@ import feedbackRoutes from "./routes/feedback.routes.js";
 import userFeedbackRoutes from "./routes/userFeedback.routes.js";
 import userParkingSessionRoutes from "./routes/userParkingSession.routes.js";
 import publicRoutes from "./routes/public.routes.js";
+import assistantRoutes from "./routes/assistant.routes.js";
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.get("/api/test-db", async (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/public", publicRoutes);
+app.use("/api/assistant", assistantRoutes);
 app.use("/api/parking-slots", parkingSlotRoutes);
 app.use("/api/parking-sessions", parkingSessionRoutes);
 app.use("/api/reservations", reservationRoutes);

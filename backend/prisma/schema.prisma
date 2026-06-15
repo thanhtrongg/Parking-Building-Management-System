@@ -95,6 +95,7 @@ model reservations {
   id                  String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_id             String         @db.Uuid
   vehicle_type_id     String         @db.Uuid
+  license_plate       String?        @db.VarChar(20)
   parking_slot_id     String?        @db.Uuid
   expected_start_time DateTime       @db.Timestamptz(6)
   expected_end_time   DateTime       @db.Timestamptz(6)

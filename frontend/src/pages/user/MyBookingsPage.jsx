@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
@@ -335,14 +335,6 @@ function BookingDateTimeField({
           />
         </div>
 
-        <div className="flex items-start gap-2 rounded-2xl bg-emerald-50 px-3 py-2.5 text-emerald-700 ring-1 ring-emerald-100">
-          <span className="material-symbols-outlined mt-0.5 text-[17px]">
-            verified
-          </span>
-          <p className="text-xs font-bold leading-5">
-            Past dates and times are automatically blocked.
-          </p>
-        </div>
       </div>
     </div>
   );
@@ -360,6 +352,7 @@ export default function UserMyBookingsPage() {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [now, setNow] = useState(() => new Date());
   const [form, setForm] = useState(() => ({
+    licensePlate: "",
     vehicleTypeId: "",
     startDate: defaultParts.dateKey,
     startTime: defaultParts.timeValue,
@@ -368,6 +361,7 @@ export default function UserMyBookingsPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
+  const slotRequestIdRef = useRef(0);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -392,44 +386,11 @@ export default function UserMyBookingsPage() {
 
           setVehicleTypes(types);
           setForm({
+            licensePlate: "",
             vehicleTypeId: defaultVehicleTypeId,
             startDate: defaultDateKey,
             startTime: defaultTimeValue,
           });
-
-          if (defaultVehicleTypeId) {
-            setLoadingSlots(true);
-            setSelectedSlot(null);
-
-            const params = new URLSearchParams({
-              vehicleTypeId: defaultVehicleTypeId,
-              startTime: toIsoString(
-                combineDateAndTime(defaultDateKey, defaultTimeValue),
-              ),
-            });
-
-            try {
-              const slotsResult = await apiRequest(
-                `/api/parking-slots/available-for-reservation?${params.toString()}`,
-              );
-
-              if (!ignore) {
-                setAvailableSlots(normalizeArray(slotsResult));
-              }
-            } catch (error) {
-              if (!ignore) {
-                setAvailableSlots([]);
-                setAlert({
-                  type: "error",
-                  message: error.message || "Cannot load available slots",
-                });
-              }
-            } finally {
-              if (!ignore) {
-                setLoadingSlots(false);
-              }
-            }
-          }
         }
       } catch (error) {
         if (!ignore) {
@@ -463,12 +424,20 @@ export default function UserMyBookingsPage() {
     );
   }, [form.vehicleTypeId, selectedStartDateTime, now]);
 
-  const loadAvailableSlots = async () => {
+  const loadAvailableSlots = useCallback(async ({ showValidationError = true } = {}) => {
+    const requestId = slotRequestIdRef.current + 1;
+    slotRequestIdRef.current = requestId;
+
     if (!canSearchSlots) {
-      setAlert({
-        type: "error",
-        message: "Please select a future date and time.",
-      });
+      setAvailableSlots([]);
+      setSelectedSlot(null);
+      setLoadingSlots(false);
+      if (showValidationError) {
+        setAlert({
+          type: "error",
+          message: "Please select a future date and time.",
+        });
+      }
       return;
     }
 
@@ -486,17 +455,33 @@ export default function UserMyBookingsPage() {
         `/api/parking-slots/available-for-reservation?${params.toString()}`,
       );
 
-      setAvailableSlots(normalizeArray(result));
+      if (requestId === slotRequestIdRef.current) {
+        setAvailableSlots(normalizeArray(result));
+      }
     } catch (error) {
-      setAvailableSlots([]);
-      setAlert({
-        type: "error",
-        message: error.message || "Cannot load available slots",
-      });
+      if (requestId === slotRequestIdRef.current) {
+        setAvailableSlots([]);
+        setAlert({
+          type: "error",
+          message: error.message || "Cannot load available slots",
+        });
+      }
     } finally {
-      setLoadingSlots(false);
+      if (requestId === slotRequestIdRef.current) {
+        setLoadingSlots(false);
+      }
     }
-  };
+  }, [canSearchSlots, form.vehicleTypeId, selectedStartDateTime]);
+
+  useEffect(() => {
+    if (loadingTypes) return undefined;
+
+    const timer = window.setTimeout(() => {
+      loadAvailableSlots({ showValidationError: false });
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [loadingTypes, loadAvailableSlots]);
 
   useAutoRefresh(async () => {
     if (!canSearchSlots || availableSlots.length === 0) return;
@@ -537,6 +522,14 @@ export default function UserMyBookingsPage() {
       return;
     }
 
+    if (!form.licensePlate.trim()) {
+      setAlert({
+        type: "error",
+        message: "Please enter your vehicle license plate.",
+      });
+      return;
+    }
+
     if (!selectedStartDateTime || selectedStartDateTime < now) {
       setAlert({
         type: "error",
@@ -563,6 +556,7 @@ export default function UserMyBookingsPage() {
         body: JSON.stringify({
           parkingSlotId: selectedSlot.id,
           vehicleTypeId: form.vehicleTypeId,
+          licensePlate: form.licensePlate.trim().toUpperCase(),
           startTime: toIsoString(selectedStartDateTime),
         }),
       });
@@ -602,6 +596,22 @@ export default function UserMyBookingsPage() {
           </h2>
 
           <div className="mt-5 space-y-4">
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-slate-700">
+                License plate
+              </span>
+              <input
+                value={form.licensePlate}
+                onChange={(event) =>
+                  updateField("licensePlate", event.target.value.toUpperCase())
+                }
+                maxLength={20}
+                placeholder="Example: 51A-123.45"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold uppercase text-slate-900 outline-none transition placeholder:font-semibold placeholder:normal-case focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                required
+              />
+            </label>
+
             <label className="block">
               <span className="mb-2 block text-sm font-bold text-slate-700">
                 Vehicle type
@@ -658,22 +668,6 @@ export default function UserMyBookingsPage() {
                 The live session shows elapsed time and current fee.
               </p>
             </div>
-
-            <button
-              type="button"
-              onClick={loadAvailableSlots}
-              disabled={loadingSlots || !canSearchSlots}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loadingSlots ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-300 border-t-blue-700" />
-              ) : (
-                <span className="material-symbols-outlined text-[20px]">
-                  search
-                </span>
-              )}
-              Find available slots
-            </button>
 
             <button
               type="submit"
