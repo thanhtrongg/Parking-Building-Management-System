@@ -1,139 +1,402 @@
-<div align="center">
-  <h1>Parking Building Management System</h1>
-  <hr />
-  <h3>Smart full-stack parking operations for reservations, live sessions, payments, feedback, and role-based management.</h3>
-  <p>
-    Manage multi-zone parking buildings with confirmed reservations, real check-in/check-out sessions, automatic fee calculation, printable receipts, and separate user/system workflows.
-  </p>
-  <p>
-    <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111827" alt="React" />
-    <img src="https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-    <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js Express" />
-    <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
-    <img src="https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  </p>
-  <p>
-    <a href="#getting-started">Quick Start</a>
-    &nbsp;•&nbsp;
-    <a href="#core-features">Features</a>
-    &nbsp;•&nbsp;
-    <a href="#main-api-groups">API</a>
-    &nbsp;•&nbsp;
-    <a href="#project-structure">Structure</a>
-  </p>
-</div>
+# Parking Building Management System
 
-## Project Overview
+Full-stack parking management application for reservations, QR check-in, live
+parking sessions, checkout payments, feedback, role-based operations, and an AI
+assistant powered by Gemini.
 
-The application is designed around two main workspaces:
+## Main Features
 
-- **User workspace**: customers can book parking slots, track active parking sessions, view completed sessions, manage booking history, submit feedback, and update account settings.
-- **System workspace**: administrators, managers, and staff can manage reservations, check vehicles in and out, monitor sessions, handle payments, manage slots/zones/vehicle types/pricing policies, and review feedback.
+- Public landing page with live parking availability and pricing
+- Shared light/dark theme across landing, authentication, and dashboards
+- JWT authentication with `ADMIN`, `MANAGER`, `STAFF`, and `USER` roles
+- Automatic slot availability refresh while users change booking options
+- Reservation QR codes containing the reservation and license plate
+- Staff QR/manual check-in and parking session management
+- Checkout, fee calculation, payment records, and SePay QR payments
+- Parking slot, zone, vehicle type, pricing, user, and feedback management
+- Gemini AI assistant available from the landing page through authenticated pages
 
-The latest parking flow uses confirmed reservations by default. Payment is handled when a parking session ends, not when the user books a slot.
+## AI Assistant
 
-## Core Features
+The ParkMaster Assistant uses `gemini-3.1-flash-lite` by default. It can:
 
-### Authentication and Roles
+- Explain parking prices
+- Estimate parking fees by vehicle type and duration
+- Check a parking slot when the user provides its exact code
+- Show a user's own recent reservations and sessions after login
+- Show an operational summary to authorized system roles
 
-- JWT-based login and protected API access
-- User registration
-- Role-based route protection
-- Separate user and system layouts
-- Admin, manager, staff, and user workflows
+Database information is retrieved by the backend and filtered by role before it
+is sent to Gemini. The model does not receive unrestricted database access. If
+Gemini is unavailable or the API quota is exceeded, the assistant uses a local
+fallback for core lookup features.
 
-### User Features
+## Technology Stack
 
-- Book parking slots by vehicle type and time range
-- Reservations are automatically confirmed
-- View booking history
-- Track active parking sessions after staff check-in
-- View completed parking sessions after checkout and payment
-- See actual assigned slot if staff moves the vehicle to another available slot
-- Submit feedback for bookings/sessions
-- Manage account settings
+| Area | Technology |
+| --- | --- |
+| Frontend | React 19, Vite 5, Tailwind CSS, React Router, Framer Motion, Three.js |
+| Backend | Node.js, Express 5, Prisma ORM |
+| Database | PostgreSQL |
+| Authentication | JWT, bcryptjs |
+| AI | Google Gemini API |
+| Payment | SePay QR and webhook integration |
 
-### System Features
+## Prerequisites
 
-- Dashboard overview for parking activity
-- Reservation management
-- Real check-in flow that creates parking sessions
-- Checkout flow that calculates parking fees and records payment
-- Parking slot management
-- Parking session management
-- Payment management with detail modal and printable receipts
-- Vehicle type management
-- Zone management
-- Pricing policy management
-- User management
-- Feedback review and reply workflow
+Install these tools before starting:
 
-## Parking Session Flow
+- Node.js 20 or newer
+- npm
+- PostgreSQL 14 or newer
+- Git
+- Optional: PostgreSQL `psql` command-line tool for importing sample data
 
-1. User books a parking slot.
-2. Reservation is created as `CONFIRMED`.
-3. Staff checks in the vehicle when the customer arrives.
-4. A real parking session starts at the actual check-in time.
-5. If the reserved slot is occupied, staff can assign another available slot.
-6. Parking fee is calculated from actual check-in time to checkout time.
-7. Staff checks out the vehicle and records payment.
-8. Parking session becomes `COMPLETED`.
-9. Related reservation becomes `COMPLETED`.
-10. The occupied slot becomes `AVAILABLE` again.
+Verify the main tools:
 
-## Languages and Tools
+```bash
+node -v
+npm -v
+psql --version
+```
 
-:hammer_and_wrench: Languages and tools used in this project:
-<div>
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" title="JavaScript" alt="JavaScript" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg" title="HTML5" alt="HTML5" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg" title="CSS3" alt="CSS3" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original-wordmark.svg" title="Node.js" alt="Node.js" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original.svg" title="Express.js" alt="Express.js" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/react/react-original.svg" title="React" alt="React" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/vitejs/vitejs-original.svg" title="Vite" alt="Vite" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/tailwindcss/tailwindcss-original.svg" title="Tailwind CSS" alt="Tailwind CSS" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/threejs/threejs-original.svg" title="Three.js" alt="Three.js" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/prisma/prisma-original.svg" title="Prisma" alt="Prisma" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original.svg" title="PostgreSQL" alt="PostgreSQL" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/npm/npm-original-wordmark.svg" title="npm" alt="npm" width="44" height="44"/>&nbsp;
-<img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/git/git-original.svg" title="Git" alt="Git" width="44" height="44"/>
-</div>
+## Quick Start
 
-## Tech Stack
+### 1. Clone the Repository
 
-### Frontend
+```bash
+git clone https://github.com/thanhtrongg/Parking-Building-Management-System.git
+cd Parking-Building-Management-System
+```
 
-- React
-- Vite
-- Tailwind CSS
-- React Router DOM
-- Framer Motion
-- Three.js / React Three Fiber
+### 2. Create the PostgreSQL Database
 
-### Backend
+Using `psql`:
 
-- Node.js
-- Express.js
-- Prisma ORM
-- PostgreSQL
-- JWT
-- bcryptjs
-- CORS
-- dotenv
+```sql
+CREATE DATABASE parking_management;
+```
 
-### Database Models
+Or create a database named `parking_management` using pgAdmin.
 
-- `users`
-- `vehicle_types`
-- `zones`
-- `parking_slots`
-- `reservations`
-- `parking_sessions`
-- `payments`
-- `feedbacks`
-- `pricing_policies`
-- `system_configs`
+The migration creates the required `uuid-ossp` extension. The PostgreSQL user in
+`DATABASE_URL` must have permission to create extensions and database objects.
+
+### 3. Configure Backend Environment Variables
+
+Create `backend/.env` from the example file.
+
+PowerShell:
+
+```powershell
+Copy-Item backend\.env.example backend\.env
+```
+
+Bash:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env`:
+
+```env
+PORT=5000
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_EXPIRES_IN=1d
+
+DATABASE_URL="postgresql://postgres:your_password@localhost:5432/parking_management?schema=public"
+
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.1-flash-lite
+
+SEPAY_BANK_CODE=
+SEPAY_ACCOUNT_NUMBER=
+SEPAY_ACCOUNT_NAME=
+SEPAY_WEBHOOK_API_KEY=
+```
+
+See [Environment Variable Reference](#environment-variable-reference) for
+detailed instructions.
+
+### 4. Configure Frontend Environment Variables
+
+Create `frontend/.env`:
+
+PowerShell:
+
+```powershell
+Copy-Item frontend\frontend.env.example frontend\.env
+```
+
+Bash:
+
+```bash
+cp frontend/frontend.env.example frontend/.env
+```
+
+Default content:
+
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+### 5. Install Dependencies and Prepare the Database
+
+Backend:
+
+```bash
+cd backend
+npm install
+npx prisma generate
+npx prisma migrate deploy
+node src/seedUser.js
+```
+
+The seed command creates the default administrator:
+
+```text
+Email: admin@gmail.com
+Password: 123456
+```
+
+Frontend:
+
+```bash
+cd ../frontend
+npm install
+```
+
+### 6. Run the Application
+
+Open two terminals.
+
+Terminal 1:
+
+```bash
+cd backend
+npm run dev
+```
+
+Terminal 2:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open:
+
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:5000`
+- Database test: `http://localhost:5000/api/test-db`
+
+## Environment Variable Reference
+
+### Backend: `backend/.env`
+
+| Variable | Required | Example | Description |
+| --- | --- | --- | --- |
+| `PORT` | No | `5000` | Backend HTTP port. Defaults to `5000`. |
+| `DATABASE_URL` | Yes | `postgresql://postgres:password@localhost:5432/parking_management?schema=public` | Prisma/PostgreSQL connection string. |
+| `JWT_SECRET` | Yes | A long random string | Signs login tokens and reservation QR tokens. Never commit this value. |
+| `JWT_EXPIRES_IN` | No | `1d` | Default login token lifetime. Remember-me sessions use 30 days. |
+| `GEMINI_API_KEY` | Recommended | Google AI Studio key | Enables natural-language AI responses. Core assistant lookups still have a local fallback without it. |
+| `GEMINI_MODEL` | No | `gemini-3.1-flash-lite` | Gemini model API ID. |
+| `SEPAY_BANK_CODE` | Only for SePay | `MBBank` | Bank code used to generate SePay QR images. |
+| `SEPAY_ACCOUNT_NUMBER` | Only for SePay | `0123456789` | Bank account that receives payments. |
+| `SEPAY_ACCOUNT_NAME` | No | `PARKMASTER` | Account name displayed with payment information. |
+| `SEPAY_WEBHOOK_API_KEY` | Recommended for SePay | Secret from SePay | Validates incoming SePay webhook requests. |
+
+#### PostgreSQL Passwords with Special Characters
+
+Percent-encode special characters inside `DATABASE_URL`.
+
+Examples:
+
+| Character | Encoded value |
+| --- | --- |
+| `@` | `%40` |
+| `#` | `%23` |
+| `/` | `%2F` |
+| `:` | `%3A` |
+| `%` | `%25` |
+
+For password `Abcd1234@`, use:
+
+```env
+DATABASE_URL="postgresql://postgres:Abcd1234%40@localhost:5432/parking_management?schema=public"
+```
+
+#### Gemini Setup
+
+1. Open [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Create or select a Google Cloud project.
+3. Create an API key.
+4. Add it only to `backend/.env`:
+
+```env
+GEMINI_API_KEY=your-private-api-key
+GEMINI_MODEL=gemini-3.1-flash-lite
+```
+
+5. Restart the backend whenever `.env` changes.
+
+The key must never be added to `backend/.env.example`, frontend files, commits,
+screenshots, or group messages.
+
+To confirm Gemini is active, ask the chatbox a question. A successful backend
+response uses:
+
+```json
+{
+  "source": "gemini"
+}
+```
+
+When Gemini cannot be called, the response uses `"source": "local"`.
+
+#### SePay Setup
+
+For real SePay integration:
+
+1. Configure the receiving bank account in SePay.
+2. Put the bank code, account number, and account name in `backend/.env`.
+3. Create a SePay webhook pointing to:
+
+```text
+https://your-public-backend/api/payments/sepay/webhook
+```
+
+4. Configure the same API key in SePay and `SEPAY_WEBHOOK_API_KEY`.
+
+SePay cannot call a localhost webhook directly. For local testing, system roles
+can use the existing sandbox simulation endpoint:
+
+```text
+POST /api/payments/sepay/sandbox/simulate
+```
+
+### Frontend: `frontend/.env`
+
+| Variable | Required | Example | Description |
+| --- | --- | --- | --- |
+| `VITE_API_URL` | Recommended | `http://localhost:5000` | Base URL of the backend API. |
+
+For deployment, set this to the public backend URL:
+
+```env
+VITE_API_URL=https://api.example.com
+```
+
+Vite embeds `VITE_*` variables into the frontend build. Never place secrets,
+private API keys, database passwords, or JWT secrets in frontend environment
+variables.
+
+## Database Commands
+
+Generate the Prisma client:
+
+```bash
+cd backend
+npx prisma generate
+```
+
+Apply committed migrations:
+
+```bash
+npx prisma migrate deploy
+```
+
+Create a migration while developing schema changes:
+
+```bash
+npx prisma migrate dev --name describe_your_change
+```
+
+Open Prisma Studio:
+
+```bash
+npx prisma studio
+```
+
+### Optional Sample Data
+
+`backend/parking_management_data.sql` contains data for local demonstrations.
+It truncates existing application tables before importing, so do not run it on
+a database containing important data.
+
+PowerShell:
+
+```powershell
+psql -U postgres -d parking_management -f backend\parking_management_data.sql
+```
+
+Bash:
+
+```bash
+psql -U postgres -d parking_management -f backend/parking_management_data.sql
+```
+
+Run migrations before importing the sample data.
+
+## Useful Commands
+
+Backend:
+
+```bash
+cd backend
+npm run dev
+npm start
+npx prisma generate
+npx prisma migrate deploy
+node src/seedUser.js
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run dev
+npm run lint
+npm run build
+npm run preview
+```
+
+## Main Application Flows
+
+### Reservation and QR Check-in
+
+1. A user selects a vehicle type, date, time, slot, and license plate.
+2. Available slots refresh automatically when booking choices change.
+3. The reservation is confirmed and its QR code stores reservation details and
+   the license plate.
+4. Staff scans the QR code or checks the reservation manually.
+5. Check-in creates a parking session and fills the correct license plate.
+
+### Parking Session and Checkout
+
+1. Staff manages active sessions on the Parking Sessions page.
+2. The session detail displays the license plate, slot, customer, and pricing.
+3. Checkout calculates the fee from actual entry time to exit time.
+4. Payment is recorded and the slot becomes available again.
+
+## Main API Groups
+
+| Group | Base path |
+| --- | --- |
+| Authentication | `/api/auth` |
+| AI Assistant | `/api/assistant` |
+| Public landing data | `/api/public` |
+| Reservations | `/api/reservations`, `/api/user/reservations` |
+| Parking slots | `/api/parking-slots` |
+| Parking sessions | `/api/parking-sessions`, `/api/user/parking-sessions` |
+| Payments and SePay | `/api/payments` |
+| Pricing policies | `/api/pricing-policies` |
+| Vehicle types | `/api/vehicle-types` |
+| Zones | `/api/zones` |
+| Feedback | `/api/feedbacks`, `/api/user/feedbacks` |
+| Users | `/api/users` |
 
 ## Project Structure
 
@@ -141,8 +404,8 @@ The latest parking flow uses confirmed reservations by default. Payment is handl
 Parking-Building-Management-System/
 |-- backend/
 |   |-- prisma/
-|   |   |-- schema.prisma
-|   |   `-- migrations/
+|   |   |-- migrations/
+|   |   `-- schema.prisma
 |   |-- src/
 |   |   |-- config/
 |   |   |-- controllers/
@@ -150,190 +413,65 @@ Parking-Building-Management-System/
 |   |   |-- routes/
 |   |   |-- services/
 |   |   `-- server.js
-|   |-- package.json
-|   `-- package-lock.json
+|   |-- .env.example
+|   `-- package.json
 |-- frontend/
-|   |-- public/
 |   |-- src/
 |   |   |-- components/
 |   |   |-- pages/
-|   |   |   |-- auth/
-|   |   |   |-- public/
-|   |   |   |-- system/
-|   |   |   `-- user/
-|   |   |-- routes/
 |   |   |-- services/
-|   |   |-- App.jsx
-|   |   `-- main.jsx
-|   |-- package.json
-|   `-- package-lock.json
-|-- LICENSE
+|   |   |-- utils/
+|   |   `-- App.jsx
+|   |-- frontend.env.example
+|   `-- package.json
 `-- README.md
 ```
 
-## Environment Variables
+## Troubleshooting
 
-Create `backend/.env`:
+### Backend cannot connect to PostgreSQL
 
-```env
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/parking_management"
-JWT_SECRET="change_this_secret"
-JWT_EXPIRES_IN="1d"
-PORT=5000
+- Confirm PostgreSQL is running.
+- Confirm the database exists.
+- Verify username, password, port, and database name in `DATABASE_URL`.
+- Percent-encode special characters in the password.
+- Test with `http://localhost:5000/api/test-db`.
 
-SEPAY_BANK_CODE=""
-SEPAY_ACCOUNT_NUMBER=""
-SEPAY_ACCOUNT_NAME=""
-SEPAY_WEBHOOK_API_KEY=""
+### Prisma migration cannot create `uuid-ossp`
+
+Connect using a PostgreSQL role with extension privileges, then run:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ```
 
-Create `frontend/.env`:
+Run `npx prisma migrate deploy` again.
 
-```env
-VITE_API_URL=http://localhost:5000
-```
+### AI chat always uses local responses
 
-## Getting Started
+- Confirm `GEMINI_API_KEY` exists in `backend/.env`.
+- Confirm `GEMINI_MODEL=gemini-3.1-flash-lite`.
+- Restart the backend after editing `.env`.
+- Check API quota and model access in Google AI Studio.
 
-### Prerequisites
+### Frontend cannot reach the backend
 
-- Node.js
-- npm
-- PostgreSQL
-- Git
+- Confirm the backend is running on port `5000`.
+- Confirm `frontend/.env` contains the correct `VITE_API_URL`.
+- Restart Vite after changing `frontend/.env`.
 
-### Backend Setup
+### Port is already in use
 
-```bash
-cd backend
-npm install
-npx prisma generate
-npx prisma migrate dev
-npm run dev
-```
+Change backend `PORT` and update frontend `VITE_API_URL` to the same port.
 
-Backend default URL:
+## Security Notes
 
-```text
-http://localhost:5000
-```
-
-### Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend default URL:
-
-```text
-http://localhost:5173
-```
-
-### Production Build
-
-```bash
-cd frontend
-npm run build
-```
-
-## Main API Groups
-
-### Auth
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `POST` | `/api/auth/register` | Register a new user |
-| `POST` | `/api/auth/login` | Login and receive JWT |
-| `GET` | `/api/auth/me` | Get current authenticated user |
-| `POST` | `/api/auth/logout` | Logout current user |
-
-### Reservations
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/reservations` | List reservations |
-| `GET` | `/api/reservations/:id` | Get reservation detail |
-| `POST` | `/api/reservations` | Create confirmed reservation |
-| `PUT` | `/api/reservations/:id` | Update reservation |
-| `DELETE` | `/api/reservations/:id` | Cancel reservation |
-
-### Parking Sessions
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/parking-sessions` | List parking sessions |
-| `GET` | `/api/parking-sessions/:id` | Get session detail |
-| `POST` | `/api/parking-sessions/check-in` | Check in vehicle and start session |
-| `PUT` | `/api/parking-sessions/:id/checkout` | Checkout vehicle and create payment |
-
-### User Parking Sessions
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/user/parking-sessions` | List current user's active/completed sessions |
-
-### Payments
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/payments` | List payments |
-| `POST` | `/api/payments/sepay/webhook` | Receive SePay webhook |
-| `GET` | `/api/payments/sepay/:paymentCode/status` | Get SePay payment status |
-| `POST` | `/api/payments/sepay/sandbox/simulate` | Simulate SePay payment in local testing |
-
-### Other API Groups
-
-- `/api/parking-slots`
-- `/api/vehicle-types`
-- `/api/zones`
-- `/api/pricing-policies`
-- `/api/users`
-- `/api/feedbacks`
-- `/api/user/feedbacks`
-
-## Frontend Pages
-
-### Public and Auth
-
-- Landing page
-- Login page
-- Sign up page
-
-### User
-
-- Dashboard
-- Book slot
-- Booking history
-- Parking sessions
-- Feedback
-- Settings
-
-### System
-
-- Dashboard
-- Parking slots
-- Parking sessions
-- Reservations
-- Payments
-- Vehicles
-- Zones
-- Pricing policies
-- Users
-- Feedbacks
-
-## Development Notes
-
-- Reservation status now starts as `CONFIRMED`.
-- Payment status can still use `PENDING`, because payment and reservation states are separate.
-- Parking fee is calculated from actual `entry_time` to `exit_time`.
-- `assigned_slot_id` is used when staff assigns a different real slot from the originally reserved slot.
-- Frontend API calls are centralized in `frontend/src/services/api.js`.
-- Backend route registration starts in `backend/src/server.js`.
-- Prisma models are defined in `backend/prisma/schema.prisma`.
+- `.env` files are ignored by Git and must remain private.
+- Rotate any key immediately if it appears in Git history or a public message.
+- Use a long random `JWT_SECRET` outside local development.
+- Configure `SEPAY_WEBHOOK_API_KEY` before exposing the webhook publicly.
+- Do not use the default administrator password in production.
 
 ## License
 
-This project is licensed under the terms included in the `LICENSE` file.
+This project is licensed under the terms included in [LICENSE](LICENSE).
