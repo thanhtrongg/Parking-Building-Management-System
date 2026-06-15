@@ -38,8 +38,10 @@ const defaultTheme = {
   icon: "grid_view",
 };
 
-const getVehicleTheme = (typeName = "") =>
-  vehicleThemes[typeName] || defaultTheme;
+const getVehicleTheme = (typeName = "") => {
+  const norm = String(typeName).trim().toUpperCase().replace(/\s+/g, "_");
+  return vehicleThemes[norm] || defaultTheme;
+};
 
 function EmptyState({ onAdd }) {
   return (

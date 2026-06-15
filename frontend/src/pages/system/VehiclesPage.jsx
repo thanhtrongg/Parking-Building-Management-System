@@ -4,32 +4,59 @@ import { apiRequest } from "../../services/api";
 import CustomSelect from "../../components/CustomSelect";
 
 const vehicleThemes = {
-  "Ô tô": {
+  // English keys (Database & Normalized formats)
+  "CAR": {
     gradient: "from-sky-500 via-blue-600 to-indigo-700",
     soft: "bg-sky-50 text-sky-700 border-sky-100",
     icon: "directions_car",
   },
-  "Xe máy": {
+  "MOTORBIKE": {
     gradient: "from-orange-500 via-amber-500 to-yellow-400",
     soft: "bg-orange-50 text-orange-700 border-orange-100",
     icon: "two_wheeler",
   },
-  "Xe đạp": {
+  "BICYCLE": {
     gradient: "from-emerald-500 via-green-500 to-lime-400",
     soft: "bg-emerald-50 text-emerald-700 border-emerald-100",
     icon: "directions_bike",
   },
-  "Xe điện": {
+  "ELECTRIC_VEHICLE": {
     gradient: "from-cyan-500 via-blue-500 to-violet-600",
     soft: "bg-cyan-50 text-cyan-700 border-cyan-100",
     icon: "ev_station",
   },
-  "Xe máy điện": {
+  "LIGHT_TRUCK": {
+    gradient: "from-slate-700 via-zinc-700 to-gray-500",
+    soft: "bg-slate-50 text-slate-700 border-slate-200",
+    icon: "local_shipping",
+  },
+  // Vietnamese translations
+  "Ô_TÔ": {
+    gradient: "from-sky-500 via-blue-600 to-indigo-700",
+    soft: "bg-sky-50 text-sky-700 border-sky-100",
+    icon: "directions_car",
+  },
+  "XE_MÁY": {
+    gradient: "from-orange-500 via-amber-500 to-yellow-400",
+    soft: "bg-orange-50 text-orange-700 border-orange-100",
+    icon: "two_wheeler",
+  },
+  "XE_ĐẠP": {
+    gradient: "from-emerald-500 via-green-500 to-lime-400",
+    soft: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    icon: "directions_bike",
+  },
+  "XE_ĐIỆN": {
+    gradient: "from-cyan-500 via-blue-500 to-violet-600",
+    soft: "bg-cyan-50 text-cyan-700 border-cyan-100",
+    icon: "ev_station",
+  },
+  "XE_MÁY_ĐIỆN": {
     gradient: "from-cyan-500 via-blue-500 to-violet-600",
     soft: "bg-cyan-50 text-cyan-700 border-cyan-100",
     icon: "electric_moped",
   },
-  "Xe tải nhỏ": {
+  "XE_TẢI_NHỎ": {
     gradient: "from-slate-700 via-zinc-700 to-gray-500",
     soft: "bg-slate-50 text-slate-700 border-slate-200",
     icon: "local_shipping",
@@ -42,8 +69,10 @@ const defaultTheme = {
   icon: "category",
 };
 
-const getVehicleTheme = (typeName = "") =>
-  vehicleThemes[typeName] || defaultTheme;
+const getVehicleTheme = (typeName = "") => {
+  const norm = String(typeName).trim().toUpperCase().replace(/\s+/g, "_");
+  return vehicleThemes[norm] || defaultTheme;
+};
 
 function EmptyState({ onAdd }) {
   return (

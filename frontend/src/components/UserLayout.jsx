@@ -239,9 +239,9 @@ function Header({ theme, onToggleTheme, onToggleMenu, onLogout, buildings = [], 
 
       <div className="flex items-center gap-3">
         {activeBuilding && (
-          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]">
-            <span className="material-symbols-outlined text-[17px] text-blue-600 dark:text-blue-400">apartment</span>
-            <span className="truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[180px] md:max-w-[240px] font-black tracking-tight">{activeBuilding.name}</span>
+          <div className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm font-black text-slate-800 shadow-sm transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]">
+            <span className="material-symbols-outlined text-[20px] text-blue-600 dark:text-blue-400">apartment</span>
+            <span className="truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[200px] md:max-w-[280px] tracking-tight">{activeBuilding.name}</span>
           </div>
         )}
 
