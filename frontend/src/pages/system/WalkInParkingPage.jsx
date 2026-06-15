@@ -46,6 +46,7 @@ export default function WalkInParkingPage() {
   const [slots, setSlots] = useState([]);
   const [vehicleTypeId, setVehicleTypeId] = useState("");
   const [parkingSlotId, setParkingSlotId] = useState("");
+  const [suggestedSlotId, setSuggestedSlotId] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -86,6 +87,38 @@ export default function WalkInParkingPage() {
     const result = await apiRequest("/api/parking-slots");
     setSlots(result.data || []);
   }, { intervalMs: 5_000 });
+
+  useEffect(() => {
+    if (!vehicleTypeId || !activeBuildingId) {
+      setSuggestedSlotId("");
+      return;
+    }
+
+    const fetchRecommendation = async () => {
+      try {
+        const type = vehicleTypes.find((t) => t.id === vehicleTypeId);
+        const vehicleTypeEnum = type?.name || type?.typeName;
+        if (!vehicleTypeEnum) return;
+
+        const result = await apiRequest("/api/slots/recommend", {
+          method: "POST",
+          body: JSON.stringify({
+            buildingId: activeBuildingId,
+            vehicleType: vehicleTypeEnum.toUpperCase(),
+          }),
+        });
+
+        if (result.data?.slot?.id) {
+          setSuggestedSlotId(result.data.slot.id);
+          setParkingSlotId(result.data.slot.id);
+        }
+      } catch (error) {
+        console.error("Failed to fetch smart allocation suggestion:", error);
+      }
+    };
+
+    fetchRecommendation();
+  }, [vehicleTypeId, activeBuildingId, vehicleTypes]);
 
   const availableSlots = useMemo(
     () =>
@@ -208,7 +241,7 @@ export default function WalkInParkingPage() {
                   { value: "", label: vehicleTypeId ? "Select available slot" : "Select vehicle type first" },
                   ...availableSlots.map((slot) => ({
                     value: slot.id,
-                    label: `${slot.slotName} - ${slot.zoneName || "Unknown zone"}`
+                    label: `${slot.slotName || slot.slotCode} - ${slot.zoneName || slot.zone || "Unknown zone"}${slot.id === suggestedSlotId ? " (Suggested)" : ""}`
                   }))
                 ]}
                 value={parkingSlotId}

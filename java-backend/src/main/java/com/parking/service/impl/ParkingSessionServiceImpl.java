@@ -39,6 +39,7 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
     private final PaymentRepository paymentRepository;
     private final ParkingBuildingRepository buildingRepository;
     private final AuditService auditService;
+    private final ReservationRepository reservationRepository;
 
 
     @Override
@@ -73,6 +74,84 @@ public class ParkingSessionServiceImpl implements ParkingSessionService {
                     !slot.getFloor().getBuilding().getId().equals(building.getId())) {
                 throw new BadRequestException("Parking slot " + slot.getSlotCode() + " does not belong to building " + building.getName());
             }
+
+            // Mark slot as occupied
+            slot.setStatus(SlotStatus.OCCUPIED);
+            slotRepository.save(slot);
+        } else {
+            // Auto-allocate optimal slot!
+            List<ParkingSlot> availableSlots = slotRepository.findAvailableSlotsByBuildingAndVehicleType(
+                    building.getId(), request.getVehicleType()
+            );
+            if (availableSlots.isEmpty()) {
+                throw new BadRequestException("No available slots found for vehicle type " + request.getVehicleType() + " in building " + building.getName());
+            }
+
+            // Filter out slots that have upcoming reservations in the next 2 hours
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime twoHoursFromNow = now.plusHours(2);
+            List<Reservation> overlappingReservations = reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
+                    building.getId(), request.getVehicleType(), now, twoHoursFromNow
+            );
+
+            java.util.Set<UUID> reservedSlotIds = overlappingReservations.stream()
+                    .map(Reservation::getSlot)
+                    .filter(java.util.Objects::nonNull)
+                    .map(ParkingSlot::getId)
+                    .collect(Collectors.toSet());
+
+            List<ParkingSlot> candidates = availableSlots.stream()
+                    .filter(s -> !reservedSlotIds.contains(s.getId()))
+                    .collect(Collectors.toList());
+
+            // If all available slots are reserved in the next 2 hours, fallback to any available slot
+            if (candidates.isEmpty()) {
+                candidates = availableSlots;
+            }
+
+            // Score candidates
+            List<ParkingSlot> allSlots = slotRepository.findByBuildingId(building.getId());
+            final java.util.Map<String, Long> zoneTotal = allSlots.stream()
+                    .filter(s -> s.getZone() != null)
+                    .collect(Collectors.groupingBy(ParkingSlot::getZone, Collectors.counting()));
+            final java.util.Map<String, Long> zoneOccupied = allSlots.stream()
+                    .filter(s -> s.getZone() != null && s.getStatus() == SlotStatus.OCCUPIED)
+                    .collect(Collectors.groupingBy(ParkingSlot::getZone, Collectors.counting()));
+
+            final double wDistance = 0.5;
+            final double wFloor = 0.3;
+            final double wUtilization = 0.2;
+
+            java.util.function.Function<ParkingSlot, Double> scoreCalculator = (ParkingSlot s) -> {
+                int distance = s.getDistanceToExit() != null ? s.getDistanceToExit() : 10;
+                double distanceScore = Math.max(0.0, 1000.0 - distance);
+
+                int floorNumber = s.getFloor() != null ? s.getFloor().getFloorNumber() : 1;
+                double floorScore = 100.0 - (floorNumber * 10.0);
+
+                double utilizationScore = 0.0;
+                if (s.getZone() != null) {
+                    long total = zoneTotal.getOrDefault(s.getZone(), 0L);
+                    long occupied = zoneOccupied.getOrDefault(s.getZone(), 0L);
+                    utilizationScore = total > 0 ? ((double) occupied / total) * 100.0 : 0.0;
+                }
+
+                return (wDistance * distanceScore) + (wFloor * floorScore) + (wUtilization * utilizationScore);
+            };
+
+            java.util.Comparator<ParkingSlot> slotComparator = (s1, s2) -> {
+                double score1 = scoreCalculator.apply(s1);
+                double score2 = scoreCalculator.apply(s2);
+                int comp = Double.compare(score2, score1); // Descending order
+                if (comp != 0) {
+                    return comp;
+                }
+                return s1.getSlotCode().compareTo(s2.getSlotCode());
+            };
+
+            slot = candidates.stream()
+                    .min(slotComparator)
+                    .orElseThrow(() -> new BadRequestException("No available slot could be allocated."));
 
             // Mark slot as occupied
             slot.setStatus(SlotStatus.OCCUPIED);

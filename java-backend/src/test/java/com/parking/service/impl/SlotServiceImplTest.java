@@ -352,4 +352,45 @@ public class SlotServiceImplTest {
 
         assertThrows(BadRequestException.class, () -> slotService.deleteSlot(slotId));
     }
+
+    @Test
+    void testRecommendSlot_SmartAllocation() {
+        ParkingBuilding building = ParkingBuilding.builder().id(buildingId).name("Building A").build();
+        Floor floor = Floor.builder().id(floorId).floorName("Floor 1").floorNumber(1).building(building).build();
+
+        // slotA: 20m to exit, zone "Zone A", named "1F-0B" (closer slot, should win under smart logic)
+        ParkingSlot slotA = ParkingSlot.builder()
+                .id(UUID.randomUUID())
+                .slotCode("1F-0B")
+                .status(SlotStatus.AVAILABLE)
+                .floor(floor)
+                .zone("Zone A")
+                .distanceToExit(20)
+                .build();
+
+        // slotB: 50m to exit, zone "Zone A", named "1F-0A" (further slot, would win under old lexicographical logic)
+        ParkingSlot slotB = ParkingSlot.builder()
+                .id(UUID.randomUUID())
+                .slotCode("1F-0A")
+                .status(SlotStatus.AVAILABLE)
+                .floor(floor)
+                .zone("Zone A")
+                .distanceToExit(50)
+                .build();
+
+        // mock repo calls
+        when(slotRepository.findAvailableSlotsByBuildingAndVehicleType(buildingId, VehicleTypeEnum.CAR))
+                .thenReturn(List.of(slotA, slotB));
+        when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(eq(buildingId), eq(VehicleTypeEnum.CAR), any(), any()))
+                .thenReturn(Collections.emptyList());
+        lenient().when(slotRepository.findByBuildingId(buildingId))
+                .thenReturn(List.of(slotA, slotB));
+
+        SlotRecommendRequest request = new SlotRecommendRequest(buildingId, VehicleTypeEnum.CAR);
+        SlotRecommendResponse response = slotService.recommendSlot(request);
+
+        assertNotNull(response);
+        // Expect slotA because distanceToExit is smaller (20m < 50m) hence higher score
+        assertEquals("1F-0B", response.getSlot().getSlotCode());
+    }
 }

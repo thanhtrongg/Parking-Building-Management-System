@@ -20,6 +20,7 @@ import com.parking.repository.ParkingSessionRepository;
 import com.parking.repository.ParkingSlotRepository;
 import com.parking.repository.UserRepository;
 import com.parking.repository.PaymentRepository;
+import com.parking.repository.ReservationRepository;
 import com.parking.service.AuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,6 +73,9 @@ public class ParkingSessionServiceImplTest {
 
     @Mock
     private AuditService auditService;
+
+    @Mock
+    private ReservationRepository reservationRepository;
 
     @InjectMocks
     private ParkingSessionServiceImpl sessionService;
@@ -232,6 +236,23 @@ public class ParkingSessionServiceImplTest {
         request.setVehicleType(VehicleTypeEnum.CAR);
         request.setGateIn("Gate A");
 
+        UUID slotId = UUID.randomUUID();
+        ParkingSlot slotObj = ParkingSlot.builder()
+                .id(slotId)
+                .status(SlotStatus.AVAILABLE)
+                .vehicleType(VehicleTypeEnum.CAR)
+                .floor(Floor.builder().building(building).build())
+                .slotCode("1A-01")
+                .build();
+
+        when(slotRepository.findAvailableSlotsByBuildingAndVehicleType(buildingId, VehicleTypeEnum.CAR))
+                .thenReturn(List.of(slotObj));
+        when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
+                eq(buildingId), eq(VehicleTypeEnum.CAR), any(), any()))
+                .thenReturn(Collections.emptyList());
+        when(slotRepository.findByBuildingId(buildingId))
+                .thenReturn(List.of(slotObj));
+
         User staff = User.builder().email("staff@parking.com").fullName("Staff In").build();
         lenient().when(userRepository.findByEmail("staff@parking.com")).thenReturn(Optional.of(staff));
         when(sessionRepository.save(any(ParkingSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -239,8 +260,8 @@ public class ParkingSessionServiceImplTest {
         SessionResponse response = sessionService.checkIn(request, "staff@parking.com");
 
         assertNotNull(response);
-        assertNull(response.getSlotId());
-        assertNull(response.getParkedAt());
+        assertEquals(slotId, response.getSlotId());
+        assertNotNull(response.getParkedAt());
         assertEquals("30A-99999", response.getLicensePlate());
         assertEquals(SessionStatus.ACTIVE, response.getStatus());
     }

@@ -131,7 +131,7 @@ function Alert({ type, message, onClose }) {
   );
 }
 
-function SlotCard({ slot, selected, onSelect }) {
+function SlotCard({ slot, selected, onSelect, isSuggested }) {
   return (
     <button
       type="button"
@@ -175,6 +175,15 @@ function SlotCard({ slot, selected, onSelect }) {
         {selected && (
           <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-blue-700 ring-1 ring-white/70">
             SELECTED
+          </span>
+        )}
+        {isSuggested && (
+          <span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${
+            selected
+              ? "bg-blue-500 text-white ring-white/30"
+              : "bg-blue-50 text-blue-700 ring-blue-100"
+          }`}>
+            SUGGESTED
           </span>
         )}
         <span
@@ -356,6 +365,7 @@ export default function UserMyBookingsPage() {
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [suggestedSlotId, setSuggestedSlotId] = useState("");
   const [now, setNow] = useState(() => new Date());
   const [form, setForm] = useState(() => ({
     licensePlate: "",
@@ -504,6 +514,7 @@ export default function UserMyBookingsPage() {
     try {
       setLoadingSlots(true);
       setSelectedSlot(null);
+      setSuggestedSlotId("");
       setAlert({ type: "", message: "" });
 
       const params = new URLSearchParams({
@@ -517,7 +528,35 @@ export default function UserMyBookingsPage() {
       );
 
       if (requestId === slotRequestIdRef.current) {
-        setAvailableSlots(normalizeArray(result));
+        const slotsList = normalizeArray(result);
+        setAvailableSlots(slotsList);
+
+        // Fetch smart recommendation
+        const type = vehicleTypes.find((t) => t.id === form.vehicleTypeId);
+        const vehicleTypeEnum = type?.name || type?.typeName;
+        if (vehicleTypeEnum) {
+          try {
+            const recResult = await apiRequest("/api/slots/recommend", {
+              method: "POST",
+              body: JSON.stringify({
+                buildingId: form.buildingId,
+                vehicleType: vehicleTypeEnum.toUpperCase(),
+              }),
+            });
+
+            if (recResult.data?.slot?.id && requestId === slotRequestIdRef.current) {
+              setSuggestedSlotId(recResult.data.slot.id);
+              // Auto-select if no slot is currently selected
+              setSelectedSlot((current) => {
+                if (current) return current;
+                const found = slotsList.find((s) => s.id === recResult.data.slot.id);
+                return found || null;
+              });
+            }
+          } catch (err) {
+            console.error("Failed to fetch smart recommendation:", err);
+          }
+        }
       }
     } catch (error) {
       if (requestId === slotRequestIdRef.current) {
@@ -792,6 +831,7 @@ export default function UserMyBookingsPage() {
                   slot={slot}
                   selected={selectedSlot?.id === slot.id}
                   onSelect={setSelectedSlot}
+                  isSuggested={suggestedSlotId === slot.id}
                 />
               ))}
             </div>

@@ -35,6 +35,9 @@ public class ParkingSlot {
     @Column(name = "zone")
     private String zone;
 
+    @Column(name = "distance_to_exit")
+    private Integer distanceToExit;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "floor_id", nullable = false)
     private Floor floor;

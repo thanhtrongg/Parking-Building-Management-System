@@ -87,20 +87,79 @@ public class ReservationServiceImpl implements ReservationService {
                 }
             }
         } else {
-            // Flexible allocation: check building capacity for the vehicle type
-            long totalCapacity = slotRepository.countByBuildingIdAndVehicleType(building.getId(), request.getVehicleType());
-            if (totalCapacity == 0) {
-                throw new BadRequestException("This building does not have any slots for vehicle type: " + request.getVehicleType());
-            }
-
+            // Flexible allocation: find and allocate the optimal slot based on MCDA weighted scoring heuristic
             List<Reservation> activeReservationsInBuilding = reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
                     building.getId(), request.getVehicleType(), request.getReservedFrom(), request.getReservedTo()
             );
 
-            if (activeReservationsInBuilding.size() >= totalCapacity) {
+            java.util.Set<UUID> reservedSlotIds = activeReservationsInBuilding.stream()
+                    .map(Reservation::getSlot)
+                    .filter(java.util.Objects::nonNull)
+                    .map(ParkingSlot::getId)
+                    .collect(Collectors.toSet());
+
+            List<ParkingSlot> availableSlots = slotRepository.findAvailableSlotsByBuildingAndVehicleType(
+                    building.getId(), request.getVehicleType()
+            );
+
+            List<ParkingSlot> candidates = availableSlots.stream()
+                    .filter(s -> !reservedSlotIds.contains(s.getId()))
+                    .collect(Collectors.toList());
+
+            if (candidates.isEmpty()) {
                 throw new BadRequestException("No available capacity for vehicle type " + request.getVehicleType() + 
                         " in building " + building.getName() + " for the selected time window.");
             }
+
+            // Calculate Zone Utilization
+            List<ParkingSlot> allSlots = slotRepository.findByBuildingId(building.getId());
+            final java.util.Map<String, Long> zoneTotal = allSlots.stream()
+                    .filter(s -> s.getZone() != null)
+                    .collect(Collectors.groupingBy(ParkingSlot::getZone, Collectors.counting()));
+            final java.util.Map<String, Long> zoneOccupied = allSlots.stream()
+                    .filter(s -> s.getZone() != null && s.getStatus() == com.parking.enums.SlotStatus.OCCUPIED)
+                    .collect(Collectors.groupingBy(ParkingSlot::getZone, Collectors.counting()));
+
+            // Heuristic Weights
+            final double wDistance = 0.5;
+            final double wFloor = 0.3;
+            final double wUtilization = 0.2;
+
+            // Scoring function
+            java.util.function.Function<ParkingSlot, Double> scoreCalculator = (ParkingSlot s) -> {
+                // 1. Distance Score: max(0, 1000 - distance)
+                int distance = s.getDistanceToExit() != null ? s.getDistanceToExit() : 10;
+                double distanceScore = Math.max(0.0, 1000.0 - distance);
+
+                // 2. Floor Score: 100 - (floorNumber * 10)
+                int floorNumber = s.getFloor() != null ? s.getFloor().getFloorNumber() : 1;
+                double floorScore = 100.0 - (floorNumber * 10.0);
+
+                // 3. Zone Utilization Score: (occupied / total) * 100
+                double utilizationScore = 0.0;
+                if (s.getZone() != null) {
+                    long total = zoneTotal.getOrDefault(s.getZone(), 0L);
+                    long occupied = zoneOccupied.getOrDefault(s.getZone(), 0L);
+                    utilizationScore = total > 0 ? ((double) occupied / total) * 100.0 : 0.0;
+                }
+
+                return (wDistance * distanceScore) + (wFloor * floorScore) + (wUtilization * utilizationScore);
+            };
+
+            // Sort descending by score, then lexicographically by slotCode
+            java.util.Comparator<ParkingSlot> slotComparator = (s1, s2) -> {
+                double score1 = scoreCalculator.apply(s1);
+                double score2 = scoreCalculator.apply(s2);
+                int comp = Double.compare(score2, score1); // Descending order
+                if (comp != 0) {
+                    return comp;
+                }
+                return s1.getSlotCode().compareTo(s2.getSlotCode());
+            };
+
+            slot = candidates.stream()
+                    .min(slotComparator)
+                    .orElseThrow(() -> new BadRequestException("Failed to find a recommended slot"));
         }
 
         Reservation reservation = Reservation.builder()

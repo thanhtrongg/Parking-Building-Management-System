@@ -89,15 +89,19 @@ public class ReservationServiceImplTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
         when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
-        when(slotRepository.countByBuildingIdAndVehicleType(building.getId(), VehicleTypeEnum.CAR)).thenReturn(10L);
         when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
                 eq(building.getId()), eq(VehicleTypeEnum.CAR), any(), any()
         )).thenReturn(Collections.emptyList());
+        when(slotRepository.findAvailableSlotsByBuildingAndVehicleType(building.getId(), VehicleTypeEnum.CAR))
+                .thenReturn(List.of(slot));
+        when(slotRepository.findByBuildingId(building.getId()))
+                .thenReturn(List.of(slot));
 
         Reservation savedReservation = Reservation.builder()
                 .id(UUID.randomUUID())
                 .driver(driver)
                 .building(building)
+                .slot(slot)
                 .vehicleType(VehicleTypeEnum.CAR)
                 .reservedFrom(request.getReservedFrom())
                 .reservedTo(request.getReservedTo())
@@ -109,7 +113,7 @@ public class ReservationServiceImplTest {
 
         assertNotNull(response);
         assertEquals(building.getId(), response.getBuildingId());
-        assertNull(response.getSlotId());
+        assertEquals(slot.getId(), response.getSlotId());
         verify(reservationRepository, times(1)).save(any(Reservation.class));
     }
 
@@ -123,10 +127,14 @@ public class ReservationServiceImplTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(driver));
         when(buildingRepository.findByIdWithWriteLock(building.getId())).thenReturn(Optional.of(building));
-        when(slotRepository.countByBuildingIdAndVehicleType(building.getId(), VehicleTypeEnum.CAR)).thenReturn(2L);
+        
+        Reservation overlapping1 = Reservation.builder().slot(slot).build();
         when(reservationRepository.findOverlappingReservationsByBuildingAndVehicleType(
                 eq(building.getId()), eq(VehicleTypeEnum.CAR), any(), any()
-        )).thenReturn(List.of(new Reservation(), new Reservation()));
+        )).thenReturn(List.of(overlapping1));
+        
+        when(slotRepository.findAvailableSlotsByBuildingAndVehicleType(building.getId(), VehicleTypeEnum.CAR))
+                .thenReturn(List.of(slot));
 
         assertThrows(BadRequestException.class, () -> reservationService.createReservation(request, email));
     }

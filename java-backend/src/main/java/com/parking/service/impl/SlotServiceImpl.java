@@ -117,18 +117,59 @@ public class SlotServiceImpl implements SlotService {
             throw new BadRequestException("All available slots have upcoming reservations in the next 2 hours");
         }
 
-        // Score slots:
-        // Sort by proximity to ground floor (absolute value of floor number) ascending, then by slotCode lexicographically.
-        java.util.Comparator<ParkingSlot> slotComparator = java.util.Comparator
-                .comparing((ParkingSlot s) -> Math.abs(s.getFloor().getFloorNumber()))
-                .thenComparing(ParkingSlot::getSlotCode);
+        // Calculate Zone Utilization
+        List<ParkingSlot> allSlots = slotRepository.findByBuildingId(request.getBuildingId());
+        final java.util.Map<String, Long> zoneTotal = allSlots.stream()
+                .filter(s -> s.getZone() != null)
+                .collect(Collectors.groupingBy(ParkingSlot::getZone, Collectors.counting()));
+        final java.util.Map<String, Long> zoneOccupied = allSlots.stream()
+                .filter(s -> s.getZone() != null && s.getStatus() == SlotStatus.OCCUPIED)
+                .collect(Collectors.groupingBy(ParkingSlot::getZone, Collectors.counting()));
+
+        // Heuristic Weights
+        final double wDistance = 0.5;
+        final double wFloor = 0.3;
+        final double wUtilization = 0.2;
+
+        // Scoring function
+        java.util.function.Function<ParkingSlot, Double> scoreCalculator = (ParkingSlot s) -> {
+            // 1. Distance Score: max(0, 1000 - distance)
+            int distance = s.getDistanceToExit() != null ? s.getDistanceToExit() : 10;
+            double distanceScore = Math.max(0.0, 1000.0 - distance);
+
+            // 2. Floor Score: 100 - (floorNumber * 10)
+            int floorNumber = s.getFloor() != null ? s.getFloor().getFloorNumber() : 1;
+            double floorScore = 100.0 - (floorNumber * 10.0);
+
+            // 3. Zone Utilization Score: (occupied / total) * 100
+            double utilizationScore = 0.0;
+            if (s.getZone() != null) {
+                long total = zoneTotal.getOrDefault(s.getZone(), 0L);
+                long occupied = zoneOccupied.getOrDefault(s.getZone(), 0L);
+                utilizationScore = total > 0 ? ((double) occupied / total) * 100.0 : 0.0;
+            }
+
+            return (wDistance * distanceScore) + (wFloor * floorScore) + (wUtilization * utilizationScore);
+        };
+
+        // Sort descending by score, then lexicographically by slotCode
+        java.util.Comparator<ParkingSlot> slotComparator = (s1, s2) -> {
+            double score1 = scoreCalculator.apply(s1);
+            double score2 = scoreCalculator.apply(s2);
+            int comp = Double.compare(score2, score1); // Descending order
+            if (comp != 0) {
+                return comp;
+            }
+            return s1.getSlotCode().compareTo(s2.getSlotCode());
+        };
 
         ParkingSlot bestSlot = candidates.stream()
                 .min(slotComparator)
                 .orElseThrow(() -> new BadRequestException("Failed to find a recommended slot"));
 
-        String reason = String.format("Recommended slot %s on floor %s (floor number %d) because it is the closest floor with availability and has no upcoming reservations.",
-                bestSlot.getSlotCode(), bestSlot.getFloor().getFloorName(), bestSlot.getFloor().getFloorNumber());
+        String reason = String.format("Recommended slot %s on floor %s (floor number %d, distance to exit %dm) because it has the highest smart allocation score (maximizing utilization and minimizing search time).",
+                bestSlot.getSlotCode(), bestSlot.getFloor().getFloorName(), bestSlot.getFloor().getFloorNumber(),
+                bestSlot.getDistanceToExit() != null ? bestSlot.getDistanceToExit() : 10);
 
         return SlotRecommendResponse.builder()
                 .slot(mapToResponse(bestSlot))
@@ -294,6 +335,7 @@ public class SlotServiceImpl implements SlotService {
                 .vehicleType(slot.getVehicleType())
                 .zone(slot.getZone())
                 .buildingId(slot.getFloor().getBuilding() != null ? slot.getFloor().getBuilding().getId() : null)
+                .distanceToExit(slot.getDistanceToExit())
                 .build();
     }
 }

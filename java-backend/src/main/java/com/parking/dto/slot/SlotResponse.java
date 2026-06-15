@@ -23,4 +23,5 @@ public class SlotResponse {
     private VehicleTypeEnum vehicleType;
     private String zone;
     private UUID buildingId;
+    private Integer distanceToExit;
 }
