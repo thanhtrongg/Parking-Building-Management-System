@@ -1,6 +1,8 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import FeedbackNotifications from "./FeedbackNotifications";
+import { apiRequest } from "../services/api";
+import CustomSelect from "./CustomSelect";
 
 const navItems = [
   {
@@ -148,11 +150,11 @@ function SidebarNav({ onNavigate }) {
   );
 }
 
-function Sidebar({ mobile = false, open = false, onClose }) {
+function Sidebar({ mobile = false, open = false, onClose, buildings = [], selectedBuildingId = "", onBuildingChange }) {
   return (
     <aside
       className={[
-        "fixed left-0 top-0 z-[60] h-dvh w-[280px] flex-col overflow-hidden border-r border-slate-200 bg-white py-5 shadow-2xl transition-transform duration-300 lg:w-[260px] lg:shadow-none",
+        "fixed left-0 top-0 z-[60] h-dvh w-[280px] flex-col overflow-hidden border-r border-slate-200 bg-white py-5 shadow-2xl transition-transform duration-300 lg:w-[260px] lg:shadow-none dark:border-white/10 dark:bg-[#11100c]",
         mobile
           ? `flex lg:hidden ${open ? "translate-x-0" : "-translate-x-full"}`
           : "hidden lg:flex",
@@ -163,23 +165,45 @@ function Sidebar({ mobile = false, open = false, onClose }) {
           type="button"
           onClick={onClose}
           aria-label="Close menu"
-          className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm"
+          className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
         >
           <span className="material-symbols-outlined text-xl">close</span>
         </button>
       )}
       <Brand />
+
+      {buildings.length > 0 && (
+        <div className="relative z-20 mt-5 px-4">
+          <div className="relative flex flex-col gap-1.5 rounded-2xl border border-slate-200 bg-slate-50/50 p-3 shadow-inner dark:border-white/10 dark:bg-white/5">
+            <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-[#b9af9d]">
+              <span className="material-symbols-outlined text-[16px] text-slate-400 dark:text-[#b9af9d]">apartment</span>
+              Active Building
+            </label>
+            <CustomSelect
+              options={buildings.map(b => ({ value: b.id, label: b.name }))}
+              value={selectedBuildingId}
+              onChange={onBuildingChange}
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-800 shadow-sm transition hover:border-blue-300 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+              popupClassName="w-56 left-0 mt-2"
+            />
+          </div>
+        </div>
+      )}
+
       <SidebarNav onNavigate={mobile ? onClose : undefined} />
     </aside>
   );
 }
 
-function Header({ theme, onToggleTheme, onToggleMenu, onLogout }) {
+function Header({ theme, onToggleTheme, onToggleMenu, onLogout, buildings = [], selectedBuildingId = "" }) {
   const user = getStoredUser();
   const { name, email } = getUserDisplay(user);
   const isDark = theme === "dark";
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
+  const activeBuilding = useMemo(() => {
+    return buildings.find(b => b.id === selectedBuildingId);
+  }, [buildings, selectedBuildingId]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -214,6 +238,13 @@ function Header({ theme, onToggleTheme, onToggleMenu, onLogout }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {activeBuilding && (
+          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/50 px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]">
+            <span className="material-symbols-outlined text-[17px] text-blue-600 dark:text-blue-400">apartment</span>
+            <span className="truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[180px] md:max-w-[240px] font-black tracking-tight">{activeBuilding.name}</span>
+          </div>
+        )}
+
         <FeedbackNotifications audience="user" />
 
         <button
@@ -292,6 +323,43 @@ export default function UserLayout({ children }) {
   });
   const isDark = theme === "dark";
 
+  const [buildings, setBuildings] = useState([]);
+  const [selectedBuildingId, setSelectedBuildingId] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBuildings = async () => {
+      try {
+        const res = await apiRequest("buildings");
+        if (!isMounted) return;
+        const list = res.data || [];
+        setBuildings(list);
+        if (list.length > 0) {
+          const stored = localStorage.getItem("activeSystemBuildingId");
+          const found = list.find((b) => b.id === stored);
+          const initialId = found ? found.id : list[0].id;
+          setSelectedBuildingId(initialId);
+          localStorage.setItem("activeSystemBuildingId", initialId);
+          // Dispatch initial event
+          window.dispatchEvent(new CustomEvent("systemBuildingChanged", { detail: initialId }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch buildings", error);
+      }
+    };
+    fetchBuildings();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleBuildingChange = (e) => {
+    const val = e && e.target ? e.target.value : e;
+    setSelectedBuildingId(val);
+    localStorage.setItem("activeSystemBuildingId", val);
+    window.dispatchEvent(new CustomEvent("systemBuildingChanged", { detail: val }));
+  };
+
   const handleToggleTheme = () => {
     setTheme((current) => {
       const nextTheme = current === "dark" ? "light" : "dark";
@@ -339,11 +407,18 @@ export default function UserLayout({ children }) {
       <div className="app-ambient app-ambient-one" aria-hidden="true" />
       <div className="app-ambient app-ambient-two" aria-hidden="true" />
       <div className="app-grid-glow" aria-hidden="true" />
-      <Sidebar />
+      <Sidebar
+        buildings={buildings}
+        selectedBuildingId={selectedBuildingId}
+        onBuildingChange={handleBuildingChange}
+      />
       <Sidebar
         mobile
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
+        buildings={buildings}
+        selectedBuildingId={selectedBuildingId}
+        onBuildingChange={handleBuildingChange}
       />
       {menuOpen && (
         <button
@@ -358,6 +433,8 @@ export default function UserLayout({ children }) {
         onToggleTheme={handleToggleTheme}
         onToggleMenu={() => setMenuOpen((current) => !current)}
         onLogout={handleLogout}
+        buildings={buildings}
+        selectedBuildingId={selectedBuildingId}
       />
 
       <main className="min-h-screen pt-16 lg:ml-[260px]">

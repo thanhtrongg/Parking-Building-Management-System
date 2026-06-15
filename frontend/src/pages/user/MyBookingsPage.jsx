@@ -367,6 +367,7 @@ export default function UserMyBookingsPage() {
   const [now, setNow] = useState(() => new Date());
   const [form, setForm] = useState(() => ({
     vehicleTypeId: "",
+    buildingId: localStorage.getItem("activeSystemBuildingId") || "",
     startDate: defaultParts.dateKey,
     startTime: defaultParts.timeValue,
   }));
@@ -376,6 +377,18 @@ export default function UserMyBookingsPage() {
   const [alert, setAlert] = useState({ type: "", message: "" });
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setForm(prev => ({ ...prev, buildingId: e.detail }));
+      setSelectedSlot(null);
+      setAvailableSlots([]);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -390,10 +403,13 @@ export default function UserMyBookingsPage() {
 
     async function loadVehicleTypes() {
       try {
-        const result = await apiRequest("/api/vehicle-types");
+        setLoadingTypes(true);
+        const typesResult = await apiRequest("/api/vehicle-types");
+
         if (!ignore) {
-          const types = normalizeArray(result);
+          const types = normalizeArray(typesResult);
           const defaultVehicleTypeId = types[0]?.id || "";
+          const defaultBuildingId = localStorage.getItem("activeSystemBuildingId") || "";
           const defaultStart = getDefaultStartDateTime();
           const defaultDateKey = toDateKey(defaultStart);
           const defaultTimeValue = toTimeValue(defaultStart);
@@ -401,15 +417,17 @@ export default function UserMyBookingsPage() {
           setVehicleTypes(types);
           setForm({
             vehicleTypeId: defaultVehicleTypeId,
+            buildingId: defaultBuildingId,
             startDate: defaultDateKey,
             startTime: defaultTimeValue,
           });
-          if (defaultVehicleTypeId) {
+          if (defaultVehicleTypeId && defaultBuildingId) {
             setLoadingSlots(true);
             setSelectedSlot(null);
 
             const params = new URLSearchParams({
               vehicleTypeId: defaultVehicleTypeId,
+              buildingId: defaultBuildingId,
               startTime: toIsoString(
                 combineDateAndTime(defaultDateKey, defaultTimeValue),
               ),
@@ -465,16 +483,16 @@ export default function UserMyBookingsPage() {
 
   const canSearchSlots = useMemo(() => {
     return (
-      Boolean(form.vehicleTypeId && selectedStartDateTime) &&
+      Boolean(form.vehicleTypeId && form.buildingId && selectedStartDateTime) &&
       selectedStartDateTime >= now
     );
-  }, [form.vehicleTypeId, selectedStartDateTime, now]);
+  }, [form.vehicleTypeId, form.buildingId, selectedStartDateTime, now]);
 
   const loadAvailableSlots = async () => {
     if (!canSearchSlots) {
       setAlert({
         type: "error",
-        message: "Please select a future date and time.",
+        message: "Please select a building, vehicle type, and a future date and time.",
       });
       return;
     }
@@ -486,6 +504,7 @@ export default function UserMyBookingsPage() {
 
       const params = new URLSearchParams({
         vehicleTypeId: form.vehicleTypeId,
+        buildingId: form.buildingId,
         startTime: toIsoString(selectedStartDateTime),
       });
 
@@ -511,13 +530,14 @@ export default function UserMyBookingsPage() {
     } else {
       setAvailableSlots([]);
     }
-  }, [form.vehicleTypeId, form.startDate, form.startTime, canSearchSlots]);
+  }, [form.vehicleTypeId, form.buildingId, form.startDate, form.startTime, canSearchSlots]);
 
   useAutoRefresh(async () => {
     if (!canSearchSlots || availableSlots.length === 0) return;
 
     const params = new URLSearchParams({
       vehicleTypeId: form.vehicleTypeId,
+      buildingId: form.buildingId,
       startTime: toIsoString(selectedStartDateTime),
     });
     const result = await apiRequest(
@@ -576,6 +596,7 @@ export default function UserMyBookingsPage() {
         body: JSON.stringify({
           parkingSlotId: selectedSlot.id,
           vehicleTypeId: form.vehicleTypeId,
+          buildingId: form.buildingId,
           startTime: toIsoString(selectedStartDateTime),
         }),
       });
@@ -706,7 +727,7 @@ export default function UserMyBookingsPage() {
                 Available Slots
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                {displayedSlots.length} slots match your selected criteria.
+                {availableSlots.length} slots match your selected criteria.
               </p>
             </div>
           </div>
@@ -720,7 +741,7 @@ export default function UserMyBookingsPage() {
                 />
               ))}
             </div>
-          ) : displayedSlots.length === 0 ? (
+          ) : availableSlots.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
                 <span className="material-symbols-outlined text-[34px]">
@@ -736,7 +757,7 @@ export default function UserMyBookingsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {displayedSlots.map((slot) => (
+              {availableSlots.map((slot) => (
                 <SlotCard
                   key={slot.id}
                   slot={slot}

@@ -248,8 +248,13 @@ export const apiRequest = async (path, options = {}) => {
       return { success: true, data: [] };
     }
 
-    // 3. Get floors for first building
-    const floorsRes = await apiRequest(`floors/building/${buildings[0].id}`);
+    // 3. Get floors for target building
+    const buildingId = params.get("buildingId");
+    const targetBuildingId = buildingId || (buildings[0] ? buildings[0].id : "");
+    if (!targetBuildingId) {
+      return { success: true, data: [] };
+    }
+    const floorsRes = await apiRequest(`floors/building/${targetBuildingId}`);
     const floors = floorsRes.data || [];
 
     // 4. Get available slots for each floor
