@@ -38,10 +38,9 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        if (userRepository.count() > 0) {
-            log.info("Database already seeded. Skipping DatabaseSeeder.");
-            return;
-        }
+        // Force database reset and re-seeding to apply the new physical building layout and distances
+        log.info("Resetting and seeding database with new development mock data layout...");
+        jdbcTemplate.execute("TRUNCATE TABLE users, parking_slots, floors, zones, parking_buildings, pricing, reservations, parking_sessions, payments, feedbacks, vehicle_types CASCADE");
 
         log.info("Seeding database with development mock data...");
 
