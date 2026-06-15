@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import CustomSelect from "../../components/CustomSelect";
 
 const statusConfig = {
   SUCCESS: {
@@ -302,31 +303,35 @@ function FilterToolbar({
             />
           </div>
 
-          <select
+          <CustomSelect
+            options={[
+              { value: "ALL", label: "All Status" },
+              { value: "SUCCESS", label: "Success" },
+              { value: "PENDING", label: "Pending" },
+              { value: "FAILED", label: "Failed" },
+              { value: "REFUNDED", label: "Refunded" }
+            ]}
             value={selectedStatus}
-            onChange={(event) => setSelectedStatus(event.target.value)}
-            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-          >
-            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Status</option>
-            <option value="SUCCESS" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Success</option>
-            <option value="PENDING" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Pending</option>
-            <option value="FAILED" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Failed</option>
-            <option value="REFUNDED" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Refunded</option>
-          </select>
+            onChange={setSelectedStatus}
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[130px]"
+            popupClassName="w-36 mt-1.5"
+          />
 
-          <select
+          <CustomSelect
+            options={[
+              { value: "ALL", label: "All Methods" },
+              { value: "CASH", label: "Cash" },
+              { value: "TRANSFER", label: "Bank Transfer" },
+              { value: "VNPAY", label: "VNPay QR" },
+              { value: "EWALLET", label: "E-Wallet" },
+              { value: "CARD", label: "Card" },
+              { value: "SEPAY", label: "SePay" }
+            ]}
             value={selectedMethod}
-            onChange={(event) => setSelectedMethod(event.target.value)}
-            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-          >
-            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Methods</option>
-            <option value="CASH" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Cash</option>
-            <option value="TRANSFER" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Bank Transfer</option>
-            <option value="VNPAY" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">VNPay QR</option>
-            <option value="EWALLET" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">E-Wallet</option>
-            <option value="CARD" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Card</option>
-            <option value="SEPAY" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">SePay</option>
-          </select>
+            onChange={setSelectedMethod}
+            className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[140px]"
+            popupClassName="w-40 mt-1.5"
+          />
 
           <button
             onClick={onResetFilters}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import CustomSelect from "../../components/CustomSelect";
 
 const roleOptions = ["ADMIN", "MANAGER", "STAFF", "USER"];
 const statusOptions = ["ACTIVE", "INACTIVE", "SUSPENDED"];
@@ -163,31 +164,25 @@ function TableToolbar({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select
+        <CustomSelect
+          options={[
+            { value: "ALL", label: "All Roles" },
+            ...roleOptions.map((role) => ({ value: role, label: role }))
+          ]}
           value={roleFilter}
-          onChange={(event) => onRoleFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-        >
-          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Roles</option>
-          {roleOptions.map((role) => (
-            <option key={role} value={role} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-              {role}
-            </option>
-          ))}
-        </select>
+          onChange={onRoleFilterChange}
+          className="h-11 min-w-[130px] rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+        />
 
-        <select
+        <CustomSelect
+          options={[
+            { value: "ALL", label: "All Statuses" },
+            ...statusOptions.map((status) => ({ value: status, label: status }))
+          ]}
           value={statusFilter}
-          onChange={(event) => onStatusFilterChange(event.target.value)}
-          className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-        >
-          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Statuses</option>
-          {statusOptions.map((status) => (
-            <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-              {status}
-            </option>
-          ))}
-        </select>
+          onChange={onStatusFilterChange}
+          className="h-11 min-w-[140px] rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+        />
 
         <div className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-4 font-['Inter'] text-sm text-blue-700">
           <span className="font-black">{total}</span>
@@ -546,31 +541,21 @@ function UserFormModal({ mode, user, saving, onClose, onSubmit }) {
             </FormField>
 
             <FormField label="Role" required>
-              <select
+              <CustomSelect
+                options={roleOptions.map((role) => ({ value: role, label: role }))}
                 value={form.role}
-                onChange={(event) => updateField("role", event.target.value)}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-              >
-                {roleOptions.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => updateField("role", val)}
+                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+              />
             </FormField>
 
             <FormField label="Status" required>
-              <select
+              <CustomSelect
+                options={statusOptions.map((status) => ({ value: status, label: status }))}
                 value={form.status}
-                onChange={(event) => updateField("status", event.target.value)}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => updateField("status", val)}
+                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+              />
             </FormField>
           </div>
 

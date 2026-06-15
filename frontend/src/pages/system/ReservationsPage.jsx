@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import CustomSelect from "../../components/CustomSelect";
 
 const RESERVATION_STATUSES = [
   "CONFIRMED",
@@ -589,44 +590,38 @@ function FilterToolbar({
           />
         </div>
 
-        <select
+        <CustomSelect
+          options={[
+            { value: "ALL", label: "All Status" },
+            ...RESERVATION_STATUSES.map(status => ({ value: status, label: getStatusMeta(status).label }))
+          ]}
           value={selectedStatus}
-          onChange={(event) => setSelectedStatus(event.target.value)}
-          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-        >
-          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Status</option>
-          {RESERVATION_STATUSES.map((status) => (
-            <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-              {getStatusMeta(status).label}
-            </option>
-          ))}
-        </select>
+          onChange={setSelectedStatus}
+          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[135px]"
+          popupClassName="w-40 mt-1.5"
+        />
 
-        <select
+        <CustomSelect
+          options={[
+            { value: "ALL", label: "All Vehicle Types" },
+            ...vehicleTypes.map((vehicleType) => ({ value: vehicleType, label: vehicleType }))
+          ]}
           value={selectedVehicleType}
-          onChange={(event) => setSelectedVehicleType(event.target.value)}
-          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-        >
-          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Vehicle Types</option>
-          {vehicleTypes.map((vehicleType) => (
-            <option key={vehicleType} value={vehicleType} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-              {vehicleType}
-            </option>
-          ))}
-        </select>
+          onChange={setSelectedVehicleType}
+          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[155px]"
+          popupClassName="w-44 mt-1.5"
+        />
 
-        <select
+        <CustomSelect
+          options={[
+            { value: "ALL", label: "All Zones" },
+            ...zones.map((zone) => ({ value: zone, label: zone }))
+          ]}
           value={selectedZone}
-          onChange={(event) => setSelectedZone(event.target.value)}
-          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-        >
-          <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Zones</option>
-          {zones.map((zone) => (
-            <option key={zone} value={zone} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-              {zone}
-            </option>
-          ))}
-        </select>
+          onChange={setSelectedZone}
+          className="h-11 rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[135px]"
+          popupClassName="w-36 mt-1.5"
+        />
 
         <button
           onClick={onResetFilters}
@@ -1070,30 +1065,22 @@ function ReservationFormModal({
             <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
               Parking Slot <span className="text-rose-600">*</span>
             </label>
-            <select
+            <CustomSelect
+              options={[
+                { value: "", label: "Select parking slot" },
+                ...availableSlots.map(slot => ({ value: slot.id, label: `${slot.slotName} - ${slot.zoneName} - ${slot.status}` }))
+              ]}
               value={form.parkingSlotId}
-              onChange={(event) => {
-                const nextSlot = slots.find(
-                  (slot) => slot.id === event.target.value,
-                );
-
+              onChange={(val) => {
+                const nextSlot = slots.find((slot) => slot.id === val);
                 setForm((prev) => ({
                   ...prev,
-                  parkingSlotId: event.target.value,
+                  parkingSlotId: val,
                   vehicleTypeId: nextSlot?.vehicleTypeId || prev.vehicleTypeId,
                 }));
               }}
-              disabled={false}
-              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
-              required
-            >
-              <option value="">Select parking slot</option>
-              {availableSlots.map((slot) => (
-                <option key={slot.id} value={slot.id}>
-                  {slot.slotName} - {slot.zoneName} - {slot.status}
-                </option>
-              ))}
-            </select>
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
+            />
             <p className="mt-2 font-['Inter'] text-xs text-[#6b7280]">
               Select an active parking slot retrieved from the slots API.
             </p>
@@ -1103,25 +1090,16 @@ function ReservationFormModal({
             <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
               Vehicle Type <span className="text-rose-600">*</span>
             </label>
-            <select
+            <CustomSelect
+              options={[
+                { value: "", label: "Select vehicle type" },
+                ...vehicleTypes.map(vt => ({ value: vt.id, label: vt.typeName }))
+              ]}
               value={form.vehicleTypeId}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  vehicleTypeId: event.target.value,
-                }))
-              }
+              onChange={(val) => setForm((prev) => ({ ...prev, vehicleTypeId: val }))}
               disabled={isStaffEdit}
-              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70"
-              required
-            >
-              <option value="">Select vehicle type</option>
-              {vehicleTypes.map((vehicleType) => (
-                <option key={vehicleType.id} value={vehicleType.id}>
-                  {vehicleType.typeName}
-                </option>
-              ))}
-            </select>
+              className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-70 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
+            />
             {selectedSlot?.vehicleTypeName &&
             selectedSlot.vehicleTypeName !== "N/A" ? (
               <p className="mt-2 font-['Inter'] text-xs text-[#6b7280]">
@@ -1167,19 +1145,12 @@ function ReservationFormModal({
               <label className="mb-2 block font-['Inter'] text-sm font-semibold text-[#374151]">
                 Status
               </label>
-              <select
+              <CustomSelect
+                options={RESERVATION_STATUSES.map(status => ({ value: status, label: getStatusMeta(status).label }))}
                 value={form.status}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, status: event.target.value }))
-                }
-                className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white"
-              >
-                {RESERVATION_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {getStatusMeta(status).label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setForm((prev) => ({ ...prev, status: val }))}
+                className="h-12 w-full rounded-xl border border-[#d7d9e4] bg-[#f8f9fc] px-4 font-['Inter'] text-sm outline-none transition focus:border-[#2563eb] focus:bg-white dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
+              />
             </div>
           ) : null}
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import CustomSelect from "../../components/CustomSelect";
 
 // Theme map for vehicle types to display corresponding icons/colors on Cards
 const vehicleThemes = {
@@ -149,16 +150,18 @@ function FilterBar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
+          <CustomSelect
+            options={[
+              { value: "name-asc", label: "Zone Name A-Z" },
+              { value: "name-desc", label: "Zone Name Z-A" },
+              { value: "capacity-desc", label: "Capacity High to Low" },
+              { value: "capacity-asc", label: "Capacity Low to High" }
+            ]}
             value={sortBy}
-            onChange={(event) => onSortChange(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-          >
-            <option value="name-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Zone Name A-Z</option>
-            <option value="name-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Zone Name Z-A</option>
-            <option value="capacity-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity High to Low</option>
-            <option value="capacity-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity Low to High</option>
-          </select>
+            onChange={onSortChange}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[210px]"
+            popupClassName="w-56 mt-1.5"
+          />
 
           <div className="inline-flex h-12 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 px-4 font-['Inter'] text-sm text-blue-700">
             <span className="font-black">{total}</span>
@@ -319,21 +322,15 @@ function ZoneFormModal({
             <label className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700 dark:text-[#b9af9d]">
               Allowed Vehicle Type <span className="text-red-500">*</span>
             </label>
-            <select
-              required
+            <CustomSelect
+              options={[
+                { value: "", label: "-- Choose a Vehicle Category --" },
+                ...vehicleTypes.map((type) => ({ value: type.id, label: type.typeName }))
+              ]}
               value={form.vehicleTypeId}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, vehicleTypeId: e.target.value }))
-              }
+              onChange={(val) => setForm((p) => ({ ...p, vehicleTypeId: val }))}
               className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-            >
-              <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">-- Choose a Vehicle Category --</option>
-              {vehicleTypes.map((type) => (
-                <option key={type.id} value={type.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                  {type.typeName}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>

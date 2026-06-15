@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import CustomSelect from "../../components/CustomSelect";
 
 const initialForm = {
   vehicleTypeId: "",
@@ -147,16 +148,18 @@ function Toolbar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
+          <CustomSelect
+            options={[
+              { value: "newest", label: "Newest effective date" },
+              { value: "oldest", label: "Oldest effective date" },
+              { value: "base-high", label: "Base price high-low" },
+              { value: "base-low", label: "Base price low-high" }
+            ]}
             value={sortBy}
-            onChange={(event) => onSortChange(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-          >
-            <option value="newest" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Newest effective date</option>
-            <option value="oldest" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Oldest effective date</option>
-            <option value="base-high" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Base price high-low</option>
-            <option value="base-low" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Base price low-high</option>
-          </select>
+            onChange={onSortChange}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[210px]"
+            popupClassName="w-56 mt-1.5"
+          />
 
           <div className="inline-flex h-12 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 px-4 text-sm text-blue-700">
             <span className="font-black">{total}</span>
@@ -316,20 +319,15 @@ function PolicyModal({
             <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
               Vehicle Type
             </label>
-            <select
+            <CustomSelect
+              options={[
+                { value: "", label: "All vehicle types / no vehicle type" },
+                ...vehicleTypes.map((vehicleType) => ({ value: vehicleType.id, label: vehicleType.typeName || vehicleType.type_name }))
+              ]}
               value={form.vehicleTypeId}
-              onChange={(event) =>
-                onChange("vehicleTypeId", event.target.value)
-              }
+              onChange={(val) => onChange("vehicleTypeId", val)}
               className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-            >
-              <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All vehicle types / no vehicle type</option>
-              {vehicleTypes.map((vehicleType) => (
-                <option key={vehicleType.id} value={vehicleType.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                  {vehicleType.typeName || vehicleType.type_name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

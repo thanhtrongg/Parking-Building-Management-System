@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import CustomSelect from "../../components/CustomSelect";
 
 function normalizeArray(value) {
   if (Array.isArray(value)) return value;
@@ -622,22 +623,16 @@ export default function UserMyBookingsPage() {
               <span className="mb-2 block text-sm font-bold text-slate-700">
                 Vehicle type
               </span>
-              <select
+              <CustomSelect
+                options={[
+                  { value: "", label: "Select vehicle type" },
+                  ...vehicleTypes.map((type) => ({ value: type.id, label: type.typeName }))
+                ]}
                 value={form.vehicleTypeId}
-                onChange={(event) =>
-                  updateField("vehicleTypeId", event.target.value)
-                }
+                onChange={(val) => updateField("vehicleTypeId", val)}
                 disabled={loadingTypes}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-                required
-              >
-                <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Select vehicle type</option>
-                {vehicleTypes.map((type) => (
-                  <option key={type.id} value={type.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                    {type.typeName}
-                  </option>
-                ))}
-              </select>
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+              />
             </label>
 
             <BookingDateTimeField

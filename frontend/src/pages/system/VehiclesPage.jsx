@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import CustomSelect from "../../components/CustomSelect";
 
 const vehicleThemes = {
   "Ô tô": {
@@ -151,15 +152,16 @@ function FilterBar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <select
+          <CustomSelect
+            options={[
+              { value: "name-asc", label: "Name A-Z" },
+              { value: "name-desc", label: "Name Z-A" },
+              { value: "newest", label: "Newest first" }
+            ]}
             value={sortBy}
-            onChange={(event) => onSortChange(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-          >
-            <option value="name-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Name A-Z</option>
-            <option value="name-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Name Z-A</option>
-            <option value="newest" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Newest first</option>
-          </select>
+            onChange={onSortChange}
+            className="h-12 min-w-[140px] rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+          />
 
           <div className="inline-flex h-12 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 px-4 font-['Inter'] text-sm text-blue-700">
             <span className="font-black">{total}</span>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import CustomSelect from "../../components/CustomSelect";
 
 const SLOT_STATUSES = ["AVAILABLE", "OCCUPIED", "RESERVED", "MAINTENANCE"];
 
@@ -281,40 +282,32 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit, defaultBu
               <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
                 Building
               </label>
-              <select
+              <CustomSelect
+                options={[
+                  { value: "", label: "Select building" },
+                  ...buildings.map(b => ({ value: b.id, label: b.name }))
+                ]}
                 value={selectedBuildingId}
-                onChange={(event) => setSelectedBuildingId(event.target.value)}
+                onChange={setSelectedBuildingId}
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
-                required
                 disabled={isEdit || loadingInfrastructure}
-              >
-                <option value="">Select building</option>
-                {buildings.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
                 Floor
               </label>
-              <select
+              <CustomSelect
+                options={[
+                  { value: "", label: "Select floor" },
+                  ...floors.map(f => ({ value: f.id, label: f.floorName }))
+                ]}
                 value={form.floorId}
-                onChange={(event) => updateField("floorId", event.target.value)}
+                onChange={(val) => updateField("floorId", val)}
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
-                required
                 disabled={isEdit}
-              >
-                <option value="">Select floor</option>
-                {floors.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.floorName}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
           </div>
 
@@ -322,19 +315,15 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit, defaultBu
             <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
               Parking Zone
             </label>
-            <select
+            <CustomSelect
+              options={[
+                { value: "", label: "Select zone" },
+                ...zones.map((zone) => ({ value: zone.id, label: zone.zoneName || zone.zone_name }))
+              ]}
               value={form.zoneId}
-              onChange={(event) => updateField("zoneId", event.target.value)}
+              onChange={(val) => updateField("zoneId", val)}
               className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
-              required
-            >
-              <option value="">Select zone</option>
-              {zones.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.zoneName || zone.zone_name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -342,17 +331,12 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit, defaultBu
               <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-[#fbf4e7]">
                 Status
               </label>
-              <select
+              <CustomSelect
+                options={SLOT_STATUSES}
                 value={form.status}
-                onChange={(event) => updateField("status", event.target.value)}
+                onChange={(val) => updateField("status", val)}
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:focus:border-blue-500"
-              >
-                {SLOT_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div>
@@ -749,31 +733,27 @@ export default function ParkingSlotsPage() {
             />
           </div>
 
-          <select
+          <CustomSelect
+            options={[
+              { value: "ALL", label: "All Status" },
+              ...SLOT_STATUSES
+            ]}
             value={selectedStatus}
-            onChange={(event) => setSelectedStatus(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-          >
-            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Status</option>
-            {SLOT_STATUSES.map((status) => (
-              <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                {status}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedStatus}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[140px]"
+            popupClassName="w-44 mt-1.5"
+          />
 
-          <select
+          <CustomSelect
+            options={[
+              { value: "ALL", label: "All Zones" },
+              ...zones.map((zone) => ({ value: zone.id, label: zone.zoneName || zone.zone_name }))
+            ]}
             value={selectedZone}
-            onChange={(event) => setSelectedZone(event.target.value)}
-            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-          >
-            <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Zones</option>
-            {zones.map((zone) => (
-              <option key={zone.id} value={zone.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                {zone.zoneName || zone.zone_name}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedZone}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[140px]"
+            popupClassName="w-44 mt-1.5"
+          />
 
           <button
             onClick={resetFilters}

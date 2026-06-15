@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import CustomSelect from "../../components/CustomSelect";
 
 function EmptyState({ onAdd }) {
   return (
@@ -405,16 +406,18 @@ export default function BuildingsPage() {
 
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Sort</span>
-            <select
+            <CustomSelect
+              options={[
+                { value: "name-asc", label: "Name (A-Z)" },
+                { value: "name-desc", label: "Name (Z-A)" },
+                { value: "slots-desc", label: "Capacity (High-Low)" },
+                { value: "slots-asc", label: "Capacity (Low-High)" }
+              ]}
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition duration-200 focus:border-blue-500 dark:border-white/10 dark:bg-[#11100c] dark:text-[#fbf4e7]"
-            >
-              <option value="name-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Name (A-Z)</option>
-              <option value="name-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Name (Z-A)</option>
-              <option value="slots-desc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity (High-Low)</option>
-              <option value="slots-asc" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Capacity (Low-High)</option>
-            </select>
+              onChange={setSortBy}
+              className="h-11 w-40 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition duration-200 focus:border-blue-500 dark:border-white/10 dark:bg-[#11100c] dark:text-[#fbf4e7]"
+              align="right"
+            />
           </div>
         </div>
 

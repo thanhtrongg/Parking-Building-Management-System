@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import CustomSelect from "../../components/CustomSelect";
 
 const initialForm = {
   buildingId: "",
@@ -331,22 +332,16 @@ export default function ParkingRulesPage() {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                 Select Parking Building
               </label>
-              <select
+              <CustomSelect
+                options={buildings.map(b => ({ value: b.id, label: `${b.name} (${b.address})` }))}
                 value={selectedBuildingId}
-                onChange={(e) => {
-                  const val = e.target.value;
+                onChange={(val) => {
                   setSelectedBuildingId(val);
                   localStorage.setItem("activeSystemBuildingId", val);
                   window.dispatchEvent(new CustomEvent("systemBuildingChanged", { detail: val }));
                 }}
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-              >
-                {buildings.map((b) => (
-                  <option key={b.id} value={b.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                    {b.name} ({b.address})
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Search Input */}
@@ -493,19 +488,18 @@ export default function ParkingRulesPage() {
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                     Parking Building
                   </label>
-                  <select
-                    name="buildingId"
+                  <CustomSelect
+                    options={buildings.map(b => ({ value: b.id, label: b.name }))}
                     value={formData.buildingId}
-                    onChange={handleFormChange}
+                    onChange={(val) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        buildingId: val
+                      }));
+                    }}
                     disabled={!!editingRule}
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-                  >
-                    {buildings.map((b) => (
-                      <option key={b.id} value={b.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {/* Rule Title */}

@@ -7,6 +7,7 @@ import {
     formatElapsedTime,
 } from "../../utils/parkingSession";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import CustomSelect from "../../components/CustomSelect";
 
 // Helper to format date-time
 const formatDateTime = (dateString) => {
@@ -133,15 +134,17 @@ function FilterBar({ keyword, onKeywordChange, statusFilter, onStatusChange, tot
                     />
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <select
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Statuses" },
+                            { value: "ACTIVE", label: "Active" },
+                            { value: "COMPLETED", label: "Completed" }
+                        ]}
                         value={statusFilter}
-                        onChange={(event) => onStatusChange(event.target.value)}
-                        className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-                    >
-                        <option value="all" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Statuses</option>
-                        <option value="ACTIVE" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Active</option>
-                        <option value="COMPLETED" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Completed</option>
-                    </select>
+                        onChange={onStatusChange}
+                        className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[140px]"
+                        popupClassName="w-40 mt-1.5"
+                    />
 
                     <div className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-500">
                         <span className="font-semibold text-slate-900">{total}</span>
@@ -420,18 +423,14 @@ function CheckoutModal({
                         <span className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700">
                             Payment method
                         </span>
-                        <select
+                        <CustomSelect
+                            options={paymentMethods}
                             value={paymentMethod}
-                            onChange={(event) => onPaymentMethodChange(event.target.value)}
+                            onChange={onPaymentMethodChange}
                             disabled={processing}
                             className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-                        >
-                            {paymentMethods.map((method) => (
-                                <option key={method.value} value={method.value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                                    {method.label}
-                                </option>
-                            ))}
-                        </select>
+                            popupClassName="mt-1.5"
+                        />
                     </label>
                 </div>
 

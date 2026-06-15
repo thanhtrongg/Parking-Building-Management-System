@@ -3,6 +3,7 @@ import UserLayout from "../../components/UserLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
 import { getReservationCode } from "../../utils/reservation";
+import CustomSelect from "../../components/CustomSelect";
 
 function normalizeBookings(value) {
   if (Array.isArray(value)) return value;
@@ -486,38 +487,28 @@ export default function UserFeedbackPage() {
               <span className="text-xs font-black uppercase tracking-wider text-slate-400">
                 Booking ID
               </span>
-              <select
+              <CustomSelect
+                options={[
+                  { value: "", label: loadingBookings ? "Loading bookings..." : "Select booking ID" },
+                  ...bookingOptions
+                ]}
                 value={form.bookingId}
-                onChange={(event) => updateField("bookingId", event.target.value)}
+                onChange={(val) => updateField("bookingId", val)}
                 disabled={loadingBookings || bookingOptions.length === 0}
-                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] dark:disabled:bg-white/5 dark:disabled:text-slate-500"
-              >
-                <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                  {loadingBookings ? "Loading bookings..." : "Select booking ID"}
-                </option>
-                {bookingOptions.map((option) => (
-                  <option key={option.value} value={option.value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+              />
             </label>
 
             <label className="block">
               <span className="text-xs font-black uppercase tracking-wider text-slate-400">
                 Feedback category
               </span>
-              <select
+              <CustomSelect
+                options={feedbackCategories}
                 value={form.category}
-                onChange={(event) => updateField("category", event.target.value)}
-                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-              >
-                {feedbackCategories.map((category) => (
-                  <option key={category.value} value={category.value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => updateField("category", val)}
+                className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+              />
               {form.category === "STAFF_ATTITUDE" && (
                 <span className="mt-2 block rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
                   Staff attitude feedback is private and only visible to Admin and Manager.
