@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
+import CustomSelect from "../../components/CustomSelect";
 
 const feedbackStatuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 const feedbackCategories = {
@@ -263,21 +264,14 @@ function FeedbackTable({
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-2">
-                    <select
+                    <CustomSelect
+                      options={feedbackStatuses.map(status => ({ value: status, label: getStatusMeta(status).label }))}
                       value={feedback.status || "OPEN"}
                       disabled={updatingId === feedback.id}
-                      onChange={(event) =>
-                        onStatusChange(feedback, event.target.value)
-                      }
-                      className="h-10 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-                      aria-label={`Update status for ${feedback.subject}`}
-                    >
-                      {feedbackStatuses.map((status) => (
-                        <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                          {getStatusMeta(status).label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => onStatusChange(feedback, val)}
+                      className="h-10 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[125px]"
+                      popupClassName="w-36 right-0 mt-1.5"
+                    />
 
                     <button
                       type="button"
@@ -424,18 +418,14 @@ function DetailPage({
           ) : null}
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <select
+            <CustomSelect
+              options={feedbackStatuses.map(status => ({ value: status, label: getStatusMeta(status).label }))}
               value={feedback.status || "OPEN"}
               disabled={updatingId === feedback.id}
-              onChange={(event) => onStatusChange(feedback, event.target.value)}
-              className="h-11 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-            >
-              {feedbackStatuses.map((status) => (
-                <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                  {getStatusMeta(status).label}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => onStatusChange(feedback, val)}
+              className="h-11 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[130px]"
+              popupClassName="w-40 mt-1.5"
+            />
 
             <button
               type="submit"
@@ -669,29 +659,27 @@ export default function FeedbacksPage() {
               />
             </div>
 
-            <select
+            <CustomSelect
+              options={[
+                { value: "ALL", label: "All Categories" },
+                ...Object.entries(feedbackCategories).map(([value, label]) => ({ value, label }))
+              ]}
               value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
-              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-            >
-              <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Categories</option>
-              {Object.entries(feedbackCategories).map(([value, label]) => (
-                <option key={value} value={value} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">{label}</option>
-              ))}
-            </select>
+              onChange={setCategoryFilter}
+              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[160px]"
+              popupClassName="w-48 mt-1.5"
+            />
 
-            <select
+            <CustomSelect
+              options={[
+                { value: "ALL", label: "All Statuses" },
+                ...feedbackStatuses.map(status => ({ value: status, label: getStatusMeta(status).label }))
+              ]}
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-            >
-              <option value="ALL" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">All Statuses</option>
-              {feedbackStatuses.map((status) => (
-                <option key={status} value={status} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                  {getStatusMeta(status).label}
-                </option>
-              ))}
-            </select>
+              onChange={setStatusFilter}
+              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705] min-w-[160px]"
+              popupClassName="w-48 mt-1.5"
+            />
           </div>
         </div>
 

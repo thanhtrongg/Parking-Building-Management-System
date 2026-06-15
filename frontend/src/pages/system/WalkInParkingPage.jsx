@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
+import CustomSelect from "../../components/CustomSelect";
 import {
   calculateLiveSessionFee,
   formatElapsedTime,
@@ -263,32 +264,34 @@ export default function WalkInParkingPage() {
               </Field>
 
               <Field label="Vehicle Type" icon="directions_car">
-                <select
+                <CustomSelect
+                  options={[
+                    { value: "", label: "Select vehicle type" },
+                    ...vehicleTypes.map((type) => ({ value: type.id, label: type.typeName }))
+                  ]}
                   value={vehicleTypeId}
-                  onChange={handleVehicleTypeChange}
+                  onChange={(val) => {
+                    setVehicleTypeId(val);
+                    setParkingSlotId("");
+                  }}
                   className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-                >
-                  <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">Select vehicle type</option>
-                  {vehicleTypes.map((type) => (
-                    <option key={type.id} value={type.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">{type.typeName}</option>
-                  ))}
-                </select>
+                />
               </Field>
 
               <Field label={`Available Slot (${availableSlots.length})`} icon="local_parking">
-                <select
+                <CustomSelect
+                  options={[
+                    { value: "", label: vehicleTypeId ? "Select available slot" : "Select vehicle type first" },
+                    ...availableSlots.map((slot) => ({
+                      value: slot.id,
+                      label: `${slot.slotName} - ${slot.zoneName || "Unknown zone"}`
+                    }))
+                  ]}
                   value={parkingSlotId}
-                  onChange={(event) => setParkingSlotId(event.target.value)}
+                  onChange={setParkingSlotId}
                   disabled={!vehicleTypeId}
                   className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-semibold text-slate-800 outline-none transition disabled:cursor-not-allowed disabled:opacity-55 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7] dark:focus:bg-[#070705]"
-                >
-                  <option value="" className="dark:bg-[#11100c] dark:text-[#fbf4e7]">{vehicleTypeId ? "Select available slot" : "Select vehicle type first"}</option>
-                  {availableSlots.map((slot) => (
-                    <option key={slot.id} value={slot.id} className="dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                      {slot.slotName} - {slot.zoneName || "Unknown zone"}
-                    </option>
-                  ))}
-                </select>
+                />
               </Field>
 
               <button

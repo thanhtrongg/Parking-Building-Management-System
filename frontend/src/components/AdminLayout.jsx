@@ -2,6 +2,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FeedbackNotifications from "./FeedbackNotifications";
 import { apiRequest } from "../services/api";
+import CustomSelect from "./CustomSelect";
 
 const navItems = [
   {
@@ -295,7 +296,7 @@ function Header({ theme, onToggleTheme, onLogout, onToggleMenu }) {
   }, []);
 
   const handleBuildingChange = (e) => {
-    const val = e.target.value;
+    const val = e && e.target ? e.target.value : e;
     setSelectedBuildingId(val);
     localStorage.setItem("activeSystemBuildingId", val);
     window.dispatchEvent(new CustomEvent("systemBuildingChanged", { detail: val }));
@@ -337,21 +338,13 @@ function Header({ theme, onToggleTheme, onLogout, onToggleMenu }) {
         {buildings.length > 0 && (
           <div className="relative flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm transition hover:border-blue-200 dark:border-white/10 dark:bg-white/5 dark:hover:border-blue-500/30">
             <span className="material-symbols-outlined text-[19px] text-slate-500 dark:text-slate-400">apartment</span>
-            <select
+            <CustomSelect
+              options={buildings.map(b => ({ value: b.id, label: b.name }))}
               value={selectedBuildingId}
               onChange={handleBuildingChange}
-              className="bg-transparent pr-4 font-['Inter'] text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none dark:text-[#fbf4e7]"
-              style={{ background: "none", border: "none" }}
-            >
-              {buildings.map((b) => (
-                <option key={b.id} value={b.id} className="text-slate-950 font-semibold bg-white text-xs dark:bg-[#11100c] dark:text-[#fbf4e7]">
-                  {b.name}
-                </option>
-              ))}
-            </select>
-            <span className="material-symbols-outlined pointer-events-none absolute right-1.5 text-base text-slate-400 dark:text-slate-500">
-              unfold_more
-            </span>
+              className="bg-transparent font-['Inter'] text-xs font-black text-slate-800 focus:outline-none cursor-pointer dark:text-[#fbf4e7] border-none px-1 py-0.5 min-w-[120px]"
+              popupClassName="w-56 mt-3 right-0"
+            />
           </div>
         )}
 
