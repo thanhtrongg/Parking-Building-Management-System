@@ -112,6 +112,16 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             log.info("Floors seeded successfully.");
 
+            // Seed Zones
+            insertZone("11111111-2222-3333-4444-55555555555a", "Zone A", carTypeId, 10, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555b", "Zone B", motoTypeId, 15, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555c", "Zone C", bikeTypeId, 10, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555d", "Zone D", electricTypeId, 5, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555e", "Zone E", truckTypeId, 5, buildingId);
+            insertZone("11111111-2222-3333-4444-55555555555f", "Zone A", carTypeId, 5, buildingBId);
+
+            log.info("Zones seeded successfully.");
+
             // Zone constants for foreign keys
             String zoneA_CarId = "11111111-2222-3333-4444-55555555555a";
             String zoneB_MotoId = "11111111-2222-3333-4444-55555555555b";
@@ -181,14 +191,14 @@ public class DatabaseSeeder implements CommandLineRunner {
             for (int i = 1; i <= 5; i++) {
                 String status = SlotStatus.AVAILABLE.name();
                 if (i == 5) status = SlotStatus.MAINTENANCE.name();
-                insertSlot(UUID.randomUUID().toString(), floor4Id, "4D-0" + i, status, VehicleTypeEnum.ELECTRIC_VEHICLE.name(), "Zone D", 60 + i, zoneD_ElecId);
+                insertSlot(UUID.randomUUID().toString(), floor4Id, "B1-D0" + i, status, VehicleTypeEnum.ELECTRIC_VEHICLE.name(), "Zone D", 60 + i, zoneD_ElecId);
             }
 
             // LIGHT_TRUCK Slots (Floor 5)
             for (int i = 1; i <= 5; i++) {
                 String status = SlotStatus.AVAILABLE.name();
                 if (i == 5) status = SlotStatus.MAINTENANCE.name();
-                insertSlot(UUID.randomUUID().toString(), floor5Id, "5E-0" + i, status, VehicleTypeEnum.LIGHT_TRUCK.name(), "Zone E", 115 + i, zoneE_TruckId);
+                insertSlot(UUID.randomUUID().toString(), floor5Id, "B2-E0" + i, status, VehicleTypeEnum.LIGHT_TRUCK.name(), "Zone E", 115 + i, zoneE_TruckId);
             }
 
             log.info("Parking slots seeded successfully.");
@@ -367,16 +377,6 @@ public class DatabaseSeeder implements CommandLineRunner {
                     ReservationStatus.PENDING.name(), LocalDateTime.of(2026, 6, 10, 15, 0, 0), buildingId);
 
             log.info("Reservations seeded successfully.");
-
-            // Seed Zones
-            insertZone("11111111-2222-3333-4444-55555555555a", "Zone A", carTypeId, 10, buildingId);
-            insertZone("11111111-2222-3333-4444-55555555555b", "Zone B", motoTypeId, 15, buildingId);
-            insertZone("11111111-2222-3333-4444-55555555555c", "Zone C", bikeTypeId, 10, buildingId);
-            insertZone("11111111-2222-3333-4444-55555555555d", "Zone D", electricTypeId, 5, buildingId);
-            insertZone("11111111-2222-3333-4444-55555555555e", "Zone E", truckTypeId, 5, buildingId);
-            insertZone("11111111-2222-3333-4444-55555555555f", "Zone A", carTypeId, 5, buildingBId);
-
-            log.info("Zones seeded successfully.");
 
             // 9. Seed Feedbacks
             insertFeedback("f1111111-1111-1111-1111-111111111111", driverId, session1Id, "Service", "Friendly staff, clean and safe parking space.", FeedbackStatus.OPEN.name(), LocalDateTime.of(2026, 6, 8, 12, 30, 0));

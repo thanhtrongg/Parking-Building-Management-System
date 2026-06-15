@@ -100,11 +100,10 @@ function PageHeader() {
   return (
     <div className="mb-6">
       <h1 className="font-['Geist'] text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-        Book a Parking Slot
+        Reserve a Spot
       </h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-        Choose your vehicle type, then pick a date and time from the live
-        picker. Past moments are locked out completely.
+        Select your vehicle type, date, arrival time, and duration to secure your parking reservation.
       </p>
     </div>
   );
@@ -131,7 +130,7 @@ function Alert({ type, message, onClose }) {
   );
 }
 
-function SlotCard({ slot, selected, onSelect, isSuggested }) {
+function SlotCard({ slot, selected, onSelect, isSuggested, recommendationReason }) {
   return (
     <button
       type="button"
@@ -211,9 +210,19 @@ function SlotCard({ slot, selected, onSelect, isSuggested }) {
               : "bg-slate-100 text-slate-600"
           }`}
         >
-          {slot.distanceToGate ?? 0}m to gate
+          {(slot.distanceToExit ?? slot.distanceToGate ?? 0)}m to exit
         </span>
       </div>
+
+      {isSuggested && recommendationReason && (
+        <div className={`mt-3 pt-3 border-t text-xs font-semibold text-left ${
+          selected
+            ? "border-white/20 text-blue-100"
+            : "border-slate-100 text-slate-500"
+        }`}>
+          <span className="font-black">AI Suggestion:</span> {recommendationReason}
+        </div>
+      )}
     </button>
   );
 }
@@ -234,24 +243,6 @@ function BookingDateTimeField({
   const displayTime = formatDisplayTime(selectedDate, selectedTime);
   const dateInputRef = useRef(null);
   const timeInputRef = useRef(null);
-
-  const openPicker = (inputRef) => {
-    const input = inputRef.current;
-    if (!input) return;
-
-    input.focus();
-
-    try {
-      if (typeof input.showPicker === "function") {
-        input.showPicker();
-        return;
-      }
-    } catch {
-      // Fall through to the native click fallback.
-    }
-
-    input.click();
-  };
 
   return (
     <div className="overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
@@ -277,8 +268,7 @@ function BookingDateTimeField({
         <div className="relative">
           <button
             type="button"
-            onClick={() => openPicker(dateInputRef)}
-            className="group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left transition hover:border-blue-200 hover:bg-blue-50/60 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
+            className="group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left transition hover:border-blue-200 hover:bg-blue-50/60 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100"
           >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
               <span className="material-symbols-outlined text-[20px]">
@@ -305,7 +295,7 @@ function BookingDateTimeField({
             value={selectedDate || ""}
             min={todayKey}
             onChange={(event) => onDateChange(event.target.value)}
-            className="pointer-events-none absolute h-px w-px opacity-0"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             required
           />
         </div>
@@ -313,8 +303,7 @@ function BookingDateTimeField({
         <div className="relative">
           <button
             type="button"
-            onClick={() => openPicker(timeInputRef)}
-            className="group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left transition hover:border-blue-200 hover:bg-blue-50/60 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100"
+            className="group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left transition hover:border-blue-200 hover:bg-blue-50/60 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100"
           >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
               <span className="material-symbols-outlined text-[20px]">
@@ -345,11 +334,10 @@ function BookingDateTimeField({
             step={60}
             min={minTime || undefined}
             onChange={(event) => onTimeChange(event.target.value)}
-            className="pointer-events-none absolute h-px w-px opacity-0"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             required
           />
         </div>
-
       </div>
     </div>
   );
@@ -366,6 +354,8 @@ export default function UserMyBookingsPage() {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [suggestedSlotId, setSuggestedSlotId] = useState("");
+  const [recommendationReason, setRecommendationReason] = useState("");
+  const [showAllSlots, setShowAllSlots] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [form, setForm] = useState(() => ({
     licensePlate: "",
@@ -373,12 +363,44 @@ export default function UserMyBookingsPage() {
     buildingId: localStorage.getItem("activeSystemBuildingId") || "",
     startDate: defaultParts.dateKey,
     startTime: defaultParts.timeValue,
+    durationHours: "2",
   }));
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
   const slotRequestIdRef = useRef(0);
+
+  // Sync buildingId from localStorage if it's currently empty, solving race conditions
+  useEffect(() => {
+    if (!form.buildingId) {
+      const stored = localStorage.getItem("activeSystemBuildingId");
+      if (stored) {
+        setForm(prev => ({ ...prev, buildingId: stored }));
+      }
+    }
+  }, [form.buildingId]);
+
+  const suggestedSlot = useMemo(() => {
+    return availableSlots.find((s) => s.id === suggestedSlotId);
+  }, [availableSlots, suggestedSlotId]);
+
+  const otherSlots = useMemo(() => {
+    if (suggestedSlot) {
+      return availableSlots.filter((s) => s.id !== suggestedSlotId);
+    }
+    return availableSlots;
+  }, [availableSlots, suggestedSlot, suggestedSlotId]);
+
+  const formatRecommendationText = useCallback((slot) => {
+    if (!slot) return "";
+    const vehicleTypeStr = (slot.vehicleTypeName || slot.vehicleType?.typeName || "vehicle").toLowerCase().replace(/_/g, " ");
+    const floorNameStr = slot.floorName || "selected floor";
+    const distanceStr = `${slot.distanceToExit ?? slot.distanceToGate ?? 0}m`;
+    const slotCodeStr = slot.slotCode || slot.slotName || slot.slotNumber || "";
+
+    return `We recommend slot ${slotCodeStr} in ${floorNameStr}. It is optimized for your ${vehicleTypeStr} and is only a ${distanceStr} drive to the exit.`;
+  }, []);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -387,6 +409,7 @@ export default function UserMyBookingsPage() {
       setForm(prev => ({ ...prev, buildingId: e.detail }));
       setSelectedSlot(null);
       setAvailableSlots([]);
+      setShowAllSlots(false);
     };
     window.addEventListener("systemBuildingChanged", handleBuildingChange);
     return () => {
@@ -426,6 +449,7 @@ export default function UserMyBookingsPage() {
             buildingId: defaultBuildingId,
             startDate: defaultDateKey,
             startTime: defaultTimeValue,
+            durationHours: "2",
           });
           if (defaultVehicleTypeId && defaultBuildingId) {
             setLoadingSlots(true);
@@ -515,6 +539,8 @@ export default function UserMyBookingsPage() {
       setLoadingSlots(true);
       setSelectedSlot(null);
       setSuggestedSlotId("");
+      setRecommendationReason("");
+      setShowAllSlots(false);
       setAlert({ type: "", message: "" });
 
       const params = new URLSearchParams({
@@ -546,6 +572,7 @@ export default function UserMyBookingsPage() {
 
             if (recResult.data?.slot?.id && requestId === slotRequestIdRef.current) {
               setSuggestedSlotId(recResult.data.slot.id);
+              setRecommendationReason(recResult.data.recommendationReason || "");
               // Auto-select if no slot is currently selected
               setSelectedSlot((current) => {
                 if (current) return current;
@@ -614,6 +641,7 @@ export default function UserMyBookingsPage() {
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
     setSelectedSlot(null);
+    setShowAllSlots(false);
   };
 
   const submitReservation = async (event) => {
@@ -658,6 +686,9 @@ export default function UserMyBookingsPage() {
       setSubmitting(true);
       setAlert({ type: "", message: "" });
 
+      const startDateTime = selectedStartDateTime;
+      const endDateTime = new Date(startDateTime.getTime() + Number(form.durationHours || 2) * 60 * 60 * 1000);
+
       await apiRequest("/api/reservations", {
         method: "POST",
         body: JSON.stringify({
@@ -665,7 +696,8 @@ export default function UserMyBookingsPage() {
           vehicleTypeId: form.vehicleTypeId,
           buildingId: form.buildingId,
           licensePlate: form.licensePlate.trim().toUpperCase(),
-          startTime: toIsoString(selectedStartDateTime),
+          startTime: toIsoString(startDateTime),
+          endTime: toIsoString(endDateTime),
         }),
       });
 
@@ -674,6 +706,10 @@ export default function UserMyBookingsPage() {
         message: "Reservation created successfully.",
       });
       setSelectedSlot(null);
+      setForm(prev => ({
+        ...prev,
+        licensePlate: "",
+      }));
       await loadAvailableSlots();
     } catch (error) {
       setAlert({
@@ -756,6 +792,30 @@ export default function UserMyBookingsPage() {
               }}
             />
 
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-slate-700">
+                Reservation Duration
+              </span>
+              <CustomSelect
+                options={[
+                  { value: "1", label: "1 hour" },
+                  { value: "2", label: "2 hours" },
+                  { value: "3", label: "3 hours" },
+                  { value: "4", label: "4 hours" },
+                  { value: "8", label: "8 hours" },
+                  { value: "12", label: "12 hours" },
+                  { value: "24", label: "24 hours" },
+                ]}
+                value={form.durationHours}
+                onChange={(val) => {
+                  setForm((current) => ({ ...current, durationHours: val }));
+                  setSelectedSlot(null);
+                  setAvailableSlots([]);
+                }}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-white/10 dark:bg-white/5 dark:text-[#fbf4e7]"
+              />
+            </label>
+
             <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -783,7 +843,7 @@ export default function UserMyBookingsPage() {
               {submitting && (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
               )}
-              Create reservation
+              Confirm Reservation
             </button>
           </div>
         </section>
@@ -824,16 +884,72 @@ export default function UserMyBookingsPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {availableSlots.map((slot) => (
-                <SlotCard
-                  key={slot.id}
-                  slot={slot}
-                  selected={selectedSlot?.id === slot.id}
-                  onSelect={setSelectedSlot}
-                  isSuggested={suggestedSlotId === slot.id}
-                />
-              ))}
+            <div className="space-y-6">
+              {/* Recommended Slot Section */}
+              {suggestedSlot && (
+                <div className="rounded-3xl border border-blue-200 bg-blue-50/30 p-5 shadow-sm">
+                  <h3 className="mb-3 text-xs font-black uppercase tracking-wider text-blue-600">
+                    AI Smart Allocation (Recommended)
+                  </h3>
+                  <div className="max-w-md">
+                    <SlotCard
+                      slot={suggestedSlot}
+                      selected={selectedSlot?.id === suggestedSlot.id}
+                      onSelect={setSelectedSlot}
+                      isSuggested={true}
+                      recommendationReason={formatRecommendationText(suggestedSlot)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Other Slots Section */}
+              {suggestedSlot ? (
+                otherSlots.length > 0 && (
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllSlots(!showAllSlots)}
+                      className="flex items-center gap-2 text-sm font-black text-blue-600 hover:text-blue-700 focus:outline-none"
+                    >
+                      <span className="material-symbols-outlined text-lg leading-none">
+                        {showAllSlots ? "keyboard_arrow_up" : "keyboard_arrow_down"}
+                      </span>
+                      <span>
+                        {showAllSlots
+                          ? "Hide other available slots"
+                          : `Show ${otherSlots.length} other available slots in this zone`}
+                      </span>
+                    </button>
+
+                    {showAllSlots && (
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {otherSlots.map((slot) => (
+                          <SlotCard
+                            key={slot.id}
+                            slot={slot}
+                            selected={selectedSlot?.id === slot.id}
+                            onSelect={setSelectedSlot}
+                            isSuggested={false}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {availableSlots.map((slot) => (
+                    <SlotCard
+                      key={slot.id}
+                      slot={slot}
+                      selected={selectedSlot?.id === slot.id}
+                      onSelect={setSelectedSlot}
+                      isSuggested={false}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </section>

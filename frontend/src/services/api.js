@@ -731,6 +731,11 @@ export const apiRequest = async (path, options = {}) => {
           }
         }
 
+        // Map distanceToExit to distanceToGate
+        if (item.distanceToExit !== undefined && item.distanceToGate === undefined) {
+          item.distanceToGate = item.distanceToExit;
+        }
+
         // Map flat slot fields in session/reservation responses into a nested parkingSlot object
         if (item.slotCode && !item.parkingSlot) {
           const parts = item.slotCode.split("-");

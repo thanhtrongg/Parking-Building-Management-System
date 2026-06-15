@@ -13,7 +13,7 @@ const navItems = [
   },
   {
     icon: "event_available",
-    label: "Book Slot",
+    label: "Reserve Spot",
     path: "/user-bookings",
   },
   {

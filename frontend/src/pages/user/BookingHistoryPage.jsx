@@ -63,7 +63,7 @@ function PageHeader({ total }) {
     <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         <h1 className="font-['Geist'] text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-          Booking History
+          Reservation History
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           Review reservations, parking location, vehicle type, schedule, and
@@ -74,7 +74,7 @@ function PageHeader({ total }) {
         <span className="material-symbols-outlined text-[20px]">
           event_available
         </span>
-        {total} bookings
+        {total} reservations
       </div>
     </div>
   );
@@ -89,10 +89,10 @@ function EmptyState() {
         </span>
       </div>
       <h2 className="mt-5 font-['Geist'] text-xl font-black text-slate-950">
-        No bookings yet
+        No reservations yet
       </h2>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-        Your reservations will appear here after you book a parking slot.
+        Your reservations will appear here after you reserve a parking spot.
       </p>
     </div>
   );
@@ -308,7 +308,7 @@ export default function BookingHistoryPage() {
       setAlert({ type: "", message: "" });
 
       const result = await apiRequest(
-        `/api/user/reservations/${booking.id}/cancel`,
+        `/api/reservations/${booking.id}/cancel`,
         {
           method: "PATCH",
         },

@@ -167,8 +167,9 @@ public class SlotServiceImpl implements SlotService {
                 .min(slotComparator)
                 .orElseThrow(() -> new BadRequestException("Failed to find a recommended slot"));
 
-        String reason = String.format("Recommended slot %s on floor %s (floor number %d, distance to exit %dm) because it has the highest smart allocation score (maximizing utilization and minimizing search time).",
-                bestSlot.getSlotCode(), bestSlot.getFloor().getFloorName(), bestSlot.getFloor().getFloorNumber(),
+        String vehicleTypeStr = bestSlot.getVehicleType() != null ? bestSlot.getVehicleType().name().toLowerCase().replace("_", " ") : "vehicle";
+        String reason = String.format("We recommend slot %s in %s. It is optimized for your %s and is only a %dm drive to the exit.",
+                bestSlot.getSlotCode(), bestSlot.getFloor().getFloorName(), vehicleTypeStr,
                 bestSlot.getDistanceToExit() != null ? bestSlot.getDistanceToExit() : 10);
 
         return SlotRecommendResponse.builder()
