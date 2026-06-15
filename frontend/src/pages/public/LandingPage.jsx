@@ -635,7 +635,7 @@ function BuildingInfoSection({ info, isLight }) {
   );
 }
 
-function RulesSection({ rules = [] }) {
+function RulesSection({ rules = [], buildingName = "" }) {
   const displayRules = rules || [];
 
   return (
@@ -643,7 +643,7 @@ function RulesSection({ rules = [] }) {
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
         <div className="lg:sticky lg:top-32">
           <SectionIntro
-            eyebrow="Parking rules"
+            eyebrow={buildingName ? `Parking rules • ${buildingName}` : "Parking rules"}
             title="Clear guidelines for a smooth check-in."
             description="A quick checklist for booking, check-in, assigned slots, and rate calculations."
           />
@@ -681,7 +681,7 @@ function RulesSection({ rules = [] }) {
                 ))
               ) : (
                 <div className="py-12 text-center text-sm font-semibold text-[#8f8678]">
-                  No parking rules configured for this building yet.
+                  No parking rules configured for {buildingName || "this building"} yet.
                 </div>
               )}
             </div>
@@ -700,12 +700,12 @@ function RulesSection({ rules = [] }) {
   );
 }
 
-function PricingSection({ policies }) {
+function PricingSection({ policies, buildingName = "" }) {
   return (
     <section id="pricing" className="scroll-mt-28 px-4 py-24 md:px-8 md:py-36">
       <div className="mx-auto max-w-7xl">
         <SectionIntro
-          eyebrow="Public pricing"
+          eyebrow={buildingName ? `Public pricing • ${buildingName}` : "Public pricing"}
           title="Transparent rates and pricing policies."
         />
 
@@ -754,7 +754,7 @@ function PricingSection({ policies }) {
   );
 }
 
-function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleType, isLight }) {
+function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleType, isLight, buildingName = "" }) {
   const zones = info.zones || [];
   const availableSlots = info.availableSlots || [];
   const vehicleTypes = Array.from(
@@ -821,7 +821,7 @@ function AvailableSlotsSection({ info, selectedVehicleType, setSelectedVehicleTy
             <div className="relative grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
               <div>
                 <SectionIntro
-                  eyebrow="Available slots"
+                  eyebrow={buildingName ? `Available slots • ${buildingName}` : "Available slots"}
                   title="Choose vehicle type, then check openings."
                   description="Filter by vehicle type and check active capacity by zone before making a booking."
                 />
@@ -1182,6 +1182,11 @@ export default function PublicLandingPage() {
     [publicInfo],
   );
 
+  const selectedBuilding = useMemo(() => {
+    return (normalizedInfo.buildings || []).find(b => b.id === selectedBuildingId);
+  }, [normalizedInfo.buildings, selectedBuildingId]);
+  const buildingName = selectedBuilding ? selectedBuilding.name : "";
+
   return (
     <div
       className={[
@@ -1234,13 +1239,14 @@ export default function PublicLandingPage() {
         />
         <PublicInfoState status={status} />
         <BuildingInfoSection info={normalizedInfo} isLight={isLight} />
-        <RulesSection rules={normalizedInfo.parkingRules} />
-        <PricingSection policies={normalizedInfo.pricingPolicies || []} />
+        <RulesSection rules={normalizedInfo.parkingRules} buildingName={buildingName} />
+        <PricingSection policies={normalizedInfo.pricingPolicies || []} buildingName={buildingName} />
         <AvailableSlotsSection
           info={normalizedInfo}
           selectedVehicleType={selectedVehicleType}
           setSelectedVehicleType={setSelectedVehicleType}
           isLight={isLight}
+          buildingName={buildingName}
         />
         <FinalCtaSection isLight={isLight} />
       </main>

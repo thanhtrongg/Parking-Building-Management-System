@@ -719,7 +719,7 @@ export default function ParkingSlotsPage() {
         />
       </div>
 
-      <div className="mb-6 rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm ring-1 ring-slate-100 backdrop-blur-xl">
+      <div className="relative z-20 mb-6 rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm ring-1 ring-slate-100 backdrop-blur-xl">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px_260px_auto]">
           <div className="relative">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">

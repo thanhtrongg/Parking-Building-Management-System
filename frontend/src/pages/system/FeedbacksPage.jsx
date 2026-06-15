@@ -645,7 +645,7 @@ export default function FeedbacksPage() {
         <PageHeader />
         <OverviewGrid feedbacks={buildingFeedbacks} />
 
-        <div className="feedback-panel mb-6 rounded-2xl border border-amber-200 bg-[#fffaf0] p-4 shadow-sm shadow-amber-900/10">
+        <div className="feedback-panel relative z-20 mb-6 rounded-2xl border border-amber-200 bg-[#fffaf0] p-4 shadow-sm shadow-amber-900/10">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative flex-1 lg:max-w-xl">
               <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">

@@ -555,7 +555,7 @@ function FilterToolbar({
   onResetFilters,
 }) {
   return (
-    <div className="mb-6 rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
+    <div className="relative z-20 mb-6 rounded-2xl border border-[#d7d9e4] bg-white shadow-sm">
       <div className="border-b border-[#eceef5] px-5 py-4">
         <div className="flex flex-col justify-between gap-2 lg:flex-row lg:items-center">
           <div>

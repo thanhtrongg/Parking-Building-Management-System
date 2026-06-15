@@ -42,7 +42,13 @@ export default function CustomSelect({
   };
 
   return (
-    <div className="relative inline-block w-full text-left" ref={containerRef}>
+    <div 
+      className={[
+        "relative inline-block w-full text-left",
+        isOpen ? "z-30" : ""
+      ].join(" ")} 
+      ref={containerRef}
+    >
       <button
         type="button"
         disabled={disabled}
