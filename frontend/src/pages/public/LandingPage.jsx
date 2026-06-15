@@ -74,6 +74,7 @@ const fallbackInfo = {
   availableSlots: [],
   buildings: [],
   selectedBuildingId: null,
+  parkingRules: [],
 };
 
 const focusRing =
@@ -635,7 +636,7 @@ function BuildingInfoSection({ info, isLight }) {
 }
 
 function RulesSection({ rules = [] }) {
-  const displayRules = rules && rules.length > 0 ? rules : parkingRules;
+  const displayRules = rules || [];
 
   return (
     <section id="rules" className="scroll-mt-28 px-4 py-20 md:px-8 md:py-32">
@@ -656,27 +657,33 @@ function RulesSection({ rules = [] }) {
         <div className="rounded-2xl bg-white/[0.04] p-1 ring-1 ring-white/10">
           <div className="relative overflow-hidden rounded-[calc(1rem-0.25rem)] bg-[#11100c] p-5 md:p-8">
             <div className="relative">
-              {displayRules.map((rule, index) => (
-                <article
-                  key={index}
-                  className="group relative grid gap-5 border-b border-white/10 py-7 last:border-b-0 md:grid-cols-[7rem_1fr]"
-                >
-                  <div className="flex items-start gap-4">
-                    <span className="font-mono text-sm font-semibold tracking-[0.16em] text-[#d7b46a]">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="mt-1 hidden h-px w-10 bg-[#d7b46a]/50 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:w-16 md:block" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-semibold tracking-[-0.025em] text-[#fbf4e7]">
-                      {rule.title}
-                    </h3>
-                    <p className="mt-3 max-w-[42rem] text-base leading-8 text-[#b9af9d]">
-                      {rule.content}
-                    </p>
-                  </div>
-                </article>
-              ))}
+              {displayRules.length > 0 ? (
+                displayRules.map((rule, index) => (
+                  <article
+                    key={index}
+                    className="group relative grid gap-5 border-b border-white/10 py-7 last:border-b-0 md:grid-cols-[7rem_1fr]"
+                  >
+                    <div className="flex items-start gap-4">
+                      <span className="font-mono text-sm font-semibold tracking-[0.16em] text-[#d7b46a]">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="mt-1 hidden h-px w-10 bg-[#d7b46a]/50 transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:w-16 md:block" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-semibold tracking-[-0.025em] text-[#fbf4e7]">
+                        {rule.title}
+                      </h3>
+                      <p className="mt-3 max-w-[42rem] text-base leading-8 text-[#b9af9d]">
+                        {rule.content}
+                      </p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="py-12 text-center text-sm font-semibold text-[#8f8678]">
+                  No parking rules configured for this building yet.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1130,6 +1137,14 @@ export default function PublicLandingPage() {
 
     let isMounted = true;
     setStatus("loading");
+    setSelectedVehicleType("all");
+
+    // Immediately reset building-specific details to avoid showing stale data from the previous building
+    setPublicInfo((prev) => ({
+      ...fallbackInfo,
+      buildings: prev.buildings || [],
+      selectedBuildingId: selectedBuildingId
+    }));
 
     const queryUrl = selectedBuildingId
       ? `/api/public/landing-info?buildingId=${selectedBuildingId}`

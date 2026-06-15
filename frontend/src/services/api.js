@@ -392,6 +392,20 @@ export const apiRequest = async (path, options = {}) => {
         };
       });
 
+      // Calculate supported vehicle types count for target building (from pricing or slots)
+      const buildingVehicleTypes = new Set();
+      pricingPolicies.forEach(p => {
+        if (p.vehicleTypeName && p.vehicleTypeName !== "N/A" && p.vehicleTypeName !== "All vehicles") {
+          buildingVehicleTypes.add(p.vehicleTypeName);
+        }
+      });
+      allSlots.forEach(slot => {
+        const typeName = slot.vehicleTypeName || refineVehicleTypeName(slot.vehicleType);
+        if (typeName && typeName !== "N/A") {
+          buildingVehicleTypes.add(typeName);
+        }
+      });
+
       const summary = {
         totalSlots,
         availableSlots: availableSlots.length,
@@ -399,7 +413,7 @@ export const apiRequest = async (path, options = {}) => {
         reservedSlots: reservedCount,
         maintenanceSlots: maintenanceCount,
         totalZones: zones.length,
-        vehicleTypes: vehicleTypes.length,
+        vehicleTypes: buildingVehicleTypes.size,
         totalFloors: floors.length
       };
 
