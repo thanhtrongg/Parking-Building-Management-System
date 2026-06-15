@@ -540,7 +540,7 @@ export default function UserMyBookingsPage() {
               method: "POST",
               body: JSON.stringify({
                 buildingId: form.buildingId,
-                vehicleType: vehicleTypeEnum.toUpperCase(),
+                vehicleType: vehicleTypeEnum.toUpperCase().replace(/\s+/g, '_'),
               }),
             });
 

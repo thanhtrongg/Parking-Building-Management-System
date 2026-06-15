@@ -104,7 +104,7 @@ export default function WalkInParkingPage() {
           method: "POST",
           body: JSON.stringify({
             buildingId: activeBuildingId,
-            vehicleType: vehicleTypeEnum.toUpperCase(),
+            vehicleType: vehicleTypeEnum.toUpperCase().replace(/\s+/g, '_'),
           }),
         });
 
