@@ -599,13 +599,28 @@ export default function AdminVehiclesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [alert, setAlert] = useState({ type: "", message: "" });
+  const [activeBuildingId, setActiveBuildingId] = useState(() => localStorage.getItem("activeSystemBuildingId") || "");
+
+  useEffect(() => {
+    const handleBuildingChange = (e) => {
+      setActiveBuildingId(e.detail);
+    };
+    window.addEventListener("systemBuildingChanged", handleBuildingChange);
+    return () => {
+      window.removeEventListener("systemBuildingChanged", handleBuildingChange);
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
 
     const loadVehicleTypes = async () => {
       try {
-        const result = await apiRequest("/api/vehicle-types");
+        setLoading(true);
+        const url = activeBuildingId
+          ? `/api/vehicle-types?buildingId=${activeBuildingId}`
+          : "/api/vehicle-types";
+        const result = await apiRequest(url);
 
         if (!ignore) {
           setVehicleTypes(result.data || []);
@@ -627,7 +642,7 @@ export default function AdminVehiclesPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [activeBuildingId]);
 
   const filteredVehicleTypes = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
