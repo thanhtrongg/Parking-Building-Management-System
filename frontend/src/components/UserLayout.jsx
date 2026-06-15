@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import FeedbackNotifications from "./FeedbackNotifications";
 import { apiRequest } from "../services/api";
 import CustomSelect from "./CustomSelect";
+import { getStoredTheme, storeTheme } from "../utils/theme";
 
 const navItems = [
   {
@@ -314,13 +315,7 @@ export default function UserLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem("systemTheme") || "light";
-    } catch {
-      return "light";
-    }
-  });
+  const [theme, setTheme] = useState(() => getStoredTheme("light"));
   const isDark = theme === "dark";
 
   const [buildings, setBuildings] = useState([]);
@@ -363,7 +358,7 @@ export default function UserLayout({ children }) {
   const handleToggleTheme = () => {
     setTheme((current) => {
       const nextTheme = current === "dark" ? "light" : "dark";
-      localStorage.setItem("systemTheme", nextTheme);
+      storeTheme(nextTheme);
       return nextTheme;
     });
   };

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../../services/api";
+import { getStoredTheme, storeTheme } from "../../utils/theme";
 
 const authImage =
   "https://images.unsplash.com/photo-1649307035604-ab3c5e5c9e7a?auto=format&fit=crop&q=82&w=1600";
@@ -110,23 +111,25 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem("systemTheme") || "light";
-    } catch {
-      return "light";
-    }
-  });
+  const [theme, setTheme] = useState(() => getStoredTheme("light"));
   const isLight = theme === "light";
 
   const handleToggleTheme = () => {
     setTheme((current) => {
       const nextTheme = current === "light" ? "dark" : "light";
-      localStorage.setItem("systemTheme", nextTheme);
-      localStorage.setItem("publicTheme", nextTheme);
+      storeTheme(nextTheme);
       return nextTheme;
     });
   };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("landing-light", isLight);
+    document.documentElement.classList.toggle("landing-dark", !isLight);
+
+    return () => {
+      document.documentElement.classList.remove("landing-light", "landing-dark");
+    };
+  }, [isLight]);
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -175,12 +178,12 @@ export default function SignUpPage() {
 
   return (
     <div className={[
-      "relative min-h-[100dvh] overflow-hidden px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] md:px-8 transition-colors duration-300",
-      isLight ? "bg-[#fcfaf6] text-slate-900" : "bg-[#070705] text-[#fbf4e7]"
+      "auth-page relative min-h-[100dvh] overflow-hidden px-4 py-6 font-['Satoshi','Plus_Jakarta_Sans',system-ui,sans-serif] md:px-8 transition-colors duration-300",
+      isLight ? "bg-[#fcfaf6] text-slate-900 landing-light" : "bg-[#070705] text-[#fbf4e7] landing-dark"
     ].join(" ")}>
       <div className="pointer-events-none fixed inset-0 opacity-[0.035] [background-image:radial-gradient(circle_at_1px_1px,#ffffff_1px,transparent_0)] [background-size:24px_24px]" />
 
-      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between">
+      <header className="auth-header relative z-10 mx-auto flex max-w-6xl items-center justify-between">
         <Link to="/" className={`group flex items-center gap-3 rounded-full ${focusRing}`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#d7b46a] text-sm font-black text-[#11100d] transition duration-300 group-hover:bg-[#e7c77f]">
             P
@@ -207,7 +210,7 @@ export default function SignUpPage() {
           </button>
           <Link
             to="/login"
-            className={["hidden rounded-lg px-4 py-2.5 text-xs font-medium ring-1 transition duration-300 md:inline-flex", isLight ? "bg-slate-100 text-slate-700 ring-slate-200 hover:bg-slate-200 hover:text-slate-900" : "bg-white/[0.055] text-[#ddd4c4] ring-white/12 hover:bg-white/[0.09] hover:text-white"].join(" ")}
+            className={["hidden rounded-lg px-4 py-2.5 text-xs font-semibold ring-1 transition duration-300 md:inline-flex", isLight ? "bg-slate-100 text-slate-700 ring-slate-200 hover:bg-slate-200 hover:text-slate-950 hover:-translate-y-0.5 hover:shadow-sm" : "border border-transparent bg-white/[0.055] text-[#ddd4c4] ring-white/12 hover:bg-[#d7b46a]/15 hover:text-[#d7b46a] hover:-translate-y-0.5 hover:border-[#d7b46a]/45 hover:shadow-md"].join(" ")}
           >
             Sign in
           </Link>
@@ -298,7 +301,7 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#d7b46a] px-5 text-sm font-semibold text-[#11100d] transition duration-300 hover:bg-[#e7c77f] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing}`}
+                className={`group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#d7b46a] px-5 text-sm font-bold text-[#11100d] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#f0d89c] hover:font-black hover:shadow-lg hover:shadow-[#d7b46a]/30 active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing}`}
               >
                 {loading ? (
                   <>
@@ -318,7 +321,7 @@ export default function SignUpPage() {
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="font-semibold text-[#d7b46a] transition hover:text-[#f0d89c]"
+                className="rounded-md px-2 py-1 font-semibold text-[#d7b46a] transition-all duration-300 hover:bg-[#d7b46a]/15 hover:text-[#f0d89c] hover:underline hover:underline-offset-4"
               >
                 Sign in
               </Link>
@@ -331,19 +334,19 @@ export default function SignUpPage() {
             "rounded-2xl p-1 ring-1",
             isLight ? "bg-slate-100 ring-slate-200/60" : "bg-white/[0.035] ring-white/10"
           ].join(" ")}>
-            <div className={["relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)]", isLight ? "bg-slate-50" : "bg-[#100f0b]"].join(" ")}>
+            <div className={["auth-image-panel relative min-h-[36rem] overflow-hidden rounded-[calc(1rem-0.25rem)]", isLight ? "bg-slate-50" : "bg-[#100f0b]"].join(" ")}>
               <img
                 src={authImage}
                 alt="Urban parking building ramp at night"
                 className={["absolute inset-0 h-full w-full object-cover saturate-[0.78]", isLight ? "opacity-90" : "opacity-62"].join(" ")}
               />
               <div className={[
-                "absolute inset-0",
+                "auth-image-overlay absolute inset-0",
                 isLight
                   ? "bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(252,250,246,0.38))]"
                   : "bg-[linear-gradient(180deg,rgba(6,6,5,0.12),rgba(6,6,5,0.86))]"
               ].join(" ")} />
-              <div className="absolute inset-x-0 bottom-0 p-8">
+              <div className="auth-image-content absolute inset-x-0 bottom-0 p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b46a]">
                   Reservation-ready
                 </p>

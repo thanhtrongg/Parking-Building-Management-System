@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
@@ -129,7 +130,7 @@ function FilterBar({ keyword, onKeywordChange, statusFilter, onStatusChange, tot
                     <input
                         value={keyword}
                         onChange={(event) => onKeywordChange(event.target.value)}
-                        placeholder="Search by user name, phone, or slot name..."
+                        placeholder="Search by license plate, user, phone, or slot..."
                         className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 font-['Inter'] text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                     />
                 </div>
@@ -195,6 +196,10 @@ function SessionCard({ session, now, onView, onCheckout }) {
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                     <span className="material-symbols-outlined text-lg text-slate-400">directions_car</span>
                     <span className="font-['Inter'] font-medium">{session.vehicleType?.typeName || "Unknown"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <span className="material-symbols-outlined text-lg text-slate-400">pin</span>
+                    <span className="font-['Inter'] font-bold uppercase text-slate-800">{session.licensePlate || "No plate"}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                     <span className="material-symbols-outlined text-lg text-slate-400">schedule</span>
@@ -286,22 +291,33 @@ function DetailModal({ session, now, onClose }) {
     if (!session) return null;
     const isActive = session.status === "ACTIVE";
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg overflow-hidden rounded-[28px] bg-white shadow-2xl shadow-slate-950/30">
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-[28px] bg-white shadow-2xl shadow-slate-950/30"
+                onClick={(event) => event.stopPropagation()}
+            >
                 <div className={`relative h-36 ${isActive ? "bg-gradient-to-br from-emerald-500 to-teal-600" : "bg-gradient-to-br from-amber-200 to-[#d7b46a]"}`}>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_40%)]" />
                     <button
+                        type="button"
                         onClick={onClose}
-                        className="absolute right-4 top-4 rounded-2xl bg-white/60 p-2 text-slate-800 backdrop-blur transition hover:bg-white/80"
+                        aria-label="Close session details"
+                        className="group absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-2xl border border-white/60 bg-white/80 p-2 text-slate-700 shadow-sm backdrop-blur transition duration-200 hover:scale-110 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-md active:scale-95"
                     >
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-outlined transition duration-200 group-hover:rotate-90">close</span>
                     </button>
                     <div className="relative flex h-full items-center justify-center">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-[24px] bg-white/55 text-slate-900 shadow-xl backdrop-blur">
-                            <span className="material-symbols-outlined text-5xl">
-                                {isActive ? "hourglass_top" : "check_circle"}
-                            </span>
+                        <div className="rounded-[24px] bg-white/70 px-7 py-4 text-center text-slate-950 shadow-xl backdrop-blur">
+                            <p className="font-['Inter'] text-[10px] font-black uppercase tracking-[0.22em] text-slate-600">
+                                License Plate
+                            </p>
+                            <p className="mt-1 font-['Geist'] text-3xl font-black uppercase tracking-wide">
+                                {session.licensePlate || "No plate"}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -338,6 +354,7 @@ function DetailModal({ session, now, onClose }) {
                             <div>
                                 <p className="font-['Inter'] text-xs font-semibold uppercase tracking-wide text-slate-400">Vehicle</p>
                                 <p className="font-['Inter'] text-sm font-semibold text-slate-800">{session.vehicleType?.typeName || "N/A"}</p>
+                                <p className="font-['Inter'] text-xs font-bold uppercase text-blue-700">{session.licensePlate || "No plate"}</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
@@ -372,15 +389,17 @@ function DetailModal({ session, now, onClose }) {
 
                     <div className="mt-6 flex justify-end">
                         <button
+                            type="button"
                             onClick={onClose}
-                            className="rounded-2xl border border-slate-200 px-5 py-3 font-['Inter'] text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 font-['Inter'] text-sm font-semibold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-md active:translate-y-0 active:scale-95"
                         >
                             Close
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }
 
@@ -395,9 +414,15 @@ function CheckoutModal({
 }) {
     if (!session) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl shadow-slate-950/30">
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl shadow-slate-950/30"
+                onClick={(event) => event.stopPropagation()}
+            >
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                     <span className="material-symbols-outlined text-3xl">logout</span>
                 </div>
@@ -436,6 +461,7 @@ function CheckoutModal({
 
                 <div className="mt-6 flex justify-end gap-3">
                     <button
+                        type="button"
                         onClick={onClose}
                         disabled={processing}
                         className="rounded-2xl border border-slate-200 px-5 py-3 font-['Inter'] text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -443,6 +469,7 @@ function CheckoutModal({
                         Cancel
                     </button>
                     <button
+                        type="button"
                         onClick={onConfirm}
                         disabled={processing}
                         className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-['Inter'] text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -454,7 +481,8 @@ function CheckoutModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }
 
@@ -565,6 +593,7 @@ export default function ParkingSessionsPage() {
                 (s) =>
                     s.user?.fullName?.toLowerCase().includes(lowerKeyword) ||
                     s.user?.phone?.toLowerCase().includes(lowerKeyword) ||
+                    s.licensePlate?.toLowerCase().includes(lowerKeyword) ||
                     s.parkingSlot?.slotName?.toLowerCase().includes(lowerKeyword) ||
                     s.vehicleType?.typeName?.toLowerCase().includes(lowerKeyword)
             );

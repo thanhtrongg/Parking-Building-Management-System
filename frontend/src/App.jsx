@@ -33,6 +33,7 @@ import UserParkingSessionsPage from "./pages/user/ParkingSessionsPage";
 import UserSettingsPage from "./pages/user/SettingsPage";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import AiAssistant from "./components/AiAssistant";
 
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -162,6 +163,7 @@ function App() {
   return (
     <BrowserRouter>
       <InactivityTimeout />
+      <AiAssistant />
       <Routes>
         {/* Public routes */}
         <Route

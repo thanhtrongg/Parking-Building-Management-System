@@ -173,6 +173,7 @@ function BookingCard({ booking, cancelling, onCancel }) {
         <Info label="Booking ID" value={reservationCode} />
         <Info label="Slot" value={slotName} />
         <Info label="Vehicle" value={vehicleType} />
+        <Info label="License Plate" value={booking.licensePlate || "N/A"} />
         <Info label="Start" value={formatDateTime(booking.startTime)} />
         <Info label="Payment" value="Pay when checkout" />
       </div>

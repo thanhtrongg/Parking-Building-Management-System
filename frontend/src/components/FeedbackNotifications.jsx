@@ -116,16 +116,18 @@ export default function FeedbackNotifications({ audience }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+0.75rem)] w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <div className="absolute right-0 top-[calc(100%+0.75rem)] w-[min(23rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
             <div>
               <p className="text-sm font-black text-slate-950">Feedback notifications</p>
-              <p className="text-xs font-semibold text-slate-500">{items.length} recent items</p>
+              <p className="mt-0.5 text-xs font-semibold text-slate-500">{items.length} recent items</p>
             </div>
-            <span className="material-symbols-outlined text-blue-600">notifications_active</span>
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+              <span className="material-symbols-outlined text-[20px]">notifications_active</span>
+            </span>
           </div>
 
-          <div className="max-h-80 overflow-y-auto p-2">
+          <div className="flex max-h-80 flex-col gap-2.5 overflow-y-auto bg-slate-50/70 p-3">
             {items.length === 0 ? (
               <div className="px-4 py-10 text-center text-sm font-semibold text-slate-500">
                 No feedback notifications yet.
@@ -136,13 +138,25 @@ export default function FeedbackNotifications({ audience }) {
                   key={item.id}
                   type="button"
                   onClick={handleOpenFeedbacks}
-                  className="w-full rounded-xl px-3 py-3 text-left transition hover:bg-slate-50"
+                  className="group w-full rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
                 >
-                  <p className="truncate text-sm font-black text-slate-950">{item.title}</p>
-                  <p className="mt-1 line-clamp-2 text-xs font-medium leading-5 text-slate-500">
-                    {item.description}
-                  </p>
-                  <p className="mt-1 text-[11px] font-bold text-blue-600">{formatTime(item.timestamp)}</p>
+                  <div className="flex items-start gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 transition group-hover:bg-blue-600 group-hover:text-white">
+                      <span className="material-symbols-outlined text-[18px]">
+                        {audience === "user" ? "quick_phrases" : "forum"}
+                      </span>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-slate-950">{item.title}</p>
+                      <p className="mt-1 line-clamp-2 text-xs font-medium leading-5 text-slate-500">
+                        {item.description}
+                      </p>
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-blue-600">
+                        <span className="material-symbols-outlined text-[14px]">schedule</span>
+                        {formatTime(item.timestamp)}
+                      </div>
+                    </div>
+                  </div>
                 </button>
               ))
             )}
@@ -151,7 +165,7 @@ export default function FeedbackNotifications({ audience }) {
           <button
             type="button"
             onClick={handleOpenFeedbacks}
-            className="flex h-11 w-full items-center justify-center gap-2 border-t border-slate-100 text-sm font-black text-blue-600 hover:bg-blue-50"
+            className="flex h-12 w-full items-center justify-center gap-2 border-t border-slate-100 text-sm font-black text-blue-600 transition hover:bg-blue-50"
           >
             View all feedbacks
             <span className="material-symbols-outlined text-lg">arrow_forward</span>

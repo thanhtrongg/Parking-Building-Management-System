@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../../services/api";
+import { getStoredTheme, storeTheme } from "../../utils/theme";
 
 const navItems = [
   ["Home", "home"],
@@ -247,13 +248,13 @@ function PublicHeader({ menuOpen, setMenuOpen, theme, onToggleTheme }) {
           </button>
           <Link
             to="/login"
-            className={`rounded-lg px-4 py-2.5 text-xs font-medium text-[#ddd4c4] transition duration-300 hover:bg-white/[0.07] hover:text-white ${focusRing}`}
+            className={`rounded-lg border border-transparent px-4 py-2.5 text-xs font-semibold text-[#ddd4c4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d7b46a]/45 hover:bg-[#d7b46a]/15 hover:text-[#f7efe0] hover:shadow-md ${focusRing}`}
           >
-            Login
+            Sign in
           </Link>
           <Link
             to="/signup"
-            className={`rounded-lg bg-[#f7efe0] px-4 py-2.5 text-xs font-semibold text-[#11100d] transition duration-300 hover:bg-[#d7b46a] active:scale-[0.98] ${focusRing}`}
+            className={`rounded-lg bg-[#f7efe0] px-4 py-2.5 text-xs font-semibold text-[#11100d] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#d7b46a] hover:shadow-lg hover:shadow-[#d7b46a]/20 active:translate-y-0 active:scale-[0.98] ${focusRing}`}
           >
             Sign Up
           </Link>
@@ -1087,9 +1088,9 @@ function PublicFooter() {
           ))}
           <Link
             to="/login"
-            className={`transition duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:text-[#d7b46a] ${focusRing}`}
+            className={`rounded-md px-2 py-1 font-semibold transition duration-300 hover:bg-[#d7b46a]/15 hover:text-[#d7b46a] hover:underline hover:underline-offset-4 ${focusRing}`}
           >
-            Login
+            Sign in
           </Link>
         </nav>
       </div>
@@ -1099,13 +1100,7 @@ function PublicFooter() {
 
 export default function PublicLandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem("publicTheme") || "light";
-    } catch {
-      return "light";
-    }
-  });
+  const [theme, setTheme] = useState(() => getStoredTheme("light"));
   const [publicInfo, setPublicInfo] = useState(fallbackInfo);
   const [status, setStatus] = useState("loading");
   const [selectedVehicleType, setSelectedVehicleType] = useState("all");
@@ -1116,7 +1111,7 @@ export default function PublicLandingPage() {
   const handleToggleTheme = () => {
     setTheme((current) => {
       const nextTheme = current === "light" ? "dark" : "light";
-      localStorage.setItem("publicTheme", nextTheme);
+      storeTheme(nextTheme);
       return nextTheme;
     });
   };

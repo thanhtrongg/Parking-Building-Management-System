@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import FeedbackNotifications from "./FeedbackNotifications";
 import { apiRequest } from "../services/api";
 import CustomSelect from "./CustomSelect";
+import { getStoredTheme, storeTheme } from "../utils/theme";
 
 const navItems = [
   {
@@ -30,16 +31,16 @@ const navItems = [
     roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
+    icon: "door_open",
+    label: "Check-in",
+    path: "/parking-sessions/create",
+    roles: ["ADMIN", "MANAGER", "STAFF"],
+  },
+  {
     icon: "confirmation_number",
     label: "Parking Sessions",
     path: "/parking-sessions",
     exact: true,
-    roles: ["ADMIN", "MANAGER", "STAFF"],
-  },
-  {
-    icon: "door_open",
-    label: "Check-in / Check-out",
-    path: "/parking-sessions/create",
     roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
@@ -399,13 +400,7 @@ export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem("systemTheme") || "light";
-    } catch {
-      return "light";
-    }
-  });
+  const [theme, setTheme] = useState(() => getStoredTheme("light"));
   const isDark = theme === "dark";
 
   const [buildings, setBuildings] = useState([]);
@@ -448,7 +443,7 @@ export default function AdminLayout({ children }) {
   const handleToggleTheme = () => {
     setTheme((current) => {
       const nextTheme = current === "dark" ? "light" : "dark";
-      localStorage.setItem("systemTheme", nextTheme);
+      storeTheme(nextTheme);
       return nextTheme;
     });
   };

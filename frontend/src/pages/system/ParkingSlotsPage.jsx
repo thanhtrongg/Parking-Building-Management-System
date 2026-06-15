@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import AdminLayout from "../../components/AdminLayout";
 import { apiRequest } from "../../services/api";
 import useAutoRefresh from "../../hooks/useAutoRefresh";
@@ -212,6 +213,16 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit, defaultBu
     loadFloors();
   }, [selectedBuildingId]);
 
+  // Scroll lock for modal overlay
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const updateField = (field, value) => {
     setForm((current) => ({
       ...current,
@@ -232,9 +243,9 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit, defaultBu
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-md">
-      <div className="w-full max-w-xl overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/20 dark:bg-[#11100c] dark:border dark:border-white/10">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-md">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl shadow-slate-950/20 dark:bg-[#11100c] dark:border dark:border-white/10">
         <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 px-6 py-6 text-white dark:from-[#070705] dark:via-[#11100c] dark:to-[#1a1914] dark:border-white/5">
           <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-500/30 blur-3xl" />
 
@@ -385,7 +396,8 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit, defaultBu
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
