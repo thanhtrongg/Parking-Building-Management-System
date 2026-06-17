@@ -202,8 +202,9 @@ function VehicleTypeCard({ vehicleType, onView, onEdit, onDelete }) {
         </div>
 
         <button
+          type="button"
           onClick={() => onView(vehicleType)}
-          className="rounded-2xl p-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-600"
+          className="rounded-2xl border border-transparent p-2 text-slate-400 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 hover:shadow-md active:translate-y-0 active:scale-95"
           title="View details"
         >
           <span className="material-symbols-outlined text-xl">visibility</span>
@@ -412,16 +413,25 @@ function DetailModal({ vehicleType, onClose, onEdit }) {
   const theme = getVehicleTheme(vehicleType.typeName);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl shadow-slate-950/20">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl shadow-slate-950/20"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="relative overflow-hidden border-b border-blue-100 bg-gradient-to-br from-white via-blue-50 to-sky-50 px-6 py-8">
           <div className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-blue-200/60 blur-2xl" />
 
           <button
+            type="button"
             onClick={onClose}
-            className="absolute right-4 top-4 rounded-2xl bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
+            className="group absolute right-4 top-4 rounded-2xl border border-transparent bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200 transition duration-200 hover:scale-110 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-md active:scale-95"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined transition duration-200 group-hover:rotate-90">
+              close
+            </span>
           </button>
 
           <div className="relative flex flex-col items-center text-center">
@@ -461,13 +471,15 @@ function DetailModal({ vehicleType, onClose, onEdit }) {
 
           <div className="mt-6 flex justify-end gap-3">
             <button
+              type="button"
               onClick={onClose}
-              className="rounded-2xl border border-slate-200 px-5 py-3 font-['Inter'] text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-2xl border border-slate-200 px-5 py-3 font-['Inter'] text-sm font-bold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-md active:translate-y-0 active:scale-95"
             >
               Close
             </button>
 
             <button
+              type="button"
               onClick={() => onEdit(vehicleType)}
               className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-['Inter'] text-sm font-black text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
             >

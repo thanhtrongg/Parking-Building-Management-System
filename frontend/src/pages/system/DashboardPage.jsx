@@ -281,7 +281,7 @@ function DashboardHero({ name, onNewEntry, onViewSlots }) {
             <button
               type="button"
               onClick={onViewSlots}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[0.98]"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-slate-50 hover:text-blue-700 hover:shadow-md active:scale-[0.98] active:translate-y-0"
             >
               <span className="material-symbols-outlined text-[21px] leading-none">
                 local_parking
@@ -292,7 +292,7 @@ function DashboardHero({ name, onNewEntry, onViewSlots }) {
         </div>
 
         <div className="grid w-full max-w-md grid-cols-2 gap-3">
-          <div className="rounded-3xl border border-amber-200 bg-[#f7ecd5] p-5 text-slate-950 shadow-xl shadow-amber-900/10">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-slate-950 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
               Today
             </p>
