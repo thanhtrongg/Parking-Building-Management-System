@@ -26,9 +26,7 @@ function normalizeSessions(value) {
 }
 
 function getSessionLocationLabel(session) {
-  return [session.buildingCode, session.floorCode, session.zoneName]
-    .filter(Boolean)
-    .join(" / ");
+  return session.zoneName || "";
 }
 
 function getSessionLandmarks(session) {

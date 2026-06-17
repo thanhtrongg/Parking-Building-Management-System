@@ -33,9 +33,7 @@ function normalizeBookings(value) {
 }
 
 function getSlotLocationLabel(slot) {
-  return [slot?.buildingCode, slot?.floorCode, slot?.zone?.zoneName]
-    .filter(Boolean)
-    .join(" / ");
+  return slot?.zone?.zoneName || "";
 }
 
 function getSlotLandmarks(slot) {

@@ -28,6 +28,10 @@ function getLandmarkLabels(slot) {
   return labels;
 }
 
+function getSlotLocationLabel(slot) {
+  return slot?.zoneName || "No zone";
+}
+
 function pad2(value) {
   return String(value).padStart(2, "0");
 }
@@ -172,9 +176,7 @@ function SlotCard({ slot, selected, onSelect }) {
               selected ? "text-blue-100" : "text-slate-500"
             }`}
           >
-            {[slot.buildingCode, slot.floorCode, slot.zoneName]
-              .filter(Boolean)
-              .join(" / ") || "No zone"}
+            {getSlotLocationLabel(slot)}
           </p>
         </div>
         <span
