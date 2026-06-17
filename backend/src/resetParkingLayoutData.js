@@ -286,6 +286,10 @@ function buildSlotName(buildingCode, floorCode, zoneCode, slotPrefix, index) {
   return `${getBuildingTag(buildingCode)}-${floorCode}-${zoneCode}-${slotPrefix}${paddedIndex}`;
 }
 
+function buildZoneName(buildingName, zoneName) {
+  return `${buildingName} - ${zoneName}`;
+}
+
 async function ensureAdminUser() {
   const hashedPassword = await bcrypt.hash("123456", 10);
 
@@ -448,7 +452,7 @@ async function seedBuildings(vehicleTypeMap) {
         const zone = await prisma.zones.create({
           data: {
             floor_id: floor.id,
-            zone_name: zoneBlueprint.zoneName,
+            zone_name: buildZoneName(blueprint.buildingName, zoneBlueprint.zoneName),
             vehicle_type_id: vehicleTypeMap[zoneBlueprint.vehicleType].id,
             total_capacity: zoneBlueprint.totalCapacity,
           },
