@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "generate": "prisma generate",
+    "migrate:deploy": "prisma migrate deploy",
+    "reset:parking-layout": "node src/resetParkingLayoutData.js",
     "postinstall": "prisma generate",
     "start": "node src/server.js"
   },

@@ -45,6 +45,10 @@ function getDistance(slot) {
   return slot?.distanceToGate ?? slot?.distance_to_gate ?? 0;
 }
 
+function getBoolean(value) {
+  return Boolean(value);
+}
+
 function getStatusMeta(status) {
   return (
     statusConfig[status] || {
@@ -54,6 +58,32 @@ function getStatusMeta(status) {
       icon: "help",
     }
   );
+}
+
+function getLandmarkSummary(slot) {
+  const landmarks = [];
+
+  if (slot?.nearElevator) {
+    landmarks.push("Near Elevator");
+  }
+
+  if (slot?.nearEntryGate) {
+    landmarks.push(
+      slot?.nearestGateName ? `Near ${slot.nearestGateName}` : "Near Entry Gate",
+    );
+  }
+
+  if (slot?.nearExitGate) {
+    landmarks.push(
+      slot?.nearestGateName ? `Near ${slot.nearestGateName}` : "Near Exit Gate",
+    );
+  }
+
+  if (slot?.nearExit) {
+    landmarks.push("Near Emergency Exit");
+  }
+
+  return landmarks.length > 0 ? landmarks.join(" | ") : "Standard";
 }
 
 function getStoredUser() {
@@ -141,12 +171,17 @@ function EmptyState({ canManage, onCreate }) {
   );
 }
 
-function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
+function SlotFormModal({ mode, slot, zones, gates, saving, onClose, onSubmit }) {
   const [form, setForm] = useState({
     slotNumber: getSlotNumber(slot),
     zoneId: getZoneId(slot),
     status: slot?.status || "AVAILABLE",
     distanceToGate: getDistance(slot),
+    nearestGateId: slot?.nearestGateId || "",
+    nearElevator: getBoolean(slot?.nearElevator),
+    nearExit: getBoolean(slot?.nearExit),
+    nearEntryGate: getBoolean(slot?.nearEntryGate),
+    nearExitGate: getBoolean(slot?.nearExitGate),
   });
 
   const isEdit = mode === "edit";
@@ -167,6 +202,12 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
     }));
   };
 
+  const selectedZone = zones.find((zone) => zone.id === form.zoneId);
+  const availableGates = gates.filter((gate) => {
+    if (!selectedZone?.buildingId) return true;
+    return gate.buildingId === selectedZone.buildingId;
+  });
+
   const handleSubmit = (event) => {
     event.preventDefault();
 
@@ -175,6 +216,11 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
       zoneId: form.zoneId,
       status: form.status,
       distanceToGate: Number(form.distanceToGate || 0),
+      nearestGateId: form.nearestGateId || null,
+      nearElevator: form.nearElevator,
+      nearExit: form.nearExit,
+      nearEntryGate: form.nearEntryGate,
+      nearExitGate: form.nearExitGate,
     });
   };
 
@@ -236,7 +282,31 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
               <option value="">Select zone</option>
               {zones.map((zone) => (
                 <option key={zone.id} value={zone.id}>
-                  {zone.zoneName || zone.zone_name}
+                  {[zone.buildingCode, zone.floorCode, zone.zoneName || zone.zone_name]
+                    .filter(Boolean)
+                    .join(" / ")}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-bold text-slate-700">
+              Nearest Gate
+            </label>
+            <select
+              value={form.nearestGateId}
+              onChange={(event) =>
+                updateField("nearestGateId", event.target.value)
+              }
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="">No nearest gate</option>
+              {availableGates.map((gate) => (
+                <option key={gate.id} value={gate.id}>
+                  {[gate.buildingCode, gate.gateCode, gate.gateName]
+                    .filter(Boolean)
+                    .join(" / ")}
                 </option>
               ))}
             </select>
@@ -281,6 +351,33 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
             </div>
           </div>
 
+          <div>
+            <label className="mb-3 block text-sm font-bold text-slate-700">
+              Location Attributes
+            </label>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {[
+                ["nearElevator", "Near Elevator"],
+                ["nearExit", "Near Exit"],
+                ["nearEntryGate", "Near Entry Gate"],
+                ["nearExitGate", "Near Exit Gate"],
+              ].map(([field, label]) => (
+                <label
+                  key={field}
+                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={form[field]}
+                    onChange={(event) => updateField(field, event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
             <button
               type="button"
@@ -314,6 +411,9 @@ function SlotFormModal({ mode, slot, zones, saving, onClose, onSubmit }) {
 export default function ParkingSlotsPage() {
   const [parkingSlots, setParkingSlots] = useState([]);
   const [zones, setZones] = useState([]);
+  const [buildings, setBuildings] = useState([]);
+  const [floors, setFloors] = useState([]);
+  const [gates, setGates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -322,7 +422,11 @@ export default function ParkingSlotsPage() {
 
   const [keyword, setKeyword] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [selectedBuilding, setSelectedBuilding] = useState("ALL");
+  const [selectedFloor, setSelectedFloor] = useState("ALL");
   const [selectedZone, setSelectedZone] = useState("ALL");
+  const [selectedGate, setSelectedGate] = useState("ALL");
+  const [landmarkFilter, setLandmarkFilter] = useState("ALL");
 
   const [modalMode, setModalMode] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -335,15 +439,22 @@ export default function ParkingSlotsPage() {
 
     async function loadInitialData() {
       try {
-        const [slotResult, zoneResult] = await Promise.all([
+        const [slotResult, zoneResult, buildingResult, floorResult, gateResult] =
+          await Promise.all([
           apiRequest("/api/parking-slots"),
           apiRequest("/api/zones"),
+          apiRequest("/api/buildings"),
+          apiRequest("/api/building-floors"),
+          apiRequest("/api/building-gates"),
         ]);
 
         if (ignore) return;
 
         setParkingSlots(slotResult.data || []);
         setZones(zoneResult.data || []);
+        setBuildings(buildingResult.data || []);
+        setFloors(floorResult.data || []);
+        setGates(gateResult.data || []);
         setError("");
       } catch (err) {
         if (ignore) return;
@@ -367,13 +478,20 @@ export default function ParkingSlotsPage() {
     try {
       setError("");
 
-      const [slotResult, zoneResult] = await Promise.all([
+      const [slotResult, zoneResult, buildingResult, floorResult, gateResult] =
+        await Promise.all([
         apiRequest("/api/parking-slots"),
         apiRequest("/api/zones"),
+        apiRequest("/api/buildings"),
+        apiRequest("/api/building-floors"),
+        apiRequest("/api/building-gates"),
       ]);
 
       setParkingSlots(slotResult.data || []);
       setZones(zoneResult.data || []);
+      setBuildings(buildingResult.data || []);
+      setFloors(floorResult.data || []);
+      setGates(gateResult.data || []);
     } catch (err) {
       setError(err.message || "Cannot refresh parking slot data");
     }
@@ -387,6 +505,17 @@ export default function ParkingSlotsPage() {
       return map;
     }, {});
   }, [zones]);
+
+  const filteredZoneOptions = useMemo(() => {
+    return zones.filter((zone) => {
+      const matchesBuilding =
+        selectedBuilding === "ALL" || zone.buildingId === selectedBuilding;
+      const matchesFloor =
+        selectedFloor === "ALL" || zone.floorId === selectedFloor;
+
+      return matchesBuilding && matchesFloor;
+    });
+  }, [zones, selectedBuilding, selectedFloor]);
 
   const summary = useMemo(() => {
     const countByStatus = (status) =>
@@ -406,8 +535,11 @@ export default function ParkingSlotsPage() {
       const slotNumber = getSlotNumber(slot);
       const zoneName = slot.zoneName || zoneMap[getZoneId(slot)] || "";
       const vehicleTypeName = slot.vehicleTypeName || "";
+      const buildingName = slot.buildingName || "";
+      const floorName = slot.floorName || "";
+      const gateName = slot.nearestGateName || "";
 
-      const matchesKeyword = `${slotNumber} ${zoneName} ${vehicleTypeName}`
+      const matchesKeyword = `${slotNumber} ${zoneName} ${vehicleTypeName} ${buildingName} ${floorName} ${gateName}`
         .toLowerCase()
         .includes(keyword.toLowerCase());
 
@@ -417,9 +549,55 @@ export default function ParkingSlotsPage() {
       const matchesZone =
         selectedZone === "ALL" || getZoneId(slot) === selectedZone;
 
-      return matchesKeyword && matchesStatus && matchesZone;
+      const matchesBuilding =
+        selectedBuilding === "ALL" || slot.buildingId === selectedBuilding;
+
+      const matchesFloor =
+        selectedFloor === "ALL" || slot.floorId === selectedFloor;
+
+      const matchesGate =
+        selectedGate === "ALL" || slot.nearestGateId === selectedGate;
+
+      const matchesLandmark =
+        landmarkFilter === "ALL" ||
+        (landmarkFilter === "ELEVATOR" && slot.nearElevator) ||
+        (landmarkFilter === "EXIT" && slot.nearExit) ||
+        (landmarkFilter === "ENTRY_GATE" && slot.nearEntryGate) ||
+        (landmarkFilter === "EXIT_GATE" && slot.nearExitGate);
+
+      return (
+        matchesKeyword &&
+        matchesStatus &&
+        matchesZone &&
+        matchesBuilding &&
+        matchesFloor &&
+        matchesGate &&
+        matchesLandmark
+      );
     });
-  }, [parkingSlots, keyword, selectedStatus, selectedZone, zoneMap]);
+  }, [
+    parkingSlots,
+    keyword,
+    selectedStatus,
+    selectedBuilding,
+    selectedFloor,
+    selectedZone,
+    selectedGate,
+    landmarkFilter,
+    zoneMap,
+  ]);
+
+  useEffect(() => {
+    if (selectedZone === "ALL") return;
+
+    const zoneStillVisible = filteredZoneOptions.some(
+      (zone) => zone.id === selectedZone,
+    );
+
+    if (!zoneStillVisible) {
+      setSelectedZone("ALL");
+    }
+  }, [filteredZoneOptions, selectedZone]);
 
   const showToast = (message) => {
     setToast(message);
@@ -508,7 +686,11 @@ export default function ParkingSlotsPage() {
   const resetFilters = () => {
     setKeyword("");
     setSelectedStatus("ALL");
+    setSelectedBuilding("ALL");
+    setSelectedFloor("ALL");
     setSelectedZone("ALL");
+    setSelectedGate("ALL");
+    setLandmarkFilter("ALL");
   };
 
   const headerAction = canManage ? (
@@ -620,7 +802,7 @@ export default function ParkingSlotsPage() {
       </div>
 
       <div className="mb-6 rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-sm ring-1 ring-slate-100 backdrop-blur-xl">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px_260px_auto]">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_180px_220px_220px_220px_220px_auto]">
           <div className="relative">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
               search
@@ -647,16 +829,72 @@ export default function ParkingSlotsPage() {
           </select>
 
           <select
+            value={selectedBuilding}
+            onChange={(event) => {
+              setSelectedBuilding(event.target.value);
+              setSelectedFloor("ALL");
+              setSelectedZone("ALL");
+            }}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="ALL">All Buildings</option>
+            {buildings.map((building) => (
+              <option key={building.id} value={building.id}>
+                {building.buildingCode}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedFloor}
+            onChange={(event) => {
+              setSelectedFloor(event.target.value);
+              setSelectedZone("ALL");
+            }}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="ALL">All Floors</option>
+            {floors
+              .filter(
+                (floor) =>
+                  selectedBuilding === "ALL" || floor.buildingId === selectedBuilding,
+              )
+              .map((floor) => (
+                <option key={floor.id} value={floor.id}>
+                  {floor.floorCode} - {floor.floorName}
+                </option>
+              ))}
+          </select>
+
+          <select
             value={selectedZone}
             onChange={(event) => setSelectedZone(event.target.value)}
             className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
           >
             <option value="ALL">All Zones</option>
-            {zones.map((zone) => (
+            {filteredZoneOptions.map((zone) => (
               <option key={zone.id} value={zone.id}>
                 {zone.zoneName || zone.zone_name}
               </option>
             ))}
+          </select>
+
+          <select
+            value={selectedGate}
+            onChange={(event) => setSelectedGate(event.target.value)}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="ALL">All Gates</option>
+            {gates
+              .filter(
+                (gate) =>
+                  selectedBuilding === "ALL" || gate.buildingId === selectedBuilding,
+              )
+              .map((gate) => (
+                <option key={gate.id} value={gate.id}>
+                  {gate.gateCode}
+                </option>
+              ))}
           </select>
 
           <button
@@ -681,6 +919,26 @@ export default function ParkingSlotsPage() {
           </p>
 
           <div className="flex flex-wrap gap-2">
+            {[
+              ["ALL", "All Landmarks"],
+              ["ELEVATOR", "Near Elevator"],
+              ["EXIT", "Near Exit"],
+              ["ENTRY_GATE", "Near Entry Gate"],
+              ["EXIT_GATE", "Near Exit Gate"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setLandmarkFilter(value)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${
+                  landmarkFilter === value
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+
             {SLOT_STATUSES.map((status) => (
               <button
                 key={status}
@@ -723,7 +981,7 @@ export default function ParkingSlotsPage() {
                     Slot
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                    Zone
+                    Location
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                     Vehicle Type
@@ -774,6 +1032,9 @@ export default function ParkingSlotsPage() {
 
                       <td className="px-6 py-4">
                         <p className="max-w-[240px] text-sm font-bold text-slate-800">
+                          {slot.buildingCode || "N/A"} / {slot.floorCode || "N/A"}
+                        </p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
                           {zoneName}
                         </p>
                       </td>
@@ -789,8 +1050,9 @@ export default function ParkingSlotsPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <p className="text-sm font-black text-slate-800">
-                          {distance} m
+                        <p className="text-sm font-black text-slate-800">{distance} m</p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          {getLandmarkSummary(slot)}
                         </p>
                       </td>
 
@@ -840,6 +1102,7 @@ export default function ParkingSlotsPage() {
           mode={modalMode}
           slot={selectedSlot}
           zones={zones}
+          gates={gates}
           saving={saving}
           onClose={closeModal}
           onSubmit={handleSubmitSlot}

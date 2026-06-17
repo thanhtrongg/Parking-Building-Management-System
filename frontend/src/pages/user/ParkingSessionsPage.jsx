@@ -25,6 +25,35 @@ function normalizeSessions(value) {
   return [];
 }
 
+function getSessionLocationLabel(session) {
+  return [session.buildingCode, session.floorCode, session.zoneName]
+    .filter(Boolean)
+    .join(" / ");
+}
+
+function getSessionLandmarks(session) {
+  const labels = [];
+
+  if (session?.nearElevator) labels.push("Near Elevator");
+  if (session?.nearEntryGate) {
+    labels.push(
+      session?.nearestGate?.gateName
+        ? `Near ${session.nearestGate.gateName}`
+        : "Near Entry Gate",
+    );
+  }
+  if (session?.nearExitGate) {
+    labels.push(
+      session?.nearestGate?.gateName
+        ? `Near ${session.nearestGate.gateName}`
+        : "Near Exit Gate",
+    );
+  }
+  if (session?.nearExit) labels.push("Near Emergency Exit");
+
+  return labels;
+}
+
 function formatDateTime(value) {
   if (!value) return "N/A";
 
@@ -167,6 +196,8 @@ function SessionCard({ session, now }) {
   const isActive = String(session.status || "").toUpperCase() === "ACTIVE";
   const hasAssignedSlot = Boolean(session.assignedSlotName);
   const displayedFee = calculateLiveSessionFee(session, now);
+  const locationLabel = getSessionLocationLabel(session);
+  const landmarks = getSessionLandmarks(session);
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -197,13 +228,25 @@ function SessionCard({ session, now }) {
         <Info label="Vehicle Type" value={session.vehicleTypeName} />
         <Info label="License Plate" value={session.licensePlate} />
         <Info label="Actual Slot" value={session.slotName} />
-        <Info label="Zone" value={session.zoneName} />
+        <Info label="Location" value={locationLabel || session.zoneName} />
+        <Info
+          label="Building / Floor"
+          value={
+            [session.buildingName, session.floorName].filter(Boolean).join(" / ") ||
+            "N/A"
+          }
+        />
+        <Info
+          label="Nearest Gate"
+          value={session.nearestGate?.gateName || "N/A"}
+        />
         {hasAssignedSlot ? (
           <Info
             label="Reserved Slot"
-            value={`${session.reservedSlotName || "N/A"} - ${
-              session.reservedZoneName || "N/A"
-            }`}
+            value={[
+              session.reservedSlotName || "N/A",
+              session.reservedZoneName || "N/A",
+            ].join(" - ")}
           />
         ) : null}
         <Info label="Entry Time" value={formatDateTime(session.entryTime)} />
@@ -223,6 +266,19 @@ function SessionCard({ session, now }) {
           }
         />
       </div>
+
+      {landmarks.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {landmarks.map((landmark) => (
+            <span
+              key={landmark}
+              className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700 ring-1 ring-blue-100"
+            >
+              {landmark}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </article>
   );
 }

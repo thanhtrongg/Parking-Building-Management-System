@@ -9,6 +9,25 @@ function normalizeArray(value) {
   return [];
 }
 
+function getLandmarkLabels(slot) {
+  const labels = [];
+
+  if (slot?.nearElevator) labels.push("Near Elevator");
+  if (slot?.nearEntryGate) {
+    labels.push(
+      slot?.nearestGateName ? `Near ${slot.nearestGateName}` : "Near Entry Gate",
+    );
+  }
+  if (slot?.nearExitGate) {
+    labels.push(
+      slot?.nearestGateName ? `Near ${slot.nearestGateName}` : "Near Exit Gate",
+    );
+  }
+  if (slot?.nearExit) labels.push("Near Emergency Exit");
+
+  return labels;
+}
+
 function pad2(value) {
   return String(value).padStart(2, "0");
 }
@@ -126,6 +145,8 @@ function Alert({ type, message, onClose }) {
 }
 
 function SlotCard({ slot, selected, onSelect }) {
+  const landmarks = getLandmarkLabels(slot);
+
   return (
     <button
       type="button"
@@ -151,7 +172,9 @@ function SlotCard({ slot, selected, onSelect }) {
               selected ? "text-blue-100" : "text-slate-500"
             }`}
           >
-            {slot.zoneName || "No zone"}
+            {[slot.buildingCode, slot.floorCode, slot.zoneName]
+              .filter(Boolean)
+              .join(" / ") || "No zone"}
           </p>
         </div>
         <span
@@ -198,6 +221,42 @@ function SlotCard({ slot, selected, onSelect }) {
         >
           {slot.distanceToGate ?? 0}m to gate
         </span>
+        {slot.nearestGateName ? (
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-black ${
+              selected
+                ? "bg-blue-500 text-blue-50"
+                : "bg-amber-50 text-amber-700"
+            }`}
+          >
+            {slot.nearestGateName}
+          </span>
+        ) : null}
+      </div>
+
+      {landmarks.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {landmarks.map((label) => (
+            <span
+              key={label}
+              className={`rounded-full px-3 py-1 text-[11px] font-black ${
+                selected
+                  ? "bg-white/15 text-white ring-1 ring-white/20"
+                  : "bg-blue-50 text-blue-700 ring-1 ring-blue-100"
+              }`}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div
+        className={`mt-4 rounded-2xl p-3 text-xs font-semibold ${
+          selected ? "bg-white/10 text-blue-50" : "bg-slate-50 text-slate-600"
+        }`}
+      >
+        {slot.buildingName || "Building"} • {slot.floorName || "Floor"}
       </div>
     </button>
   );
@@ -348,6 +407,9 @@ export default function UserMyBookingsPage() {
   };
 
   const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [buildings, setBuildings] = useState([]);
+  const [floors, setFloors] = useState([]);
+  const [zones, setZones] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [now, setNow] = useState(() => new Date());
@@ -356,6 +418,8 @@ export default function UserMyBookingsPage() {
     vehicleTypeId: "",
     startDate: defaultParts.dateKey,
     startTime: defaultParts.timeValue,
+    buildingId: "ALL",
+    floorId: "ALL",
   }));
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -374,22 +438,32 @@ export default function UserMyBookingsPage() {
   useEffect(() => {
     let ignore = false;
 
-    async function loadVehicleTypes() {
+    async function loadBookingContext() {
       try {
-        const result = await apiRequest("/api/vehicle-types");
+        const [typesResult, buildingsResult, floorsResult, zonesResult] = await Promise.all([
+          apiRequest("/api/vehicle-types"),
+          apiRequest("/api/buildings"),
+          apiRequest("/api/building-floors"),
+          apiRequest("/api/zones"),
+        ]);
         if (!ignore) {
-          const types = normalizeArray(result);
+          const types = normalizeArray(typesResult);
           const defaultVehicleTypeId = types[0]?.id || "";
           const defaultStart = getDefaultStartDateTime();
           const defaultDateKey = toDateKey(defaultStart);
           const defaultTimeValue = toTimeValue(defaultStart);
 
           setVehicleTypes(types);
+          setBuildings(normalizeArray(buildingsResult));
+          setFloors(normalizeArray(floorsResult));
+          setZones(normalizeArray(zonesResult));
           setForm({
             licensePlate: "",
             vehicleTypeId: defaultVehicleTypeId,
             startDate: defaultDateKey,
             startTime: defaultTimeValue,
+            buildingId: "ALL",
+            floorId: "ALL",
           });
         }
       } catch (error) {
@@ -406,7 +480,7 @@ export default function UserMyBookingsPage() {
       }
     }
 
-    loadVehicleTypes();
+    loadBookingContext();
 
     return () => {
       ignore = true;
@@ -416,6 +490,73 @@ export default function UserMyBookingsPage() {
   const selectedStartDateTime = useMemo(() => {
     return combineDateAndTime(form.startDate, form.startTime);
   }, [form.startDate, form.startTime]);
+
+  const allowedZones = useMemo(() => {
+    return zones.filter((zone) => {
+      if (!form.vehicleTypeId) return false;
+
+      const matchesVehicleType = zone.vehicleTypeId === form.vehicleTypeId;
+      const matchesBuilding =
+        form.buildingId === "ALL" || zone.buildingId === form.buildingId;
+      const matchesFloor = form.floorId === "ALL" || zone.floorId === form.floorId;
+
+      return matchesVehicleType && matchesBuilding && matchesFloor;
+    });
+  }, [zones, form.vehicleTypeId, form.buildingId, form.floorId]);
+
+  const availableBuildingOptions = useMemo(() => {
+    if (!form.vehicleTypeId) return buildings;
+
+    const allowedBuildingIds = new Set(
+      zones
+        .filter((zone) => zone.vehicleTypeId === form.vehicleTypeId)
+        .map((zone) => zone.buildingId)
+        .filter(Boolean),
+    );
+
+    return buildings.filter((building) => allowedBuildingIds.has(building.id));
+  }, [buildings, zones, form.vehicleTypeId]);
+
+  const availableFloorOptions = useMemo(() => {
+    const allowedFloorIds = new Set(allowedZones.map((zone) => zone.floorId));
+
+    return floors.filter((floor) => allowedFloorIds.has(floor.id));
+  }, [floors, allowedZones]);
+
+  useEffect(() => {
+    if (form.buildingId === "ALL") return;
+
+    const buildingStillAllowed = availableBuildingOptions.some(
+      (building) => building.id === form.buildingId,
+    );
+
+    if (!buildingStillAllowed) {
+      setSelectedSlot(null);
+      setAvailableSlots([]);
+      setForm((current) => ({
+        ...current,
+        buildingId: "ALL",
+        floorId: "ALL",
+      }));
+    }
+  }, [availableBuildingOptions, form.buildingId]);
+
+  useEffect(() => {
+    if (form.floorId === "ALL") return;
+
+    const floorStillAllowed = availableFloorOptions.some(
+      (floor) => floor.id === form.floorId,
+    );
+
+    if (!floorStillAllowed) {
+      setSelectedSlot(null);
+      setAvailableSlots([]);
+      setForm((current) => ({
+        ...current,
+        floorId: "ALL",
+      }));
+    }
+  }, [availableFloorOptions, form.floorId]);
 
   const canSearchSlots = useMemo(() => {
     return (
@@ -451,12 +592,24 @@ export default function UserMyBookingsPage() {
         startTime: toIsoString(selectedStartDateTime),
       });
 
+      if (form.buildingId !== "ALL") {
+        params.set("buildingId", form.buildingId);
+      }
+
+      if (form.floorId !== "ALL") {
+        params.set("floorId", form.floorId);
+      }
+
       const result = await apiRequest(
         `/api/parking-slots/available-for-reservation?${params.toString()}`,
       );
 
       if (requestId === slotRequestIdRef.current) {
-        setAvailableSlots(normalizeArray(result));
+        setAvailableSlots(
+          normalizeArray(result).filter(
+            (slot) => slot.vehicleTypeId === form.vehicleTypeId,
+          ),
+        );
       }
     } catch (error) {
       if (requestId === slotRequestIdRef.current) {
@@ -471,7 +624,13 @@ export default function UserMyBookingsPage() {
         setLoadingSlots(false);
       }
     }
-  }, [canSearchSlots, form.vehicleTypeId, selectedStartDateTime]);
+  }, [
+    canSearchSlots,
+    form.vehicleTypeId,
+    form.buildingId,
+    form.floorId,
+    selectedStartDateTime,
+  ]);
 
   useEffect(() => {
     if (loadingTypes) return undefined;
@@ -490,10 +649,21 @@ export default function UserMyBookingsPage() {
       vehicleTypeId: form.vehicleTypeId,
       startTime: toIsoString(selectedStartDateTime),
     });
+
+    if (form.buildingId !== "ALL") {
+      params.set("buildingId", form.buildingId);
+    }
+
+    if (form.floorId !== "ALL") {
+      params.set("floorId", form.floorId);
+    }
+
     const result = await apiRequest(
       `/api/parking-slots/available-for-reservation?${params.toString()}`,
     );
-    const nextSlots = normalizeArray(result);
+    const nextSlots = normalizeArray(result).filter(
+      (slot) => slot.vehicleTypeId === form.vehicleTypeId,
+    );
     setAvailableSlots(nextSlots);
     setSelectedSlot((current) =>
       current && nextSlots.some((slot) => slot.id === current.id)
@@ -503,12 +673,19 @@ export default function UserMyBookingsPage() {
   });
 
   const updateField = (field, value) => {
-    setForm((current) => ({ ...current, [field]: value }));
-
     if (field === "vehicleTypeId") {
       setSelectedSlot(null);
       setAvailableSlots([]);
+      setForm((current) => ({
+        ...current,
+        [field]: value,
+        buildingId: "ALL",
+        floorId: "ALL",
+      }));
+      return;
     }
+
+    setForm((current) => ({ ...current, [field]: value }));
   };
 
   const submitReservation = async (event) => {
@@ -634,6 +811,61 @@ export default function UserMyBookingsPage() {
               </select>
             </label>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-700">
+                  Building
+                </span>
+                <select
+                  value={form.buildingId}
+                  onChange={(event) => {
+                    setSelectedSlot(null);
+                    setAvailableSlots([]);
+                    setAlert({ type: "", message: "" });
+                    setForm((current) => ({
+                      ...current,
+                      buildingId: event.target.value,
+                      floorId: "ALL",
+                    }));
+                  }}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="ALL">All buildings</option>
+                  {availableBuildingOptions.map((building) => (
+                    <option key={building.id} value={building.id}>
+                      {building.buildingCode} - {building.buildingName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-700">
+                  Floor
+                </span>
+                <select
+                  value={form.floorId}
+                  onChange={(event) => {
+                    setSelectedSlot(null);
+                    setAvailableSlots([]);
+                    setAlert({ type: "", message: "" });
+                    setForm((current) => ({
+                      ...current,
+                      floorId: event.target.value,
+                    }));
+                  }}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="ALL">All floors</option>
+                  {availableFloorOptions.map((floor) => (
+                    <option key={floor.id} value={floor.id}>
+                      {floor.floorCode} - {floor.floorName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
             <BookingDateTimeField
               now={now}
               selectedDate={form.startDate}
@@ -665,7 +897,8 @@ export default function UserMyBookingsPage() {
                 </span>
               </div>
               <p className="mt-2 text-xs font-semibold text-blue-700">
-                The live session shows elapsed time and current fee.
+                Pick by building, floor, zone, and nearest gate before
+                confirming the reservation.
               </p>
             </div>
 

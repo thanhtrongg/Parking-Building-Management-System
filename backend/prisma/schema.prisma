@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -55,8 +56,14 @@ model parking_slots {
   slot_name                                                         String             @db.VarChar(20)
   status                                                            String?            @default("AVAILABLE") @db.VarChar(20)
   distance_to_gate                                                  Int?               @default(0)
+  nearest_gate_id                                                   String?            @db.Uuid
+  near_elevator                                                     Boolean?           @default(false)
+  near_exit                                                         Boolean?           @default(false)
+  near_entry_gate                                                   Boolean?           @default(false)
+  near_exit_gate                                                    Boolean?           @default(false)
   parking_sessions_parking_sessions_assigned_slot_idToparking_slots parking_sessions[] @relation("parking_sessions_assigned_slot_idToparking_slots")
   parking_sessions_parking_sessions_parking_slot_idToparking_slots  parking_sessions[] @relation("parking_sessions_parking_slot_idToparking_slots")
+  building_gates                                                    building_gates?    @relation(fields: [nearest_gate_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   zones                                                             zones?             @relation(fields: [zone_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   reservations                                                      reservations[]
 
@@ -145,11 +152,59 @@ model vehicle_types {
   zones            zones[]
 }
 
+model buildings {
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  building_code   String            @unique @db.VarChar(30)
+  building_name   String            @db.VarChar(120)
+  address         String?
+  description     String?
+  status          String?           @default("ACTIVE") @db.VarChar(20)
+  created_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  building_floors building_floors[]
+  building_gates  building_gates[]
+}
+
+model building_floors {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  building_id  String    @db.Uuid
+  floor_code   String    @db.VarChar(30)
+  floor_name   String    @db.VarChar(120)
+  level_number Int
+  description  String?
+  status       String?   @default("ACTIVE") @db.VarChar(20)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  buildings    buildings @relation(fields: [building_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  zones        zones[]
+
+  @@unique([building_id, floor_code])
+  @@unique([building_id, level_number])
+}
+
+model building_gates {
+  id                   String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  building_id          String          @db.Uuid
+  gate_code            String          @db.VarChar(30)
+  gate_name            String          @db.VarChar(120)
+  gate_type            String          @default("ENTRY") @db.VarChar(20)
+  location_description String?
+  status               String?         @default("ACTIVE") @db.VarChar(20)
+  created_at           DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?       @default(now()) @db.Timestamptz(6)
+  buildings            buildings       @relation(fields: [building_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  parking_slots        parking_slots[]
+
+  @@unique([building_id, gate_code])
+}
+
 model zones {
   id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  floor_id        String?         @db.Uuid
   zone_name       String          @db.VarChar(50)
   vehicle_type_id String?         @db.Uuid
   total_capacity  Int
   parking_slots   parking_slots[]
+  building_floors building_floors? @relation(fields: [floor_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   vehicle_types   vehicle_types?  @relation(fields: [vehicle_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

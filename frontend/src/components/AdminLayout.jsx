@@ -8,6 +8,12 @@ const navItems = [
     roles: ["ADMIN", "MANAGER", "STAFF"],
   },
   {
+    icon: "apartment",
+    label: "Buildings",
+    path: "/admin-buildings",
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     icon: "grid_view",
     label: "Parking Zones",
     path: "/admin-zones",

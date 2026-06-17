@@ -23,6 +23,7 @@ import FeedbacksPage from "./pages/system/FeedbacksPage";
 import AdminUsersPage from "./pages/system/UsersPage";
 import AdminVehiclesPage from "./pages/system/VehiclesPage";
 import ZonesPage from "./pages/system/ZonesPage";
+import BuildingsPage from "./pages/system/BuildingsPage";
 import UserDashboardPage from "./pages/user/DashboardPage";
 import UserBookingHistoryPage from "./pages/user/BookingHistoryPage";
 import UserFeedbackPage from "./pages/user/FeedbackPage";
@@ -271,6 +272,15 @@ function App() {
         />
 
         {/* ADMIN / MANAGER only routes */}
+        <Route
+          path="/admin-buildings"
+          element={
+            <ProtectedRoute allowedRoles={managementRoles}>
+              <BuildingsPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/admin-zones"
           element={
