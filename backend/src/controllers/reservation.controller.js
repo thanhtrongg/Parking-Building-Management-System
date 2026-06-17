@@ -78,6 +78,49 @@ const isValidDate = (date) => {
   return date instanceof Date && !Number.isNaN(date.getTime());
 };
 
+const mapReservationSlot = (slot) => {
+  if (!slot) return null;
+
+  const zone = slot.zones;
+  const floor = zone?.building_floors;
+  const building = floor?.buildings;
+  const gate = slot.building_gates;
+
+  return {
+    id: slot.id,
+    slotName: slot.slot_name,
+    status: slot.status,
+    zoneId: slot.zone_id,
+    zone: zone
+      ? {
+          id: zone.id,
+          zoneName: zone.zone_name,
+          totalCapacity: zone.total_capacity,
+        }
+      : null,
+    floorId: floor?.id || null,
+    floorCode: floor?.floor_code || null,
+    floorName: floor?.floor_name || null,
+    buildingId: building?.id || null,
+    buildingCode: building?.building_code || null,
+    buildingName: building?.building_name || null,
+    distanceToGate: slot.distance_to_gate ?? 0,
+    nearElevator: Boolean(slot.near_elevator),
+    nearExit: Boolean(slot.near_exit),
+    nearEntryGate: Boolean(slot.near_entry_gate),
+    nearExitGate: Boolean(slot.near_exit_gate),
+    nearestGateId: slot.nearest_gate_id || null,
+    nearestGate: gate
+      ? {
+          id: gate.id,
+          gateCode: gate.gate_code,
+          gateName: gate.gate_name,
+          gateType: gate.gate_type,
+        }
+      : null,
+  };
+};
+
 const mapReservationResponse = (reservation) => {
   const latestPayment = Array.isArray(reservation.payments)
     ? reservation.payments[0]
@@ -106,21 +149,7 @@ const mapReservationResponse = (reservation) => {
       : null,
 
     parkingSlotId: reservation.parking_slot_id,
-    parkingSlot: reservation.parking_slots
-      ? {
-          id: reservation.parking_slots.id,
-          slotName: reservation.parking_slots.slot_name,
-          status: reservation.parking_slots.status,
-          zoneId: reservation.parking_slots.zone_id,
-          zone: reservation.parking_slots.zones
-            ? {
-                id: reservation.parking_slots.zones.id,
-                zoneName: reservation.parking_slots.zones.zone_name,
-                totalCapacity: reservation.parking_slots.zones.total_capacity,
-              }
-            : null,
-        }
-      : null,
+    parkingSlot: mapReservationSlot(reservation.parking_slots),
 
     startTime: reservation.expected_start_time,
     endTime: reservation.expected_end_time,
@@ -178,12 +207,40 @@ const reservationInclude = {
       id: true,
       slot_name: true,
       status: true,
+      distance_to_gate: true,
+      near_elevator: true,
+      near_exit: true,
+      near_entry_gate: true,
+      near_exit_gate: true,
+      nearest_gate_id: true,
       zone_id: true,
+      building_gates: {
+        select: {
+          id: true,
+          gate_code: true,
+          gate_name: true,
+          gate_type: true,
+        },
+      },
       zones: {
         select: {
           id: true,
           zone_name: true,
           total_capacity: true,
+          building_floors: {
+            select: {
+              id: true,
+              floor_code: true,
+              floor_name: true,
+              buildings: {
+                select: {
+                  id: true,
+                  building_code: true,
+                  building_name: true,
+                },
+              },
+            },
+          },
         },
       },
     },

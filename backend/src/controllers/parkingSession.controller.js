@@ -15,6 +15,38 @@ const isBlockedSlot = (slot) => {
     return !slot || ["OCCUPIED", "MAINTENANCE"].includes(slot.status);
 };
 
+const mapSessionSlotDetails = (slot) => {
+    if (!slot) return null;
+
+    const zone = slot.zones;
+    const floor = zone?.building_floors;
+    const building = floor?.buildings;
+    const gate = slot.building_gates;
+
+    return {
+        id: slot.id,
+        slotName: slot.slot_name,
+        zoneName: zone?.zone_name || null,
+        floorCode: floor?.floor_code || null,
+        floorName: floor?.floor_name || null,
+        buildingCode: building?.building_code || null,
+        buildingName: building?.building_name || null,
+        distanceToGate: slot.distance_to_gate ?? 0,
+        nearElevator: Boolean(slot.near_elevator),
+        nearExit: Boolean(slot.near_exit),
+        nearEntryGate: Boolean(slot.near_entry_gate),
+        nearExitGate: Boolean(slot.near_exit_gate),
+        nearestGate: gate
+            ? {
+                id: gate.id,
+                gateCode: gate.gate_code,
+                gateName: gate.gate_name,
+                gateType: gate.gate_type,
+            }
+            : null,
+    };
+};
+
 export const getParkingSessions = async (req, res) => {
     try {
         const sessionRows = await prisma.$queryRaw`
@@ -38,6 +70,10 @@ export const getParkingSessions = async (req, res) => {
 
                 COALESCE(assigned_slot.slot_name, slot.slot_name) AS "slotName",
                 COALESCE(assigned_zone.zone_name, z.zone_name) AS "zoneName",
+                COALESCE(assigned_floor.floor_name, floor.floor_name) AS "floorName",
+                COALESCE(assigned_floor.floor_code, floor.floor_code) AS "floorCode",
+                COALESCE(assigned_building.building_name, building.building_name) AS "buildingName",
+                COALESCE(assigned_building.building_code, building.building_code) AS "buildingCode",
                 slot.slot_name AS "reservedSlotName",
                 z.zone_name AS "reservedZoneName",
                 assigned_slot.id AS "assignedSlotId",
@@ -54,8 +90,12 @@ export const getParkingSessions = async (req, res) => {
             LEFT JOIN vehicle_types vt ON ps.vehicle_type_id = vt.id
             LEFT JOIN parking_slots slot ON ps.parking_slot_id = slot.id
             LEFT JOIN zones z ON slot.zone_id = z.id
+            LEFT JOIN building_floors floor ON z.floor_id = floor.id
+            LEFT JOIN buildings building ON floor.building_id = building.id
             LEFT JOIN parking_slots assigned_slot ON ps.assigned_slot_id = assigned_slot.id
             LEFT JOIN zones assigned_zone ON assigned_slot.zone_id = assigned_zone.id
+            LEFT JOIN building_floors assigned_floor ON assigned_zone.floor_id = assigned_floor.id
+            LEFT JOIN buildings assigned_building ON assigned_floor.building_id = assigned_building.id
             LEFT JOIN LATERAL (
                 SELECT id, amount, payment_method, payment_time, status
                 FROM payments
@@ -123,6 +163,10 @@ export const getParkingSessions = async (req, res) => {
                         zone: {
                             zoneName: session.zoneName,
                         },
+                        floorName: session.floorName,
+                        floorCode: session.floorCode,
+                        buildingName: session.buildingName,
+                        buildingCode: session.buildingCode,
                     }
                     : null,
                 reservedSlot: session.parkingSlotId
@@ -130,6 +174,8 @@ export const getParkingSessions = async (req, res) => {
                         id: session.parkingSlotId,
                         slotName: session.reservedSlotName,
                         zoneName: session.reservedZoneName,
+                        floorName: session.floorName,
+                        buildingName: session.buildingName,
                     }
                     : null,
                 assignedSlot: session.assignedSlotId
@@ -137,6 +183,8 @@ export const getParkingSessions = async (req, res) => {
                         id: session.assignedSlotId,
                         slotName: session.assignedSlotName,
                         zoneName: session.assignedZoneName,
+                        floorName: session.floorName,
+                        buildingName: session.buildingName,
                     }
                     : null,
             };
@@ -195,9 +243,34 @@ export const getMyParkingSessions = async (req, res) => {
                     select: {
                         id: true,
                         slot_name: true,
+                        distance_to_gate: true,
+                        near_elevator: true,
+                        near_exit: true,
+                        near_entry_gate: true,
+                        near_exit_gate: true,
+                        building_gates: {
+                            select: {
+                                id: true,
+                                gate_code: true,
+                                gate_name: true,
+                                gate_type: true,
+                            },
+                        },
                         zones: {
                             select: {
                                 zone_name: true,
+                                building_floors: {
+                                    select: {
+                                        floor_code: true,
+                                        floor_name: true,
+                                        buildings: {
+                                            select: {
+                                                building_code: true,
+                                                building_name: true,
+                                            },
+                                        },
+                                    },
+                                },
                             },
                         },
                     },
@@ -206,9 +279,34 @@ export const getMyParkingSessions = async (req, res) => {
                     select: {
                         id: true,
                         slot_name: true,
+                        distance_to_gate: true,
+                        near_elevator: true,
+                        near_exit: true,
+                        near_entry_gate: true,
+                        near_exit_gate: true,
+                        building_gates: {
+                            select: {
+                                id: true,
+                                gate_code: true,
+                                gate_name: true,
+                                gate_type: true,
+                            },
+                        },
                         zones: {
                             select: {
                                 zone_name: true,
+                                building_floors: {
+                                    select: {
+                                        floor_code: true,
+                                        floor_name: true,
+                                        buildings: {
+                                            select: {
+                                                building_code: true,
+                                                building_name: true,
+                                            },
+                                        },
+                                    },
+                                },
                             },
                         },
                     },
@@ -237,6 +335,9 @@ export const getMyParkingSessions = async (req, res) => {
             const assignedSlot =
                 session.parking_slots_parking_sessions_assigned_slot_idToparking_slots;
             const actualSlot = assignedSlot || parkingSlot;
+            const actualSlotDetails = mapSessionSlotDetails(actualSlot);
+            const reservedSlotDetails = mapSessionSlotDetails(parkingSlot);
+            const assignedSlotDetails = mapSessionSlotDetails(assignedSlot);
             const latestPayment = session.payments[0];
             const endTime = session.exit_time ? new Date(session.exit_time) : new Date();
             const pricingPolicy = await getPricingPolicyForSession(
@@ -254,12 +355,33 @@ export const getMyParkingSessions = async (req, res) => {
                 ticketCode: session.ticket_code,
                 vehicleTypeName: session.vehicle_types?.type_name || null,
                 licensePlate: session.license_plate,
-                slotName: actualSlot?.slot_name || null,
-                zoneName: actualSlot?.zones?.zone_name || null,
-                reservedSlotName: parkingSlot?.slot_name || null,
-                reservedZoneName: parkingSlot?.zones?.zone_name || null,
-                assignedSlotName: assignedSlot?.slot_name || null,
-                assignedZoneName: assignedSlot?.zones?.zone_name || null,
+                slotName: actualSlotDetails?.slotName || null,
+                zoneName: actualSlotDetails?.zoneName || null,
+                floorCode: actualSlotDetails?.floorCode || null,
+                floorName: actualSlotDetails?.floorName || null,
+                buildingCode: actualSlotDetails?.buildingCode || null,
+                buildingName: actualSlotDetails?.buildingName || null,
+                distanceToGate: actualSlotDetails?.distanceToGate ?? 0,
+                nearElevator: actualSlotDetails?.nearElevator ?? false,
+                nearExit: actualSlotDetails?.nearExit ?? false,
+                nearEntryGate: actualSlotDetails?.nearEntryGate ?? false,
+                nearExitGate: actualSlotDetails?.nearExitGate ?? false,
+                nearestGate: actualSlotDetails?.nearestGate || null,
+                reservedSlotName: reservedSlotDetails?.slotName || null,
+                reservedZoneName: reservedSlotDetails?.zoneName || null,
+                reservedFloorCode: reservedSlotDetails?.floorCode || null,
+                reservedFloorName: reservedSlotDetails?.floorName || null,
+                reservedBuildingCode: reservedSlotDetails?.buildingCode || null,
+                reservedBuildingName: reservedSlotDetails?.buildingName || null,
+                assignedSlotName: assignedSlotDetails?.slotName || null,
+                assignedZoneName: assignedSlotDetails?.zoneName || null,
+                assignedFloorCode: assignedSlotDetails?.floorCode || null,
+                assignedFloorName: assignedSlotDetails?.floorName || null,
+                assignedBuildingCode: assignedSlotDetails?.buildingCode || null,
+                assignedBuildingName: assignedSlotDetails?.buildingName || null,
+                actualSlot: actualSlotDetails,
+                reservedSlot: reservedSlotDetails,
+                assignedSlot: assignedSlotDetails,
                 entryTime: session.entry_time,
                 exitTime: session.exit_time,
                 status: session.status,

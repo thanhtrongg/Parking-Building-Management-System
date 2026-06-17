@@ -1,7 +1,9 @@
 import prisma from "../config/prisma.js";
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import {
+  isValidUUID,
+  normalizeBooleanInput,
+  parseOptionalBoolean,
+} from "../utils/validation.js";
 
 const VALID_SLOT_STATUSES = [
   "AVAILABLE",
@@ -11,22 +13,91 @@ const VALID_SLOT_STATUSES = [
 ];
 const RESERVATION_HOLD_WINDOW_MINUTES = 15;
 
-const isValidUUID = (id) => {
-  return typeof id === "string" && UUID_REGEX.test(id);
-};
-
 const isValidDate = (date) => {
   return date instanceof Date && !Number.isNaN(date.getTime());
 };
 
+function mapParkingSlot(slot) {
+  const zone = slot.zones;
+  const floor = zone?.building_floors;
+  const building = floor?.buildings;
+  const gate = slot.building_gates;
+
+  return {
+    id: slot.id,
+    slotNumber: slot.slot_name,
+    slotName: slot.slot_name,
+    status: slot.status,
+    distanceToGate: slot.distance_to_gate,
+    nearElevator: Boolean(slot.near_elevator),
+    nearExit: Boolean(slot.near_exit),
+    nearEntryGate: Boolean(slot.near_entry_gate),
+    nearExitGate: Boolean(slot.near_exit_gate),
+    zoneId: slot.zone_id,
+    zoneName: zone?.zone_name || null,
+    totalCapacity: zone?.total_capacity ?? null,
+    floorId: floor?.id || null,
+    floorCode: floor?.floor_code || null,
+    floorName: floor?.floor_name || null,
+    levelNumber: floor?.level_number ?? null,
+    buildingId: building?.id || null,
+    buildingCode: building?.building_code || null,
+    buildingName: building?.building_name || null,
+    vehicleTypeId: zone?.vehicle_type_id || null,
+    vehicleTypeName: zone?.vehicle_types?.type_name || null,
+    nearestGateId: slot.nearest_gate_id || null,
+    nearestGateCode: gate?.gate_code || null,
+    nearestGateName: gate?.gate_name || null,
+    nearestGateType: gate?.gate_type || null,
+  };
+}
+
+async function findZoneById(zoneId) {
+  return prisma.zones.findUnique({
+    where: { id: zoneId },
+    include: {
+      building_floors: {
+        include: {
+          buildings: true,
+        },
+      },
+    },
+  });
+}
+
+async function findGateById(gateId) {
+  if (!gateId) return null;
+
+  return prisma.building_gates.findUnique({
+    where: { id: gateId },
+    include: {
+      buildings: true,
+    },
+  });
+}
+
 export const getAvailableParkingSlotsForReservation = async (req, res) => {
   try {
-    const { vehicleTypeId, startTime, endTime } = req.query;
+    const { vehicleTypeId, startTime, endTime, buildingId, floorId } = req.query;
 
     if (vehicleTypeId && !isValidUUID(vehicleTypeId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid vehicleTypeId",
+      });
+    }
+
+    if (buildingId && !isValidUUID(buildingId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid buildingId",
+      });
+    }
+
+    if (floorId && !isValidUUID(floorId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid floorId",
       });
     }
 
@@ -57,14 +128,26 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
       });
     }
 
+    const zoneFilter = {
+      ...(vehicleTypeId ? { vehicle_type_id: vehicleTypeId } : {}),
+      ...(floorId ? { floor_id: floorId } : {}),
+      ...(buildingId
+        ? {
+            building_floors: {
+              is: {
+                building_id: buildingId,
+              },
+            },
+          }
+        : {}),
+    };
+
     const parkingSlots = await prisma.parking_slots.findMany({
       where: {
         status: "AVAILABLE",
-        ...(vehicleTypeId && {
+        ...(Object.keys(zoneFilter).length > 0 && {
           zones: {
-            is: {
-              vehicle_type_id: vehicleTypeId,
-            },
+            is: zoneFilter,
           },
         }),
         ...(parsedStartTime &&
@@ -85,9 +168,15 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
           }),
       },
       include: {
+        building_gates: true,
         zones: {
           include: {
             vehicle_types: true,
+            building_floors: {
+              include: {
+                buildings: true,
+              },
+            },
           },
         },
       },
@@ -106,17 +195,7 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
     return res.json({
       success: true,
       message: "Get available parking slots successfully",
-      data: parkingSlots.map((slot) => ({
-        id: slot.id,
-        slotName: slot.slot_name,
-        slotNumber: slot.slot_name,
-        status: slot.status,
-        distanceToGate: slot.distance_to_gate,
-        zoneId: slot.zone_id,
-        zoneName: slot.zones?.zone_name || null,
-        vehicleTypeId: slot.zones?.vehicle_type_id || null,
-        vehicleTypeName: slot.zones?.vehicle_types?.type_name || null,
-      })),
+      data: parkingSlots.map(mapParkingSlot),
     });
   } catch (error) {
     console.error("Get available parking slots error:", error);
@@ -131,30 +210,95 @@ export const getAvailableParkingSlotsForReservation = async (req, res) => {
 
 export const getParkingSlots = async (req, res) => {
   try {
-    const parkingSlots = await prisma.$queryRaw`
-            SELECT
-                ps.id,
-                ps.slot_name AS "slotNumber",
-                ps.slot_name AS "slotName",
-                ps.status,
-                ps.distance_to_gate AS "distanceToGate",
+    const {
+      buildingId,
+      floorId,
+      zoneId,
+      gateId,
+      nearElevator,
+      nearExit,
+      nearEntryGate,
+      nearExitGate,
+      status,
+    } = req.query;
 
-                z.id AS "zoneId",
-                z.zone_name AS "zoneName",
-                z.total_capacity AS "totalCapacity",
+    const parsedNearElevator = parseOptionalBoolean(nearElevator);
+    const parsedNearExit = parseOptionalBoolean(nearExit);
+    const parsedNearEntryGate = parseOptionalBoolean(nearEntryGate);
+    const parsedNearExitGate = parseOptionalBoolean(nearExitGate);
 
-                vt.id AS "vehicleTypeId",
-                vt.type_name AS "vehicleTypeName"
-            FROM parking_slots ps
-            LEFT JOIN zones z ON ps.zone_id = z.id
-            LEFT JOIN vehicle_types vt ON z.vehicle_type_id = vt.id
-            ORDER BY z.zone_name ASC, ps.slot_name ASC
-        `;
+    if (
+      [buildingId, floorId, zoneId, gateId]
+        .filter(Boolean)
+        .some((value) => !isValidUUID(value))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "One or more filter ids are invalid",
+      });
+    }
+
+    const parkingSlots = await prisma.parking_slots.findMany({
+      where: {
+        ...(status ? { status } : {}),
+        ...(zoneId ? { zone_id: zoneId } : {}),
+        ...(gateId ? { nearest_gate_id: gateId } : {}),
+        ...(parsedNearElevator !== undefined
+          ? { near_elevator: parsedNearElevator }
+          : {}),
+        ...(parsedNearExit !== undefined ? { near_exit: parsedNearExit } : {}),
+        ...(parsedNearEntryGate !== undefined
+          ? { near_entry_gate: parsedNearEntryGate }
+          : {}),
+        ...(parsedNearExitGate !== undefined
+          ? { near_exit_gate: parsedNearExitGate }
+          : {}),
+        ...((buildingId || floorId) && {
+          zones: {
+            is: {
+              ...(floorId ? { floor_id: floorId } : {}),
+              ...(buildingId
+                ? {
+                    building_floors: {
+                      is: {
+                        building_id: buildingId,
+                      },
+                    },
+                  }
+                : {}),
+            },
+          },
+        }),
+      },
+      include: {
+        building_gates: true,
+        zones: {
+          include: {
+            vehicle_types: true,
+            building_floors: {
+              include: {
+                buildings: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        {
+          zones: {
+            zone_name: "asc",
+          },
+        },
+        {
+          slot_name: "asc",
+        },
+      ],
+    });
 
     return res.json({
       success: true,
       message: "Get parking slots successfully",
-      data: parkingSlots,
+      data: parkingSlots.map(mapParkingSlot),
     });
   } catch (error) {
     console.error("Get parking slots error:", error);
@@ -175,9 +319,18 @@ export const createParkingSlot = async (req, res) => {
       zoneId,
       status = "AVAILABLE",
       distanceToGate = 0,
+      nearestGateId,
+      nearElevator = false,
+      nearExit = false,
+      nearEntryGate = false,
+      nearExitGate = false,
     } = req.body;
 
     const finalSlotName = slotNumber || slotName;
+    const parsedNearElevator = normalizeBooleanInput(nearElevator);
+    const parsedNearExit = normalizeBooleanInput(nearExit);
+    const parsedNearEntryGate = normalizeBooleanInput(nearEntryGate);
+    const parsedNearExitGate = normalizeBooleanInput(nearExitGate);
 
     if (!finalSlotName || !zoneId) {
       return res.status(400).json({
@@ -193,6 +346,13 @@ export const createParkingSlot = async (req, res) => {
       });
     }
 
+    if (nearestGateId && !isValidUUID(nearestGateId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid nearestGateId",
+      });
+    }
+
     if (status && !VALID_SLOT_STATUSES.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -200,14 +360,29 @@ export const createParkingSlot = async (req, res) => {
       });
     }
 
-    const zone = await prisma.zones.findUnique({
-      where: { id: zoneId },
-    });
+    const zone = await findZoneById(zoneId);
 
     if (!zone) {
       return res.status(404).json({
         success: false,
         message: "Zone not found",
+      });
+    }
+
+    const gate = await findGateById(nearestGateId);
+
+    if (nearestGateId && !gate) {
+      return res.status(404).json({
+        success: false,
+        message: "Nearest gate not found",
+      });
+    }
+
+    const zoneBuildingId = zone.building_floors?.building_id;
+    if (gate && zoneBuildingId && gate.building_id !== zoneBuildingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Nearest gate must belong to the same building as the zone",
       });
     }
 
@@ -233,13 +408,31 @@ export const createParkingSlot = async (req, res) => {
         zone_id: zoneId,
         status,
         distance_to_gate: Number(distanceToGate) || 0,
+        nearest_gate_id: nearestGateId || null,
+        near_elevator: parsedNearElevator ?? false,
+        near_exit: parsedNearExit ?? false,
+        near_entry_gate: parsedNearEntryGate ?? false,
+        near_exit_gate: parsedNearExitGate ?? false,
+      },
+      include: {
+        building_gates: true,
+        zones: {
+          include: {
+            vehicle_types: true,
+            building_floors: {
+              include: {
+                buildings: true,
+              },
+            },
+          },
+        },
       },
     });
 
     return res.status(201).json({
       success: true,
       message: "Create parking slot successfully",
-      data: parkingSlot,
+      data: mapParkingSlot(parkingSlot),
     });
   } catch (error) {
     console.error("Create parking slot error:", error);
@@ -255,7 +448,22 @@ export const createParkingSlot = async (req, res) => {
 export const updateParkingSlot = async (req, res) => {
   try {
     const { id } = req.params;
-    const { slotNumber, slotName, zoneId, status, distanceToGate } = req.body;
+    const {
+      slotNumber,
+      slotName,
+      zoneId,
+      status,
+      distanceToGate,
+      nearestGateId,
+      nearElevator,
+      nearExit,
+      nearEntryGate,
+      nearExitGate,
+    } = req.body;
+    const parsedNearElevator = normalizeBooleanInput(nearElevator);
+    const parsedNearExit = normalizeBooleanInput(nearExit);
+    const parsedNearEntryGate = normalizeBooleanInput(nearEntryGate);
+    const parsedNearExitGate = normalizeBooleanInput(nearExitGate);
 
     if (!isValidUUID(id)) {
       return res.status(400).json({
@@ -271,6 +479,13 @@ export const updateParkingSlot = async (req, res) => {
       });
     }
 
+    if (nearestGateId && !isValidUUID(nearestGateId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid nearestGateId",
+      });
+    }
+
     if (status && !VALID_SLOT_STATUSES.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -280,6 +495,13 @@ export const updateParkingSlot = async (req, res) => {
 
     const parkingSlot = await prisma.parking_slots.findUnique({
       where: { id },
+      include: {
+        zones: {
+          include: {
+            building_floors: true,
+          },
+        },
+      },
     });
 
     if (!parkingSlot) {
@@ -289,21 +511,37 @@ export const updateParkingSlot = async (req, res) => {
       });
     }
 
-    if (zoneId) {
-      const zone = await prisma.zones.findUnique({
-        where: { id: zoneId },
-      });
+    const nextZoneId = zoneId || parkingSlot.zone_id;
+    const zone = nextZoneId ? await findZoneById(nextZoneId) : null;
 
-      if (!zone) {
-        return res.status(404).json({
-          success: false,
-          message: "Zone not found",
-        });
-      }
+    if (nextZoneId && !zone) {
+      return res.status(404).json({
+        success: false,
+        message: "Zone not found",
+      });
+    }
+
+    const gate =
+      nearestGateId === undefined
+        ? await findGateById(parkingSlot.nearest_gate_id)
+        : await findGateById(nearestGateId);
+
+    if (nearestGateId && !gate) {
+      return res.status(404).json({
+        success: false,
+        message: "Nearest gate not found",
+      });
+    }
+
+    const zoneBuildingId = zone?.building_floors?.building_id;
+    if (gate && zoneBuildingId && gate.building_id !== zoneBuildingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Nearest gate must belong to the same building as the zone",
+      });
     }
 
     const finalSlotName = slotNumber || slotName;
-    const nextZoneId = zoneId || parkingSlot.zone_id;
     const nextSlotName = finalSlotName
       ? finalSlotName.trim()
       : parkingSlot.slot_name;
@@ -334,13 +572,41 @@ export const updateParkingSlot = async (req, res) => {
         ...(distanceToGate !== undefined && {
           distance_to_gate: Number(distanceToGate) || 0,
         }),
+        ...(nearestGateId !== undefined && {
+          nearest_gate_id: nearestGateId || null,
+        }),
+        ...(nearElevator !== undefined && {
+          near_elevator: parsedNearElevator ?? false,
+        }),
+        ...(nearExit !== undefined && {
+          near_exit: parsedNearExit ?? false,
+        }),
+        ...(nearEntryGate !== undefined && {
+          near_entry_gate: parsedNearEntryGate ?? false,
+        }),
+        ...(nearExitGate !== undefined && {
+          near_exit_gate: parsedNearExitGate ?? false,
+        }),
+      },
+      include: {
+        building_gates: true,
+        zones: {
+          include: {
+            vehicle_types: true,
+            building_floors: {
+              include: {
+                buildings: true,
+              },
+            },
+          },
+        },
       },
     });
 
     return res.json({
       success: true,
       message: "Update parking slot successfully",
-      data: updatedParkingSlot,
+      data: mapParkingSlot(updatedParkingSlot),
     });
   } catch (error) {
     console.error("Update parking slot error:", error);

@@ -32,6 +32,35 @@ function normalizeBookings(value) {
   return [];
 }
 
+function getSlotLocationLabel(slot) {
+  return [slot?.buildingCode, slot?.floorCode, slot?.zone?.zoneName]
+    .filter(Boolean)
+    .join(" / ");
+}
+
+function getSlotLandmarks(slot) {
+  const landmarks = [];
+
+  if (slot?.nearElevator) landmarks.push("Near Elevator");
+  if (slot?.nearEntryGate) {
+    landmarks.push(
+      slot?.nearestGate?.gateName
+        ? `Near ${slot.nearestGate.gateName}`
+        : "Near Entry Gate",
+    );
+  }
+  if (slot?.nearExitGate) {
+    landmarks.push(
+      slot?.nearestGate?.gateName
+        ? `Near ${slot.nearestGate.gateName}`
+        : "Near Exit Gate",
+    );
+  }
+  if (slot?.nearExit) landmarks.push("Near Emergency Exit");
+
+  return landmarks;
+}
+
 function buildQrImageUrl(qrText) {
   if (!qrText) return "";
 
@@ -140,13 +169,16 @@ function Alert({ type, message, onClose }) {
 }
 
 function BookingCard({ booking, cancelling, onCancel }) {
-  const slotName = booking.parkingSlot?.slotName || "Unassigned";
-  const zoneName = booking.parkingSlot?.zone?.zoneName || "N/A";
+  const slot = booking.parkingSlot;
+  const slotName = slot?.slotName || "Unassigned";
+  const zoneName = slot?.zone?.zoneName || "N/A";
   const vehicleType = booking.vehicleType?.typeName || "N/A";
   const reservationCode = getReservationCode(booking.id);
   const status = String(booking.status || "").toUpperCase();
   const canCancel = cancellableStatuses.includes(status);
   const qrImageUrl = buildQrImageUrl(booking.qr?.text);
+  const locationLabel = getSlotLocationLabel(slot);
+  const landmarks = getSlotLandmarks(slot);
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -159,7 +191,7 @@ function BookingCard({ booking, cancelling, onCancel }) {
             <StatusBadge status={booking.status} />
           </div>
           <p className="mt-2 text-sm font-semibold text-slate-700">
-            {zoneName}
+            {locationLabel || zoneName}
           </p>
         </div>
         <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
@@ -174,9 +206,33 @@ function BookingCard({ booking, cancelling, onCancel }) {
         <Info label="Slot" value={slotName} />
         <Info label="Vehicle" value={vehicleType} />
         <Info label="License Plate" value={booking.licensePlate || "N/A"} />
+        <Info
+          label="Building / Floor"
+          value={
+            [slot?.buildingName, slot?.floorName].filter(Boolean).join(" / ") ||
+            "N/A"
+          }
+        />
+        <Info
+          label="Nearest Gate"
+          value={slot?.nearestGate?.gateName || "N/A"}
+        />
         <Info label="Start" value={formatDateTime(booking.startTime)} />
         <Info label="Payment" value="Pay when checkout" />
       </div>
+
+      {landmarks.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {landmarks.map((landmark) => (
+            <span
+              key={landmark}
+              className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700 ring-1 ring-blue-100"
+            >
+              {landmark}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {qrImageUrl && (
         <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 sm:flex-row sm:items-center">

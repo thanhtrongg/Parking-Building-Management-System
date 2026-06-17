@@ -136,7 +136,16 @@ function PageHero({ total, filteredTotal, onAdd }) {
   );
 }
 
-function FilterBar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
+function FilterBar({
+  keyword,
+  onKeywordChange,
+  sortBy,
+  onSortChange,
+  selectedBuilding,
+  onBuildingChange,
+  buildings,
+  total,
+}) {
   return (
     <div className="mb-6 rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -154,6 +163,19 @@ function FilterBar({ keyword, onKeywordChange, sortBy, onSortChange, total }) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <select
+            value={selectedBuilding}
+            onChange={(event) => onBuildingChange(event.target.value)}
+            className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+          >
+            <option value="ALL">All Buildings</option>
+            {buildings.map((building) => (
+              <option key={building.id} value={building.id}>
+                {building.buildingCode} - {building.buildingName}
+              </option>
+            ))}
+          </select>
+
           <select
             value={sortBy}
             onChange={(event) => onSortChange(event.target.value)}
@@ -216,13 +238,17 @@ function ZoneCard({ zone, onEdit, onDelete }) {
 
         <div>
           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-            Zone ID
+            Building / Floor
           </p>
           <p className="mt-1 truncate text-xs font-semibold text-slate-500">
-            #{zone.id?.slice(-6) || zone.id}
+            {zone.buildingCode || "N/A"} / {zone.floorCode || "N/A"}
           </p>
         </div>
       </div>
+
+      <p className="relative mt-4 text-sm font-medium text-slate-500">
+        {zone.buildingName || "No building"} • {zone.floorName || "No floor"}
+      </p>
 
       <div className="relative mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
         <button
@@ -249,6 +275,7 @@ function ZoneFormModal({
   mode,
   initialData,
   vehicleTypes,
+  floors,
   submitting,
   onClose,
   onSubmit,
@@ -257,19 +284,26 @@ function ZoneFormModal({
     zoneName: initialData?.zoneName || "",
     vehicleTypeId: initialData?.vehicleTypeId || "",
     totalCapacity: initialData?.totalCapacity || "",
+    floorId: initialData?.floorId || "",
   }));
 
   const isEdit = mode === "edit";
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!form.zoneName.trim() || !form.vehicleTypeId || !form.totalCapacity)
+    if (
+      !form.zoneName.trim() ||
+      !form.vehicleTypeId ||
+      !form.totalCapacity ||
+      !form.floorId
+    )
       return;
 
     onSubmit({
       zoneName: form.zoneName.trim(),
       vehicleTypeId: form.vehicleTypeId,
       totalCapacity: parseInt(form.totalCapacity, 10),
+      floorId: form.floorId,
     });
   };
 
@@ -338,6 +372,27 @@ function ZoneFormModal({
               {vehicleTypes.map((type) => (
                 <option key={type.id} value={type.id}>
                   {type.typeName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block font-['Inter'] text-sm font-semibold text-slate-700">
+              Building Floor <span className="text-red-500">*</span>
+            </label>
+            <select
+              required
+              value={form.floorId}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, floorId: e.target.value }))
+              }
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            >
+              <option value="">-- Choose a Floor --</option>
+              {floors.map((floor) => (
+                <option key={floor.id} value={floor.id}>
+                  {floor.buildingCode} - {floor.floorCode} - {floor.floorName}
                 </option>
               ))}
             </select>
@@ -466,12 +521,15 @@ function Alert({ alert, onClose }) {
 export default function ZonesPage() {
   const [zones, setZones] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [floors, setFloors] = useState([]);
+  const [buildings, setBuildings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   // Filters & Sorting state
   const [keyword, setKeyword] = useState("");
   const [sortBy, setSortBy] = useState("name-asc");
+  const [selectedBuilding, setSelectedBuilding] = useState("ALL");
 
   // Modals control state
   const [modalMode, setModalMode] = useState(null); // 'create' | 'edit' | null
@@ -484,37 +542,32 @@ export default function ZonesPage() {
 
   // Hàm gọi API nạp dữ liệu đồng thời từ server
   const fetchZonesData = async () => {
-    const [zonesRes, vehicleTypesRes] = await Promise.all([
+    const [zonesRes, vehicleTypesRes, floorsRes, buildingsRes] = await Promise.all([
       apiRequest("/api/zones"),
       apiRequest("/api/vehicle-types"),
+      apiRequest("/api/building-floors"),
+      apiRequest("/api/buildings"),
     ]);
 
     const zonesData = zonesRes.data || [];
     const vTypesData = vehicleTypesRes.data || [];
 
-    const enrichedZones = zonesData.map((zone) => {
-      const foundType = vTypesData.find(
-        (type) => type.id === zone.vehicleTypeId,
-      );
-
-      return {
-        ...zone,
-        vehicleTypeName: foundType ? foundType.typeName : "Unknown",
-      };
-    });
-
     return {
-      enrichedZones,
+      zonesData,
       vTypesData,
+      floorsData: floorsRes.data || [],
+      buildingsData: buildingsRes.data || [],
     };
   };
 
   const loadData = async () => {
     try {
-      const { enrichedZones, vTypesData } = await fetchZonesData();
+      const { zonesData, vTypesData, floorsData, buildingsData } = await fetchZonesData();
 
-      setZones(enrichedZones);
+      setZones(zonesData);
       setVehicleTypes(vTypesData);
+      setFloors(floorsData);
+      setBuildings(buildingsData);
       setError("");
     } catch (err) {
       setError(err.message || "Cannot synchronize component database data.");
@@ -526,12 +579,14 @@ export default function ZonesPage() {
 
     async function loadInitialData() {
       try {
-        const { enrichedZones, vTypesData } = await fetchZonesData();
+        const { zonesData, vTypesData, floorsData, buildingsData } = await fetchZonesData();
 
         if (ignore) return;
 
-        setZones(enrichedZones);
+        setZones(zonesData);
         setVehicleTypes(vTypesData);
+        setFloors(floorsData);
+        setBuildings(buildingsData);
         setError("");
       } catch (err) {
         if (ignore) return;
@@ -565,6 +620,10 @@ export default function ZonesPage() {
       );
     }
 
+    if (selectedBuilding !== "ALL") {
+      result = result.filter((z) => z.buildingId === selectedBuilding);
+    }
+
     result.sort((a, b) => {
       if (sortBy === "name-asc") return a.zoneName.localeCompare(b.zoneName);
       if (sortBy === "name-desc") return b.zoneName.localeCompare(a.zoneName);
@@ -574,7 +633,7 @@ export default function ZonesPage() {
     });
 
     return result;
-  }, [zones, keyword, sortBy]);
+  }, [zones, keyword, sortBy, selectedBuilding]);
 
   // Các hàm đóng mở Modal Form
   const openCreateModal = () => {
@@ -669,6 +728,9 @@ export default function ZonesPage() {
         onKeywordChange={setKeyword}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        selectedBuilding={selectedBuilding}
+        onBuildingChange={setSelectedBuilding}
+        buildings={buildings}
         total={filteredZones.length}
       />
 
@@ -705,6 +767,7 @@ export default function ZonesPage() {
           mode={modalMode}
           initialData={selectedZone}
           vehicleTypes={vehicleTypes}
+          floors={floors}
           submitting={submitting}
           onClose={closeFormModal}
           onSubmit={handleFormSubmit}
