@@ -268,7 +268,7 @@ function UserRow({ user, isCurrentUser, onEdit, onDelete }) {
         <button
           type="button"
           onClick={() => onEdit(user)}
-          className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+          className="rounded-lg border border-transparent p-2 text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md active:translate-y-0"
           title="Edit user"
         >
           <span className="material-symbols-outlined text-xl">edit</span>

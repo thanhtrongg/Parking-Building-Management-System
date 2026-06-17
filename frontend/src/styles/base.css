@@ -1,0 +1,160 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
+@import "tailwindcss";
+
+:root {
+  --app-font-sans:
+    "Inter", "Plus Jakarta Sans", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans",
+    sans-serif;
+  --app-font-display:
+    "Geist", "Inter", "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans",
+    sans-serif;
+  --app-font-public:
+    "Plus Jakarta Sans", "Inter", "Segoe UI Variable Text", "Segoe UI",
+    system-ui, sans-serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--app-font-sans);
+  font-weight: 500;
+  font-synthesis-weight: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+select {
+  appearance: none;
+  cursor: pointer;
+  min-height: 2.75rem;
+  padding-right: 2.75rem !important;
+  border: 1px solid rgb(171 125 43 / 0.38);
+  border-radius: 0.9rem !important;
+  background-color: #f4ead7;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%),
+    linear-gradient(90deg, transparent, rgb(171 125 43 / 0.1));
+  background-position:
+    calc(100% - 1.15rem) calc(50% - 2px),
+    calc(100% - 0.85rem) calc(50% - 2px),
+    right center;
+  background-repeat: no-repeat;
+  background-size: 6px 6px, 6px 6px, 2.65rem 100%;
+  box-shadow:
+    0 5px 14px rgb(89 62 17 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.72);
+  color: #3d3428;
+  font-weight: 650;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+select:hover {
+  border-color: rgb(171 125 43 / 0.7);
+  background-color: #eee0c7;
+  box-shadow:
+    0 8px 18px rgb(89 62 17 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.78);
+  transform: translateY(-1px);
+}
+
+select:focus {
+  border-color: #b98529 !important;
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgb(201 155 63 / 0.16),
+    0 8px 20px rgb(89 62 17 / 0.12) !important;
+}
+
+select option,
+select optgroup {
+  background-color: #f4ead7;
+  color: #3d3428;
+  font-weight: 600;
+}
+
+select option:checked {
+  background: #d9b66d linear-gradient(0deg, #d9b66d 0%, #d9b66d 100%);
+  color: #241b0e;
+}
+
+select option:disabled {
+  background-color: #eee3cf;
+  color: #968873;
+}
+
+.system-dark select,
+.landing-dark select {
+  background-color: #1b1914 !important;
+  border-color: rgb(255 255 255 / 0.14) !important;
+  color: #fbf4e7 !important;
+  color-scheme: dark;
+  box-shadow:
+    0 7px 18px rgb(0 0 0 / 0.2),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.system-dark select option,
+.system-dark select optgroup,
+.landing-dark select option,
+.landing-dark select optgroup {
+  background-color: #1b1914 !important;
+  color: #fbf4e7 !important;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  vertical-align: middle;
+}
+
+.material-symbols-outlined {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+  font-size: inherit;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-\[\'Inter\'\] {
+  font-family: var(--app-font-sans);
+}
+
+.font-\[\'Geist\'\] {
+  font-family: var(--app-font-display);
+}
+
+.font-\[\'Satoshi\'\,\'Plus_Jakarta_Sans\'\,system-ui\,sans-serif\] {
+  font-family: var(--app-font-public);
+}

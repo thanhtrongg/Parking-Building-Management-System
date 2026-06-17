@@ -1,0 +1,235 @@
+/* Shared motion language for authenticated user and system pages. */
+.app-shell {
+  isolation: isolate;
+  position: relative;
+}
+
+.app-shell > header {
+  z-index: 40;
+}
+
+.app-shell > main {
+  position: relative;
+  z-index: 2;
+}
+
+.app-shell > main:has(.app-page-stage .fixed.inset-0) {
+  z-index: 100;
+}
+
+/* Keep modal dismiss actions visibly interactive across both system themes. */
+body .fixed.inset-0 button[class*="border"]:not(:disabled):hover {
+  border-color: rgb(185 133 41 / 0.55) !important;
+  background-color: #f4ead7 !important;
+  color: #6f4c13 !important;
+  box-shadow: 0 8px 20px rgb(89 62 17 / 0.12);
+  transform: translateY(-2px);
+}
+
+body
+  .fixed.inset-0
+  button:has(> .material-symbols-outlined:only-child):not(:disabled):hover {
+  background-color: #f4ead7 !important;
+  color: #9a6a16 !important;
+  box-shadow: 0 8px 20px rgb(89 62 17 / 0.14);
+  transform: translateY(-2px) rotate(3deg);
+}
+
+.system-dark .fixed.inset-0 button[class*="border"]:not(:disabled):hover,
+.system-dark
+  .fixed.inset-0
+  button:has(> .material-symbols-outlined:only-child):not(:disabled):hover {
+  border-color: rgb(215 180 106 / 0.42) !important;
+  background-color: rgb(215 180 106 / 0.16) !important;
+  color: #e2c579 !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.2);
+}
+
+.app-ambient,
+.app-grid-glow {
+  pointer-events: none;
+  position: fixed;
+}
+
+.app-ambient {
+  z-index: 0;
+  width: 34rem;
+  height: 34rem;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.2;
+  will-change: transform;
+}
+
+.app-ambient-one {
+  right: -12rem;
+  top: 8rem;
+  background: rgb(201 155 63 / 0.55);
+  animation: app-ambient-drift-one 18s ease-in-out infinite alternate;
+}
+
+.app-ambient-two {
+  bottom: -16rem;
+  left: 18%;
+  background: rgb(59 130 246 / 0.32);
+  animation: app-ambient-drift-two 22s ease-in-out infinite alternate;
+}
+
+.app-grid-glow {
+  inset: 0;
+  z-index: 1;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgb(111 85 42 / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(111 85 42 / 0.055) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+.app-page-stage {
+  animation: app-page-enter 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.app-page-stage > * {
+  animation: app-content-rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.app-page-stage > :nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.app-page-stage > :nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.app-page-stage > :nth-child(4) {
+  animation-delay: 145ms;
+}
+
+.app-page-stage > :nth-child(n + 5) {
+  animation-delay: 180ms;
+}
+
+.app-shell :where(article, section)[class*="rounded"][class*="border"] {
+  position: relative;
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 280ms ease,
+    border-color 280ms ease;
+}
+
+.app-shell :where(article, section)[class*="rounded"][class*="border"]:hover {
+  transform: translateY(-3px);
+}
+
+.app-shell button,
+.app-shell a[class*="rounded"] {
+  transition-duration: 220ms;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.app-shell button:active,
+.app-shell a[class*="rounded"]:active {
+  transform: scale(0.97);
+}
+
+.app-shell header {
+  animation: app-header-enter 480ms ease-out both;
+}
+
+.app-shell aside nav a {
+  animation: app-nav-enter 420ms ease-out both;
+}
+
+.app-shell aside nav a:nth-child(2) { animation-delay: 30ms; }
+.app-shell aside nav a:nth-child(3) { animation-delay: 60ms; }
+.app-shell aside nav a:nth-child(4) { animation-delay: 90ms; }
+.app-shell aside nav a:nth-child(5) { animation-delay: 120ms; }
+.app-shell aside nav a:nth-child(6) { animation-delay: 150ms; }
+.app-shell aside nav a:nth-child(n + 7) { animation-delay: 180ms; }
+
+.app-shell .animate-pulse {
+  animation-duration: 1.7s;
+}
+
+.system-dark .app-grid-glow {
+  opacity: 0.1;
+  background-image:
+    linear-gradient(rgb(215 180 106 / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(215 180 106 / 0.08) 1px, transparent 1px);
+}
+
+.system-dark .app-ambient-one {
+  background: rgb(215 180 106 / 0.35);
+  opacity: 0.16;
+}
+
+.system-dark .app-ambient-two {
+  background: rgb(59 130 246 / 0.2);
+  opacity: 0.12;
+}
+
+@keyframes app-page-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-content-rise {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-header-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes app-nav-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes app-ambient-drift-one {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-7rem, 4rem, 0) scale(1.12); }
+}
+
+@keyframes app-ambient-drift-two {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to { transform: translate3d(8rem, -5rem, 0) scale(0.94); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .app-shell *::before,
+  .app-shell *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+
+  .app-ambient {
+    display: none;
+  }
+}

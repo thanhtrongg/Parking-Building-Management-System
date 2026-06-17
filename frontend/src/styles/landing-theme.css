@@ -1,0 +1,301 @@
+.landing-light {
+  background: #f5f1e8 !important;
+  color: #17140f !important;
+  color-scheme: light;
+}
+
+.landing-light [class*="bg-[#070705]"],
+.landing-light [class*="bg-[#090806]"],
+.landing-light [class*="bg-[#090907]"],
+.landing-light [class*="bg-[#0f0d09]"],
+.landing-light [class*="bg-[#100f0b]"],
+.landing-light [class*="bg-[#11100c]"],
+.landing-light [class*="bg-[#11100d]"],
+.landing-light [class*="bg-[#15130f]"],
+.landing-light [class*="bg-[#080806]"],
+.landing-light [class*="bg-[#0c0b08]"],
+.landing-light [class*="bg-[#0b0a07]"] {
+  background-color: rgb(255 252 244 / 0.9) !important;
+}
+
+.landing-light header {
+  background-color: rgb(245 241 232 / 0.88) !important;
+  border-color: rgb(23 20 15 / 0.1) !important;
+}
+
+.landing-light [class*="bg-white/"],
+.landing-light [class*="bg-white\\["],
+.landing-light [class*="bg-white\\/\["] {
+  background-color: rgb(255 252 244 / 0.72) !important;
+}
+
+.landing-light [class*="ring-white"],
+.landing-light [class*="border-white"] {
+  --tw-ring-color: rgb(23 20 15 / 0.1) !important;
+  border-color: rgb(23 20 15 / 0.1) !important;
+}
+
+.landing-light [class*="text-[#fbf4e7]"],
+.landing-light [class*="text-[#f7efe0]"],
+.landing-light [class*="text-[#ddd4c4]"] {
+  color: #17140f !important;
+}
+
+.landing-light [class*="text-[#c7beae]"],
+.landing-light [class*="text-[#bbb4a6]"],
+.landing-light [class*="text-[#b9af9d]"],
+.landing-light [class*="text-[#9b917f]"],
+.landing-light [class*="text-[#958b7b]"],
+.landing-light [class*="text-[#8f8678]"] {
+  color: #61594b !important;
+}
+
+.landing-light [class*="bg-[#f7efe0]"] {
+  background-color: #17140f !important;
+  color: #fff8ea !important;
+}
+
+.landing-light [class*="bg-[#d7b46a]"] {
+  background-color: #c99b3f !important;
+  color: #17140f !important;
+}
+
+.landing-light .landing-theme-toggle {
+  background-color: rgb(23 20 15 / 0.06) !important;
+  color: #17140f !important;
+  --tw-ring-color: rgb(23 20 15 / 0.12) !important;
+}
+
+.landing-light.auth-page .auth-header {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.landing-light.auth-page .auth-image-panel {
+  background-color: #100f0b !important;
+  box-shadow: 0 20px 50px rgb(47 36 18 / 0.18);
+}
+
+.landing-light.auth-page .auth-image-panel img {
+  opacity: 0.78 !important;
+  filter: saturate(0.82) contrast(1.08) brightness(0.78) !important;
+}
+
+.landing-light.auth-page .auth-image-overlay {
+  opacity: 1 !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(6 6 5 / 0.08),
+      rgb(6 6 5 / 0.46) 48%,
+      rgb(6 6 5 / 0.94)
+    ) !important;
+}
+
+.landing-light.auth-page .auth-image-content h1,
+.landing-light.auth-page .auth-image-content h2 {
+  color: #fff8ea !important;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.72);
+}
+
+.landing-light.auth-page .auth-image-content p {
+  color: #d7b46a !important;
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.72);
+}
+
+.landing-light.auth-page .auth-image-stat {
+  background-color: rgb(8 8 6 / 0.82) !important;
+  --tw-ring-color: rgb(255 255 255 / 0.18) !important;
+}
+
+.landing-light img {
+  opacity: 0.9;
+  filter: saturate(0.9) contrast(0.96);
+}
+
+.landing-light [class*="bg-[linear-gradient"] {
+  opacity: 0.7;
+}
+
+.landing-light select,
+.landing-light input,
+.landing-light textarea {
+  background-color: rgb(255 252 244 / 0.86) !important;
+  color: #17140f !important;
+  border-color: rgb(23 20 15 / 0.14) !important;
+}
+
+.landing-light select {
+  background-color: #f4ead7 !important;
+  border-color: rgb(171 125 43 / 0.42) !important;
+  color: #3d3428 !important;
+}
+
+.landing-light select:hover {
+  background-color: #eee0c7 !important;
+  border-color: rgb(171 125 43 / 0.72) !important;
+}
+
+.landing-light select option {
+  background-color: #f4ead7 !important;
+  color: #3d3428 !important;
+}
+
+.landing-light select option:checked {
+  background: #d9b66d linear-gradient(0deg, #d9b66d 0%, #d9b66d 100%) !important;
+  color: #241b0e !important;
+}
+
+.landing-light .landing-building-shell {
+  background-color: rgb(23 20 15 / 0.06) !important;
+  --tw-ring-color: rgb(23 20 15 / 0.12) !important;
+}
+
+.landing-light .landing-building-panel {
+  background-color: #fbf6ea !important;
+}
+
+.landing-light .landing-building-image {
+  opacity: 0.36 !important;
+  filter: saturate(0.82) contrast(0.9);
+}
+
+.landing-light .landing-building-overlay {
+  background:
+    radial-gradient(circle at 78% 12%, rgb(201 155 63 / 0.18), transparent 32%),
+    linear-gradient(
+      90deg,
+      rgb(251 246 234 / 0.94),
+      rgb(251 246 234 / 0.88) 46%,
+      rgb(251 246 234 / 0.62)
+    ) !important;
+}
+
+.landing-light .landing-building-panel h2,
+.landing-light .landing-building-panel h3,
+.landing-light .landing-building-panel p {
+  text-shadow: none !important;
+}
+
+.landing-light .landing-building-panel h2,
+.landing-light .landing-building-panel h3,
+.landing-light .landing-building-stat p:first-child {
+  color: #17140f !important;
+}
+
+.landing-light .landing-building-panel p {
+  color: #4f4639 !important;
+}
+
+.landing-light .landing-building-panel [class*="text-[#d7b46a]"] {
+  color: #9a6a16 !important;
+}
+
+.landing-light .landing-building-stat {
+  background-color: rgb(255 252 244 / 0.82) !important;
+  --tw-ring-color: rgb(23 20 15 / 0.1) !important;
+  box-shadow: 0 12px 30px rgb(23 20 15 / 0.08);
+}
+
+.landing-light .landing-building-fact {
+  background-color: rgb(255 252 244 / 0.72) !important;
+  --tw-ring-color: rgb(23 20 15 / 0.12) !important;
+  box-shadow: 0 14px 38px rgb(23 20 15 / 0.1);
+}
+
+.landing-light .landing-building-fact-body {
+  background-color: rgb(255 252 244 / 0.9) !important;
+}
+
+.landing-light .landing-slots-panel {
+  background-color: #fbf6ea !important;
+}
+
+.landing-light .landing-slots-image {
+  opacity: 0.28 !important;
+  filter: saturate(0.82) contrast(0.9);
+}
+
+.landing-light .landing-slots-overlay {
+  background:
+    radial-gradient(circle at 78% 12%, rgb(201 155 63 / 0.12), transparent 30%),
+    linear-gradient(
+      90deg,
+      rgb(251 246 234 / 0.95),
+      rgb(251 246 234 / 0.9) 48%,
+      rgb(251 246 234 / 0.74)
+    ) !important;
+}
+
+.landing-light .landing-slots-panel h2,
+.landing-light .landing-slots-panel h3,
+.landing-light .landing-slots-panel p {
+  text-shadow: none !important;
+}
+
+.landing-light .landing-slots-panel [class*="text-[#fbf4e7]"] {
+  color: #17140f !important;
+}
+
+.landing-light .landing-slots-panel [class*="text-[#c7beae]"],
+.landing-light .landing-slots-panel [class*="text-[#b9af9d]"],
+.landing-light .landing-slots-panel [class*="text-[#9b917f]"] {
+  color: #5a5143 !important;
+}
+
+.landing-light .landing-slots-panel [class*="text-[#d7b46a]"] {
+  color: #9a6a16 !important;
+}
+
+.landing-light .landing-slots-panel [class*="bg-[#070705]"],
+.landing-light .landing-slots-panel [class*="bg-[#0b0a07]"] {
+  background-color: rgb(255 252 244 / 0.84) !important;
+}
+
+.landing-light .landing-slots-panel [class*="ring-white"],
+.landing-light .landing-slots-panel [class*="border-white"] {
+  --tw-ring-color: rgb(23 20 15 / 0.1) !important;
+  border-color: rgb(23 20 15 / 0.1) !important;
+}
+
+.landing-light .landing-slots-panel article {
+  box-shadow: 0 12px 30px rgb(23 20 15 / 0.08);
+}
+
+.landing-light .landing-cta-panel {
+  background-color: #fbf6ea !important;
+}
+
+.landing-light .landing-cta-image {
+  opacity: 0.3 !important;
+  filter: saturate(0.82) contrast(0.9);
+}
+
+.landing-light .landing-cta-overlay {
+  background:
+    radial-gradient(circle at 24% 8%, rgb(201 155 63 / 0.16), transparent 34%),
+    linear-gradient(
+      90deg,
+      rgb(251 246 234 / 0.94),
+      rgb(251 246 234 / 0.72)
+    ) !important;
+}
+
+.landing-light .landing-cta-panel h2,
+.landing-light .landing-cta-panel h3,
+.landing-light .landing-cta-panel p {
+  text-shadow: none !important;
+}
+
+.landing-light .landing-cta-panel [class*="text-[#fbf4e7]"] {
+  color: #17140f !important;
+}
+
+.landing-light .landing-cta-panel [class*="text-[#c7beae]"] {
+  color: #5a5143 !important;
+}
+
+.landing-light .landing-cta-panel [class*="text-[#d7b46a]"] {
+  color: #9a6a16 !important;
+}

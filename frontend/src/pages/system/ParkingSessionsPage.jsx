@@ -80,7 +80,7 @@ function LoadingState() {
 
 function PageHero({ total, activeCount }) {
     return (
-        <div className="relative mb-7 overflow-hidden rounded-[32px] border border-amber-200 bg-[#fffaf0] p-6 shadow-xl shadow-amber-900/10 md:p-8">
+        <div className="relative mb-7 overflow-hidden rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-amber-200/55 blur-3xl" />
             <div className="absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-[#d7b46a]/25 blur-3xl" />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -104,7 +104,7 @@ function PageHero({ total, activeCount }) {
                         <span className="material-symbols-outlined text-xl">add</span>
                         Create
                     </Link>
-                    <div className="rounded-3xl border border-amber-200 bg-[#f7ecd5] px-5 py-4 shadow-sm">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 shadow-sm">
                         <p className="font-['Inter'] text-xs font-bold text-amber-800">Total Sessions</p>
                         <p className="mt-1 font-['Geist'] text-3xl font-bold text-slate-950">{total}</p>
                     </div>
@@ -224,8 +224,9 @@ function SessionCard({ session, now, onView, onCheckout }) {
                 </div>
                 <div className="flex gap-2">
                     <button
+                        type="button"
                         onClick={() => onView(session)}
-                        className="px-4 py-2.5 rounded-xl bg-slate-100 font-['Inter'] text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                        className="rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 font-['Inter'] text-sm font-semibold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-slate-50 hover:text-blue-700 hover:shadow-md active:translate-y-0 active:scale-95"
                     >
                         Details
                     </button>

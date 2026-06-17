@@ -87,7 +87,7 @@ function PageHeader() {
 
 function SummaryCard({ title, value, icon, className }) {
   return (
-    <div className="feedback-surface rounded-2xl border border-[#d2b77a] bg-[#fffdfa] p-5 shadow-[0_18px_42px_rgba(86,63,23,0.16)]">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-['Geist'] text-[11px] font-semibold uppercase tracking-wider text-[#6b5a3d]">
@@ -167,7 +167,7 @@ function FeedbackTable({
 }) {
   if (loading) {
     return (
-      <div className="feedback-panel rounded-2xl border border-amber-200 bg-[#fffaf0] p-6 shadow-sm shadow-amber-900/10">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="space-y-3">
           {[1, 2, 3, 4].map((item) => (
             <div
@@ -182,7 +182,7 @@ function FeedbackTable({
 
   if (feedbacks.length === 0) {
     return (
-      <div className="feedback-panel rounded-2xl border border-dashed border-amber-300 bg-[#fffaf0] px-6 py-12 text-center shadow-sm shadow-amber-900/10">
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
           <span className="material-symbols-outlined text-3xl">forum</span>
         </div>
@@ -197,10 +197,10 @@ function FeedbackTable({
   }
 
   return (
-    <div className="feedback-panel overflow-hidden rounded-2xl border border-amber-200 bg-[#fffaf0] shadow-sm shadow-amber-900/10">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1120px] border-collapse text-left">
-          <thead className="border-b border-[#d7d9e4] bg-[#f8f9fc]">
+          <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
               {[
                 "Customer",
@@ -220,11 +220,11 @@ function FeedbackTable({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#eef0f5]">
+          <tbody className="divide-y divide-slate-100">
             {feedbacks.map((feedback) => (
               <tr
                 key={feedback.id}
-                className="transition hover:bg-[#f8f9fc]"
+                className="transition hover:bg-slate-50"
               >
                 <td className="px-5 py-4">
                   <CategoryBadge category={feedback.category} />
@@ -269,7 +269,7 @@ function FeedbackTable({
                       onChange={(event) =>
                         onStatusChange(feedback, event.target.value)
                       }
-                      className="h-10 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-10 rounded-xl border border-slate-200 bg-white px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label={`Update status for ${feedback.subject}`}
                     >
                       {feedbackStatuses.map((status) => (
@@ -282,7 +282,7 @@ function FeedbackTable({
                     <button
                       type="button"
                       onClick={() => onOpenDetail(feedback)}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 font-['Inter'] text-sm font-black text-blue-700 transition hover:bg-blue-100"
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 font-['Inter'] text-sm font-black text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-100 hover:shadow-md active:translate-y-0"
                     >
                       <span className="material-symbols-outlined text-[18px]">
                         visibility
@@ -320,14 +320,14 @@ function DetailPage({
       <button
         type="button"
         onClick={onBack}
-        className="mb-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-[#fffaf0] px-4 font-['Inter'] text-sm font-black text-slate-700 transition hover:bg-[#f7ecd5]"
+        className="mb-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-['Inter'] text-sm font-black text-slate-700 transition hover:bg-slate-50"
       >
         <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         Back to feedbacks
       </button>
 
       <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
-        <div className="rounded-xl border border-amber-200 bg-[#fffaf0] p-5 shadow-sm shadow-amber-900/10">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="font-['Inter'] text-xs font-black uppercase tracking-wider text-[#6b7280]">
@@ -346,7 +346,7 @@ function DetailPage({
             <StatusBadge status={feedback.status} />
           </div>
 
-          <div className="mt-5 rounded-xl bg-[#f7ecd5] p-4 text-sm leading-6 text-slate-700 ring-1 ring-amber-200">
+          <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 ring-1 ring-slate-200">
             {feedback.message}
           </div>
 
@@ -387,7 +387,7 @@ function DetailPage({
 
         <form
           onSubmit={onReplySubmit}
-          className="rounded-xl border border-amber-200 bg-[#fffaf0] p-5 shadow-sm shadow-amber-900/10"
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -411,7 +411,7 @@ function DetailPage({
               value={reply}
               onChange={(event) => onReplyChange(event.target.value)}
               rows={8}
-              className="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 py-3 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+              className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-500/10"
               placeholder="Write the response to send to the customer..."
               required
             />
@@ -428,7 +428,7 @@ function DetailPage({
               value={feedback.status || "OPEN"}
               disabled={updatingId === feedback.id}
               onChange={(event) => onStatusChange(feedback, event.target.value)}
-              className="h-11 rounded-xl border border-amber-200 bg-[#fffaf0] px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 font-['Inter'] text-sm font-semibold text-[#374151] outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {feedbackStatuses.map((status) => (
                 <option key={status} value={status}>
@@ -623,7 +623,7 @@ export default function FeedbacksPage() {
         <PageHeader />
         <OverviewGrid feedbacks={feedbacks} />
 
-        <div className="feedback-panel mb-6 rounded-2xl border border-amber-200 bg-[#fffaf0] p-4 shadow-sm shadow-amber-900/10">
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative flex-1 lg:max-w-xl">
               <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -633,14 +633,14 @@ export default function FeedbacksPage() {
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 placeholder="Search customer, ticket, subject, message..."
-                className="h-12 w-full rounded-xl border border-amber-200 bg-[#f7ecd5] pl-12 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 font-['Inter'] text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-500/10"
               />
             </div>
 
             <select
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
-              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+              className="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-500/10"
             >
               <option value="ALL">All Categories</option>
               {Object.entries(feedbackCategories).map(([value, label]) => (
@@ -651,7 +651,7 @@ export default function FeedbacksPage() {
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-12 rounded-xl border border-amber-200 bg-[#f7ecd5] px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-[#fffaf0] focus:ring-4 focus:ring-amber-500/10"
+              className="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 font-['Inter'] text-sm font-bold text-slate-700 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-500/10"
             >
               <option value="ALL">All Statuses</option>
               {feedbackStatuses.map((status) => (
